@@ -1,64 +1,45 @@
-# orbita (codinome)
+# GCard-PRÓ
 
-Negócio de **placas físicas com QR Code + NFC** que levam o cliente direto pra
-avaliar o negócio no Google. Separado do Toqy. Sociedade 50/50 — divide custos
-e lucros. Marca, Supabase e domínio próprios (a definir).
+Cartões e plaquinhas com NFC + QR Code que levam o cliente direto para a tela de
+avaliação do Google do estabelecimento. Fase 1: site público + checkout guiado +
+redirecionamento `/r/{token}` + painel administrativo.
 
-- Next.js 16 (App Router) + React 19 + Tailwind 4 + Supabase
-- Dev roda na porta **3100** (`npm run dev`)
+## Stack
 
-## O que já tem
+- TanStack Start (Vite, SSR) + React 19 + TypeScript
+- Tailwind CSS v4 + shadcn/ui
+- Supabase (Postgres + Auth + RLS)
+- Deploy: Vercel (Nitro preset `vercel`)
 
-| Área | Estado |
-|---|---|
-| Landing (`/`), pré-venda, grupo WhatsApp | pronto |
-| Redirect dinâmico da placa (`/r/[token]`) | pronto (só https + hosts Google) |
-| Catálogo de produtos (`/api/plate/products`) | pronto (lê `plate_product_types`) |
-| Funil de eventos (`/api/plate/funnel`) | pronto |
-| Painel financeiro (`/painel`) | pronto — visão geral, lançamentos, calculadoras |
-| Compra individual + checkout | falta (aguarda provedor de pagamento) |
-| Revenda + ativação de placa (`/painel/ativar`) | placeholder |
-| Google Places / link de avaliação | falta |
+## Desenvolvimento
 
-Plano completo: [.planning/PLAN_PLACAS.md](.planning/PLAN_PLACAS.md)
-
-## Setup
-
-```bash
-npm install
-cp .env.example .env.local   # preencher depois
-npm run dev
+```sh
+bun install
+cp .env.example .env   # preencha os valores
+bun run dev
 ```
 
-1. **Criar projeto Supabase novo** (não usar o do Toqy).
-2. Aplicar a migration: cole `supabase/migrations/0001_foundation.sql` no
-   SQL Editor do Supabase e rode. Cria `profiles` + roles + módulo `plate_*`
-   + módulo `finance_*`. Já semeia 3 produtos (cartão, 10x10, 10x15-L em "em breve").
-3. Preencher `.env.local` com URL + anon key + service_role key do projeto novo.
-4. Criar seu usuário (Auth > Users no Supabase) e virar admin:
-   ```sql
-   update public.profiles set role = 'admin' where email = 'seu@email.com';
-   ```
-5. Cadastrar os sócios pra divisão de lucro:
-   ```sql
-   insert into public.finance_partners (name, share_percent) values ('Léo', 50), ('Sócio', 50);
-   ```
-6. `/painel` → entrar com email/senha → aba Lançamentos / Calculadoras.
+Rotas: `/` (landing), `/comprar` (checkout guiado), `/r/{token}` (redirect da placa),
+`/painel` (admin — em construção).
 
-## Verificação
+## Banco de dados
 
-```bash
-npx tsc --noEmit
-npm run lint
-npx vitest run
-npm run build
-```
+Migrações em `supabase/migrations/`, aplicadas em ordem. Todas as tabelas com RLS
+ativado; funções de papel (`has_role`, `is_team`) vivem no schema `app_private`,
+fora da API pública. Preço é sempre recalculado no servidor
+(`src/lib/checkout.functions.ts`), nunca confiando no valor do navegador.
 
-## Comandos
+## Variáveis de ambiente
 
-| Comando | O quê |
-|---|---|
-| `npm run dev` | dev server :3100 |
-| `npm run build` | build produção |
-| `npm run lint` | eslint |
-| `npm run test` | vitest (calc financeira, state machine, redirect) |
+Ver `.env.example`. Segredos (`SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_MAPS_API_KEY`,
+`MERCADOPAGO_ACCESS_TOKEN`) só no gerenciador de segredos da hospedagem — nunca no
+repositório, nunca em variáveis `VITE_*`.
+
+## Deploy (Vercel)
+
+1. Importar o repositório no Vercel.
+2. Definir env vars (todas de `.env.example` que já tiver valor).
+3. Definir `NITRO_PRESET=vercel` (também em `vercel.json`).
+4. Build: `bun run build` · Output: automático (Nitro → `.vercel/output`).
+
+Pagamento (Mercado Pago) e e-mail transacional (Resend) entram depois.
