@@ -29,7 +29,7 @@ export const Route = createFileRoute("/r/$token")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: plate } = await supabaseAdmin
           .from("plates")
-          .select("id, status, destination_url, business_id")
+          .select("id, status, destination_url, business_id, scan_count")
           .eq("token", token)
           .maybeSingle();
 
@@ -86,6 +86,13 @@ export const Route = createFileRoute("/r/$token")({
           country: request.headers.get("cf-ipcountry"),
           referrer_host: referrerHost,
         });
+
+        // ponytail: read-modify-write, races under concurrent scans of one plate.
+        // Fine at this volume; move to a DB trigger / rpc increment if it matters.
+        await supabaseAdmin
+          .from("plates")
+          .update({ scan_count: (plate.scan_count ?? 0) + 1, last_scan_at: new Date().toISOString() })
+          .eq("id", plate.id);
 
         return new Response(null, {
           status: 302,
