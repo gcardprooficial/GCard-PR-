@@ -88,7 +88,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Cartão de bolso e plaquinha de balcão com NFC + QR Code, já configurados com o link de avaliação do seu negócio.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/og-image.png" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/og-image.png" },
     ],
     links: [
       {
@@ -102,6 +104,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon-512.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/favicon-512.png" },
     ],
   }),
   shellComponent: RootShell,

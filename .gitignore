@@ -41,3 +41,7 @@ dist-ssr
 
 .vercel
 APPLY_ALL_MIGRATIONS.sql
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/

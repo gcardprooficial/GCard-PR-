@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { getCatalog, type CatalogProduct } from "@/lib/catalog.functions";
@@ -111,6 +111,18 @@ function Comprar() {
   });
   const [saving, setSaving] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
+
+  // Trocar de caminho (meu negócio <-> em quantidade) reinicia o passo a passo:
+  // os dois fluxos têm etapas diferentes e não devem compartilhar progresso.
+  useEffect(() => {
+    setStepIndex(0);
+    setProduct(null);
+    setTerm("");
+    setResults([]);
+    setManualLink("");
+    setBusiness(null);
+    setQuantity(caminho === "revenda" ? 5 : 1);
+  }, [caminho]);
 
   const unitPrice = useMemo(() => {
     if (!plan) return 0;
