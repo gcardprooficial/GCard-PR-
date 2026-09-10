@@ -52,6 +52,7 @@ type OrderRow = {
 function Orders() {
   const { userId, email } = usePanel();
   const [rows, setRows] = useState<OrderRow[] | null>(null);
+  const [kindFilter, setKindFilter] = useState<"all" | "individual" | "revenda">("all");
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -89,6 +90,13 @@ function Orders() {
     toast.success(`Pedido #${row.order_number} atualizado.`);
   }
 
+  const counts = {
+    all: rows?.length ?? 0,
+    individual: rows?.filter((r) => r.kind === "individual").length ?? 0,
+    revenda: rows?.filter((r) => r.kind === "revenda").length ?? 0,
+  };
+  const visible = (rows ?? []).filter((r) => kindFilter === "all" || r.kind === kindFilter);
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -98,14 +106,49 @@ function Orders() {
         </Button>
       </div>
 
+      <div className="mt-4 flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+        {([
+          ["all", `Todos (${counts.all})`],
+          ["individual", `Loja própria (${counts.individual})`],
+          ["revenda", `Revenda / lote (${counts.revenda})`],
+        ] as const).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setKindFilter(k)}
+            className={`rounded-full px-3 py-1.5 transition-colors ${
+              kindFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {rows === null ? (
         <p className="mt-8 text-sm text-muted-foreground">Carregando…</p>
-      ) : rows.length === 0 ? (
-        <p className="mt-8 text-sm text-muted-foreground">Nenhum pedido ainda.</p>
+      ) : visible.length === 0 ? (
+        <p className="mt-8 text-sm text-muted-foreground">Nenhum pedido nesta aba.</p>
       ) : (
         <div className="mt-6 space-y-4">
-          {rows.map((r) => (
-            <div key={r.id} className="rounded-2xl bg-card p-5 card-soft">
+          {visible.map((r) => (
+            <div
+              key={r.id}
+              className={`rounded-2xl bg-card p-5 card-soft ${
+                r.kind === "individual" ? "border-l-4 border-primary" : "border-l-4 border-g-blue"
+              }`}
+            >
+              <div
+                className={`mb-3 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  r.kind === "individual"
+                    ? "bg-primary/15 text-foreground"
+                    : "bg-g-blue/15 text-foreground"
+                }`}
+              >
+                {r.kind === "individual"
+                  ? "LOJA PRÓPRIA — vai configurada com o negócio abaixo"
+                  : "REVENDA — enviar em branco, sem configuração (códigos na aba Lotes)"}
+              </div>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-display text-lg">

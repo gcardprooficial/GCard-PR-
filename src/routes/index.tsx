@@ -64,8 +64,9 @@ function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <Link to="/" className="font-display text-lg tracking-tight">
-          GCard<span className="text-primary">-PRÓ</span>
+        <Link to="/" className="flex items-center gap-2">
+          <img src="@/assets/logo/gcard-pro-logo-fundo-branco.png" alt="GCard-PRÓ" className="h-8 w-auto" />
+          <span className="sr-only">GCard-PRÓ</span>
         </Link>
         <div className="flex items-center gap-2">
           <a
@@ -250,6 +251,9 @@ function Home() {
                     )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{product.format}</p>
+                  <p className="mt-2 text-xs font-semibold text-primary">
+                    {[product.has_nfc && "NFC", product.has_qr && "QR Code"].filter(Boolean).join(" + ")}
+                  </p>
                 </div>
               </div>
             ))}
@@ -321,6 +325,9 @@ function Home() {
             </Link>
             <Link to="/privacidade" className="hover:text-foreground">
               Privacidade
+            </Link>
+            <Link to="/ativar" className="hover:text-foreground">
+              Ativar meus códigos
             </Link>
             <span>@gcardpro.oficial</span>
           </div>

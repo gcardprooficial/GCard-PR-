@@ -15,7 +15,9 @@ export const Route = createFileRoute("/painel")({
 
 const TABS = [
   { to: "/painel", label: "Pedidos", exact: true },
+  { to: "/painel/lotes", label: "Lotes" },
   { to: "/painel/financeiro", label: "Financeiro" },
+  { to: "/painel/calculadora", label: "Calculadora" },
   { to: "/painel/placas", label: "Placas" },
   { to: "/painel/scans", label: "Scans" },
 ] as const;

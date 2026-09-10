@@ -29,6 +29,8 @@ export type CatalogProduct = {
   format: string | null;
   status: string;
   price_delta_cents: number;
+  has_qr: boolean;
+  has_nfc: boolean;
 };
 
 export type CatalogPlan = {
@@ -57,7 +59,7 @@ export const getCatalog = createServerFn({ method: "GET" }).handler(async () => 
   const [products, plans, packages, tiers] = await Promise.all([
     supabase
       .from("products")
-      .select("id, slug, name, tagline, description, format, status, price_delta_cents")
+      .select("id, slug, name, tagline, description, format, status, price_delta_cents, has_qr, has_nfc")
       .order("sort_order"),
     supabase
       .from("plans")
