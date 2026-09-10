@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* Tema neutro/placeholder (2026-09-10). Trocar as cores quando a marca
+   for definida. Verde parecido com o do Toqy só de partida — mudar. */
+@theme {
+  --color-bg: #f7f8f7;
+  --color-card: #ffffff;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-surface: #f1f5f9;
+  --color-accent: #0d7a55;
+  --color-accent-dim: #0a5f42;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}

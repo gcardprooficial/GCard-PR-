@@ -1,0 +1,45 @@
+# dependencies
+node_modules/
+
+# next
+.next/
+out/
+
+# production
+dist/
+build/
+
+# vercel
+.vercel/
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+*.log
+
+# system
+.DS_Store
+Thumbs.db
+
+# cache
+.cache/
+.turbo/
+.vite/
+
+# editor
+.vscode/
+.idea/
+
+# local archives
+*.zip
+.vercel
+.env*
+
+# ts
+*.tsbuildinfo
