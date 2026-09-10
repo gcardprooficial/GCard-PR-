@@ -75,7 +75,7 @@ function Header() {
             Como funciona
           </a>
           <Button asChild size="sm">
-            <Link to="/comprar" search={{ caminho: "lojista" }}>
+            <Link to="/comprar" search={{}}>
               Quero o meu
             </Link>
           </Button>

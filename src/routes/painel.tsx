@@ -1,8 +1,9 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { createContext, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { PanelCtx } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,14 +12,6 @@ export const Route = createFileRoute("/painel")({
   head: () => ({ meta: [{ title: "Painel | GCard-PRÓ" }, { name: "robots", content: "noindex" }] }),
   component: PanelLayout,
 });
-
-type PanelUser = { userId: string; email: string };
-const PanelCtx = createContext<PanelUser | null>(null);
-export function usePanel(): PanelUser {
-  const v = useContext(PanelCtx);
-  if (!v) throw new Error("usePanel fora do painel");
-  return v;
-}
 
 const TABS = [
   { to: "/painel", label: "Pedidos", exact: true },
