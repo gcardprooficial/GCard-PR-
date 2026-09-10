@@ -315,7 +315,15 @@ function Home() {
           <span className="font-display text-base text-foreground">
             GCard<span className="text-primary">-PRÓ</span>
           </span>
-          <span>gcardpro.com.br · @gcardpro.oficial</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link to="/termos" className="hover:text-foreground">
+              Termos
+            </Link>
+            <Link to="/privacidade" className="hover:text-foreground">
+              Privacidade
+            </Link>
+            <span>@gcardpro.oficial</span>
+          </div>
         </div>
       </footer>
     </div>
