@@ -19,7 +19,7 @@ import produto10x15 from "@/assets/produto-plaquinha-10x15.jpg";
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
 
 const searchSchema = z.object({
-  caminho: z.enum(["lojista", "revenda"]).default("lojista").catch("lojista"),
+  caminho: z.enum(["lojista", "revenda"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/comprar")({
@@ -217,6 +217,75 @@ function Comprar() {
     );
   }
 
+  if (!caminho) {
+    const lojista = data.plans.find((p) => p.slug === "lojista");
+    const revenda = data.plans.find((p) => p.slug === "renda-extra");
+    const revendaFrom = revenda
+      ? Math.min(...revenda.tiers.map((t) => t.unit_price_cents), revenda.unit_price_cents)
+      : 0;
+    return (
+      <div className="min-h-screen bg-surface">
+        <header className="border-b border-border bg-background">
+          <div className="mx-auto max-w-3xl px-5 py-4">
+            <Link to="/" className="font-display text-lg">
+              GCard<span className="text-primary">-PRÓ</span>
+            </Link>
+          </div>
+        </header>
+        <div className="mx-auto max-w-3xl px-5 py-12 sm:py-16">
+          <h1 className="text-3xl sm:text-4xl">Como você vai usar o GCard-PRÓ?</h1>
+          <p className="mt-2 text-muted-foreground">
+            Escolha uma opção. Cada uma abre um pedido diferente.
+          </p>
+          <div className="mt-8 grid gap-5 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/comprar", search: { caminho: "lojista" } })}
+              className="rounded-3xl border-2 border-border bg-card p-7 text-left transition-all hover:-translate-y-1 hover:border-primary card-soft"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Para o meu negócio
+              </p>
+              <h2 className="mt-2 text-2xl">Quero receber configurado</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Você informa o seu negócio no Google e recebe as placas já apontando para a sua
+                avaliação.
+              </p>
+              <p className="mt-4 font-display text-2xl">
+                {money(lojista?.unit_price_cents ?? 5990)}
+                <span className="text-sm font-sans font-medium text-muted-foreground"> / unidade</span>
+              </p>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+                Continuar →
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/comprar", search: { caminho: "revenda" } })}
+              className="rounded-3xl border-2 border-border bg-card p-7 text-left transition-all hover:-translate-y-1 hover:border-primary card-soft"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Para revender
+              </p>
+              <h2 className="mt-2 text-2xl">Comprar em quantidade</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Lote com preço de revenda. Quanto mais unidades, menor o preço por unidade.
+              </p>
+              <p className="mt-4 font-display text-2xl">
+                a partir de {money(revendaFrom || 1990)}
+                <span className="text-sm font-sans font-medium text-muted-foreground"> / unidade</span>
+              </p>
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+                Continuar →
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (orderNumber) {
     return (
       <div className="flex min-h-screen items-center justify-center px-5">
@@ -273,22 +342,13 @@ function Comprar() {
           <Link to="/" className="font-display text-lg">
             GCard<span className="text-primary">-PRÓ</span>
           </Link>
-          <div className="flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => navigate({ to: "/comprar", search: { caminho: "lojista" } })}
-              className={`rounded-full px-3 py-1.5 transition-colors ${caminho === "lojista" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-            >
-              Meu negócio
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate({ to: "/comprar", search: { caminho: "revenda" } })}
-              className={`rounded-full px-3 py-1.5 transition-colors ${caminho === "revenda" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-            >
-              Em quantidade
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/comprar" })}
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            ‹ Trocar opção
+          </button>
         </div>
       </header>
 
