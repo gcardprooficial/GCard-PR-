@@ -43,4 +43,3 @@ repositório, nunca em variáveis `VITE_*`.
 4. Build: `bun run build` · Output: automático (Nitro → `.vercel/output`).
 
 Pagamento (Mercado Pago) e e-mail transacional (Resend) entram depois.
-"# GCard-PR-" 
