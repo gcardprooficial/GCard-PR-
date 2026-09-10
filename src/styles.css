@@ -136,8 +136,8 @@
   --card-foreground: #212529;
   --popover: #FFFFFF;
   --popover-foreground: #212529;
-  --primary: #1A73E8; /* Google blue */
-  --primary-foreground: #FFFFFF;
+  --primary: #F5C842; /* Yellow (original primary) */
+  --primary-foreground: #212529;
   --secondary: #6C63FF; /* Purple */
   --secondary-foreground: #FFFFFF;
   --muted: #F0F0F0;

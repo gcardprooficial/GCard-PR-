@@ -42,7 +42,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         ref={ref}
-        className={cn(buttonVariants({ variant, size, className }), "rounded-xl border bg-white/30 text-primary-foreground backdrop-blur-md border-white/20 shadow-lg")}
+        className={cn(buttonVariants({ variant, size, className }))}
         {...props}
       />
     );
