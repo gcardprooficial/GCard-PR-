@@ -40,3 +40,4 @@ dist-ssr
 *.sw?
 
 .vercel
+APPLY_ALL_MIGRATIONS.sql
