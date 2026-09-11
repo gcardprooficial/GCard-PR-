@@ -17,6 +17,7 @@ import { Route as PainelRouteImport } from './routes/painel'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as ApiUnsubscribeRouteImport } from './routes/api/unsubscribe'
+import { Route as GuiaIndexRouteImport } from './routes/guia.index'
 import { Route as GuiaCartaoDeVisitaPorAproximacaoRouteImport } from './routes/guia.cartao-de-visita-por-aproximacao'
 import { Route as GuiaCartaoNfcVsCartaoDigitalRouteImport } from './routes/guia.cartao-nfc-vs-cartao-digital'
 import { Route as GuiaMelhorCartaoDigitalParaEmpresaRouteImport } from './routes/guia.melhor-cartao-digital-para-empresa'
@@ -68,6 +69,11 @@ const ApiUnsubscribeRoute = ApiUnsubscribeRouteImport.update({
   id: '/api/unsubscribe',
   path: '/api/unsubscribe',
   getParentRoute: () => rootRouteImport,
+} as any)
+const GuiaIndexRoute = GuiaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GuiaRoute,
 } as any)
 const GuiaCartaoDeVisitaPorAproximacaoRoute =
   GuiaCartaoDeVisitaPorAproximacaoRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/scans': typeof PainelScansRoute
   '/r/$token': typeof RTokenRoute
+  '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
@@ -153,7 +160,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
-  '/guia': typeof GuiaRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
@@ -166,6 +172,7 @@ export interface FileRoutesByTo {
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/scans': typeof PainelScansRoute
   '/r/$token': typeof RTokenRoute
+  '/guia': typeof GuiaIndexRoute
   '/painel': typeof PainelIndexRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
@@ -188,6 +195,7 @@ export interface FileRoutesById {
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/scans': typeof PainelScansRoute
   '/r/$token': typeof RTokenRoute
+  '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
@@ -211,6 +219,7 @@ export interface FileRouteTypes {
     | '/painel/placas'
     | '/painel/scans'
     | '/r/$token'
+    | '/guia/'
     | '/painel/'
     | '/api/webhooks/mercadopago'
   fileRoutesByTo: FileRoutesByTo
@@ -218,7 +227,6 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
-    | '/guia'
     | '/privacidade'
     | '/termos'
     | '/api/unsubscribe'
@@ -231,6 +239,7 @@ export interface FileRouteTypes {
     | '/painel/placas'
     | '/painel/scans'
     | '/r/$token'
+    | '/guia'
     | '/painel'
     | '/api/webhooks/mercadopago'
   id:
@@ -252,6 +261,7 @@ export interface FileRouteTypes {
     | '/painel/placas'
     | '/painel/scans'
     | '/r/$token'
+    | '/guia/'
     | '/painel/'
     | '/api/webhooks/mercadopago'
   fileRoutesById: FileRoutesById
@@ -326,6 +336,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/unsubscribe'
       preLoaderRoute: typeof ApiUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/guia/': {
+      id: '/guia/'
+      path: '/'
+      fullPath: '/guia/'
+      preLoaderRoute: typeof GuiaIndexRouteImport
+      parentRoute: typeof GuiaRoute
     }
     '/guia/cartao-de-visita-por-aproximacao': {
       id: '/guia/cartao-de-visita-por-aproximacao'
@@ -411,6 +428,7 @@ interface GuiaRouteChildren {
   GuiaCartaoDeVisitaPorAproximacaoRoute: typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   GuiaCartaoNfcVsCartaoDigitalRoute: typeof GuiaCartaoNfcVsCartaoDigitalRoute
   GuiaMelhorCartaoDigitalParaEmpresaRoute: typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
+  GuiaIndexRoute: typeof GuiaIndexRoute
 }
 
 const GuiaRouteChildren: GuiaRouteChildren = {
@@ -418,6 +436,7 @@ const GuiaRouteChildren: GuiaRouteChildren = {
   GuiaCartaoNfcVsCartaoDigitalRoute: GuiaCartaoNfcVsCartaoDigitalRoute,
   GuiaMelhorCartaoDigitalParaEmpresaRoute:
     GuiaMelhorCartaoDigitalParaEmpresaRoute,
+  GuiaIndexRoute: GuiaIndexRoute,
 }
 
 const GuiaRouteWithChildren = GuiaRoute._addFileChildren(GuiaRouteChildren)
