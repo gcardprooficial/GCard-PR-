@@ -10,8 +10,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import heroCartao from "@/assets/gcard-mockup-real.png";
-import produtoCartao from "@/assets/gcard-cartao-arte.png";
+import heroCartao from "@/assets/gcard-pro-cartao-nfc-mockup-avaliacao-google.png";
+import produtoCartao from "@/assets/gcard-pro-cartao-nfc-arte-frontal.png";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
 
 const catalogQuery = queryOptions({
