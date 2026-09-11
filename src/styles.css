@@ -405,3 +405,31 @@ select {
   padding-right: 2.5rem !important;
   cursor: pointer;
 }
+
+/* ===== Accessibility & responsive tweaks ===== */
+
+:root {
+  --accessible-font-size: 16px;
+}
+
+html { font-size: var(--accessible-font-size); }
+
+@media (max-width: 640px) {
+  :root { --accessible-font-size: 15px; }
+  /* Ensure comfortable touch targets */
+  button, .btn, input[type="button"], input[type="submit"] { min-height: 44px; }
+}
+
+/* Stronger visible focus for accessibility */
+:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 28%, transparent), 0 6px 20px -14px rgba(17,17,17,0.18);
+  border-radius: 6px;
+}
+
+/* Ensure images scale nicely on small screens */
+img { max-width: 100%; height: auto; display: block; }
+
+/* Utility to make small components stack on narrow viewports */
+.responsive-stack > * { width: 100%; }
+
