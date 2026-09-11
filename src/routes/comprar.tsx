@@ -239,7 +239,7 @@ function Comprar() {
       ? Math.min(...revenda.tiers.map((t) => t.unit_price_cents), revenda.unit_price_cents)
       : 0;
     return (
-      <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
+   <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
         <div aria-hidden className="pointer-events-none absolute -top-20 -left-24 size-[500px] rounded-full bg-primary/15 blur-3xl" />
         <div aria-hidden className="pointer-events-none absolute top-40 -right-20 size-[420px] rounded-full bg-foreground/5 blur-3xl" />
 
@@ -402,18 +402,16 @@ function Comprar() {
               </p>
 
               <div className="relative mt-8 grid gap-3">
-                <Button
                   asChild
                   size="lg"
-                  className="btn-press btn-primary-shadow h-14 rounded-2xl text-base font-bold"
+                  className="group animate-rise delay-2 relative overflow-hidden rounded-[1.75rem] border-2 border-border bg-card p-7 sm:p-8 text-left card-soft card-soft-hover shine-border"
                 >
                   <Link to="/">← Voltar ao início</Link>
                 </Button>
                 {isResale && (
-                  <Button
                     asChild
                     variant="outline"
-                    size="lg"
+                    className="group animate-rise delay-3 relative overflow-hidden rounded-[1.75rem] border-2 border-foreground/5 bg-card p-7 sm:p-8 text-left card-soft card-soft-hover shine-border"
                     className="btn-press h-14 rounded-2xl border-2 text-base font-bold hover:bg-card"
                   >
                     <Link to="/ativar">Ativar meus códigos (depois que chegar o lote)</Link>

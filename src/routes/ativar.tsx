@@ -262,9 +262,9 @@ function Lote({ email, userId }: { email: string; userId: string }) {
               </p>
             ))}
 
-            <div className="mt-4 flex items-center justify-between gap-3">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-lg font-semibold">Códigos</h2>
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código / negócio" className="h-10 w-56" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código / negócio" className="h-10 w-full sm:w-56" />
             </div>
 
             <div className="mt-3 space-y-3">

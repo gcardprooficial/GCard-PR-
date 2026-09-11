@@ -433,3 +433,18 @@ img { max-width: 100%; height: auto; display: block; }
 /* Utility to make small components stack on narrow viewports */
 .responsive-stack > * { width: 100%; }
 
+/* ===== Header / logo constraints ===== */
+header img, .site-header img, .page-header img {
+  max-height: 48px;
+  height: auto;
+  width: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 640px) {
+  header img, .site-header img, .page-header img { max-height: 40px; }
+}
+
+/* Ensure sticky header doesn't push content on small screens */
+header.sticky, .sticky { position: sticky; top: 0; z-index: 40; }
+

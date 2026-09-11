@@ -154,7 +154,7 @@ function Orders() {
         </Button>
       </div>
 
-      <div className="mt-4 flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+      <div className="mt-4 flex flex-wrap gap-2 rounded-full bg-secondary p-1 text-xs font-semibold">
         {([
           ["all", `Todos (${counts.all})`],
           ["individual", `Loja própria (${counts.individual})`],
