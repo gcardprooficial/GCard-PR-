@@ -93,10 +93,10 @@ function Comprar() {
     audience: isResale ? "Comprar em quantidade e revender" : "Para usar no seu próprio balcão",
     description: null,
     unit_price_cents: isResale ? 3790 : 5990,
-    min_quantity: 1,
+    min_quantity: isResale ? 10 : 1,
     max_quantity: isResale ? null : 5,
     is_resale: isResale,
-    tiers: isResale ? [{ min_quantity: 1, unit_price_cents: 3790, label: "1 a 10 unidades" }, { min_quantity: 11, unit_price_cents: 2790, label: "11 a 50 unidades" }, { min_quantity: 51, unit_price_cents: 1990, label: "51 unidades ou mais" }] : [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }],
+    tiers: isResale ? [{ min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" }, { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" }, { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" }] : [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }],
     packages: [],
   };
   const products = data.products.length > 0 ? data.products : FALLBACK_PRODUCTS;
@@ -143,7 +143,7 @@ function Comprar() {
     setResults([]);
     setManualLink("");
     setBusiness(null);
-    setQuantity(caminho === "revenda" ? 5 : 1);
+    setQuantity(caminho === "revenda" ? 10 : 1);
   }, [caminho]);
 
   const unitPrice = useMemo(() => {

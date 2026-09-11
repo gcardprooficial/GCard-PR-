@@ -43,12 +43,12 @@ FROM public.plans p,
      ) AS t(lbl, qty, badge, note, ord)
 WHERE p.slug = 'lojista';
 
--- 3. Plan Revenda: 1 a 10 por R$ 37,90 | 11 a 50 por R$ 27,90 | acima de 50 por R$ 19,90
+-- 3. Plan Revenda: mínimo de 10; 10 a 24 por R$ 37,90 | 25 a 99 por R$ 27,90 | 100+ por R$ 19,90
 UPDATE public.plans
 SET unit_price_cents = 3790,
-    min_quantity = 1,
+  min_quantity = 10,
     max_quantity = NULL,
-    description = 'Compre em quantidade e revenda com alta margem: 1 a 10 por R$ 37,90, de 11 a 50 por R$ 27,90 e acima de 50 por R$ 19,90 cada.'
+  description = 'Pedido inicial a partir de 10 unidades: de 10 a 24 por R$ 37,90, de 25 a 99 por R$ 27,90 e 100 ou mais por R$ 19,90 cada.'
 WHERE slug = 'renda-extra';
 
 DELETE FROM public.plan_price_tiers
@@ -58,9 +58,9 @@ INSERT INTO public.plan_price_tiers (plan_id, min_quantity, unit_price_cents, la
 SELECT id, t.min_q, t.price, t.lbl
 FROM public.plans,
      (VALUES
-       (1, 3790, '1 a 10 unidades'),
-       (11, 2790, '11 a 50 unidades'),
-       (51, 1990, 'Acima de 50 unidades')
+      (10, 3790, '10 a 24 unidades'),
+      (25, 2790, '25 a 99 unidades'),
+      (100, 1990, '100 unidades ou mais')
      ) AS t(min_q, price, lbl)
 WHERE slug = 'renda-extra';
 

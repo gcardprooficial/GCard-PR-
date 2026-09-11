@@ -184,7 +184,7 @@ function ImpactCalculator() {
 function Home() {
   const { data } = useSuspenseQuery(catalogQuery);
   const lojista = data.plans.find((p) => p.slug === "lojista") ?? { name: "Plano Lojista", audience: "Para usar no seu próprio balcão", unit_price_cents: 5990, tiers: [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }] };
-  const revenda = data.plans.find((p) => p.slug === "renda-extra") ?? { name: "Pack Renda Extra", audience: "Comprar em quantidade e revender", unit_price_cents: 3790, tiers: [{ min_quantity: 1, unit_price_cents: 3790, label: "1 a 10 unidades" }, { min_quantity: 11, unit_price_cents: 2790, label: "11 a 50 unidades" }, { min_quantity: 51, unit_price_cents: 1990, label: "51 unidades ou mais" }] };
+  const revenda = data.plans.find((p) => p.slug === "renda-extra") ?? { name: "Pack Renda Extra", audience: "Comprar em quantidade e revender", unit_price_cents: 3790, tiers: [{ min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" }, { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" }, { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" }] };
   const products = data.products.length > 0 ? data.products : FALLBACK_PRODUCTS;
 
   return (
@@ -688,7 +688,7 @@ function Home() {
             <h3 className="mt-5 text-2xl sm:text-3xl">Cartões em branco em lote</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Receba cartões e manual com códigos únicos. Ative pelo painel quando vender.</p>
             <div className="mt-7 grid gap-2 sm:grid-cols-3">
-              {[['1 a 10', 'R$ 37,90'], ['11 a 50', 'R$ 27,90'], ['51+', 'R$ 19,90']].map(([label, price]) => <div key={label} className="rounded-xl bg-surface p-3"><p className="text-xs text-muted-foreground">{label} unidades</p><p className="mt-1 font-display text-xl">{price}</p><p className="text-xs text-muted-foreground">por unidade</p></div>)}
+              {[['10 a 24', 'R$ 37,90'], ['25 a 99', 'R$ 27,90'], ['100+', 'R$ 19,90']].map(([label, price]) => <div key={label} className="rounded-xl bg-surface p-3"><p className="text-xs text-muted-foreground">{label} unidades</p><p className="mt-1 font-display text-xl">{price}</p><p className="text-xs text-muted-foreground">por unidade</p></div>)}
             </div>
             <Button asChild size="lg" variant="outline" className="mt-6 h-12 w-full rounded-xl border-2"><Link to="/comprar" search={{ caminho: "revenda" }}>Começar a revender</Link></Button>
           </div>
