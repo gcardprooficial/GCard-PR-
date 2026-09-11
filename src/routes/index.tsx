@@ -10,9 +10,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import heroCartao from "@/assets/gcard-pro-cartao-nfc-mockup-avaliacao-google.png";
-import produtoCartao from "@/assets/gcard-pro-cartao-nfc-arte-frontal.png";
-import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
+import heroCartao from "@/assets/gcard-pro-cartao-nfc-mockup-avaliacao-google.webp";
+import produtoCartao from "@/assets/gcard-pro-cartao-nfc-arte-frontal.webp";
+import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 const catalogQuery = queryOptions({
   queryKey: ["catalog"],
@@ -333,6 +333,8 @@ function Home() {
               alt="Cartão GCard-PRÓ sendo aproximado do celular para abrir a avaliação no Google"
               className="w-full h-full object-cover"
               loading="eager"
+              fetchPriority="high"
+              decoding="async"
               draggable={false}
             />
           </div>

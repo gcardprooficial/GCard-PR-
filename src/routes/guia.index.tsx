@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
+import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 export const Route = createFileRoute("/guia/")({
   head: () => ({

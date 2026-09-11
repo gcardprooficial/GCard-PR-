@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
+import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 export const Route = createFileRoute("/ativar")({
   beforeLoad: () => {

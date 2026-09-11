@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import produtoCartao from "@/assets/gcard-pro-cartao-nfc-arte-frontal.png";
-import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
+import produtoCartao from "@/assets/gcard-pro-cartao-nfc-arte-frontal.webp";
+import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
 
