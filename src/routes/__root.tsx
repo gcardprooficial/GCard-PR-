@@ -172,6 +172,8 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="pt-BR">
       <head>
         <HeadContent />
+      </head>
+      <body className="bg-background antialiased">
         {import.meta.env.VITE_GA4_MEASUREMENT_ID ? (
           <>
             <script
@@ -193,8 +195,6 @@ function RootShell({ children }: { children: ReactNode }) {
             }}
           />
         ) : null}
-      </head>
-      <body className="bg-background antialiased">
         {import.meta.env.VITE_GTM_ID ? (
           <noscript>
             <iframe
