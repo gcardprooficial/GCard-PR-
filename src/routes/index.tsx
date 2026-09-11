@@ -17,10 +17,13 @@ import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 const catalogQuery = queryOptions({
   queryKey: ["catalog"],
   queryFn: () => getCatalog(),
+  initialData: { products: [], plans: [] },
+  initialDataUpdatedAt: 0,
+  staleTime: 60_000,
+  refetchOnMount: "always",
 });
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(catalogQuery),
   head: () => ({
     meta: [
       {
