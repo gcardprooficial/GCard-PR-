@@ -134,6 +134,7 @@ function Comprar() {
   const [saving, setSaving] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [lookingUpZip, setLookingUpZip] = useState(false);
 
   // Trocar de caminho (meu negócio <-> em quantidade) reinicia o passo a passo:
   // os dois fluxos têm etapas diferentes e não devem compartilhar progresso.
@@ -193,6 +194,7 @@ function Comprar() {
   async function lookupZip(zip: string) {
     const digits = zip.replace(/\D/g, "");
     if (digits.length !== 8) return;
+    setLookingUpZip(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
       const json = (await res.json()) as {
@@ -212,6 +214,8 @@ function Comprar() {
       }));
     } catch {
       /* preenchimento manual continua disponível */
+    } finally {
+      setLookingUpZip(false);
     }
   }
 
@@ -1098,7 +1102,7 @@ function Comprar() {
                     <span className="inline-flex items-center gap-1.5">
                       CEP
                       <span className="rounded-md bg-primary/20 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-primary-foreground">
-                        Auto
+                        {lookingUpZip ? "Buscando" : "Auto"}
                       </span>
                     </span>
                   </Label>
@@ -1112,6 +1116,9 @@ function Comprar() {
                     className="mt-1.5 h-12 input-soft rounded-2xl"
                     placeholder="00000-000"
                   />
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    {lookingUpZip ? "Localizando seu endereço..." : "Rua, bairro e cidade são preenchidos automaticamente."}
+                  </p>
                 </div>
                 <Field label="Número" value={address.number} onChange={(v) => setAddress({ ...address, number: v })} placeholder="123 ou s/n" />
                 <div className="sm:col-span-2">
@@ -1249,6 +1256,18 @@ function Comprar() {
                 </svg>
               </Button>
             )}
+          </div>
+
+          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-g-green/20 bg-g-green/5 px-4 py-3 text-sm">
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-g-green/15 text-g-green" aria-hidden>
+              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </span>
+            <p className="leading-relaxed text-muted-foreground">
+              Pagamento processado com segurança pelo <strong className="text-foreground">Mercado Pago</strong>. Seus dados de cartão não ficam armazenados na GCard-PRÓ.
+            </p>
           </div>
         </div>
       </div>

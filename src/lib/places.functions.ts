@@ -30,21 +30,30 @@ export const searchBusinesses = createServerFn({ method: "POST" })
       return { ok: false as const, error: "A busca no Google não está disponível agora." };
     }
 
-    const response = await fetch(PLACES_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": key,
-        "X-Goog-FieldMask":
-          "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount",
-      },
-      body: JSON.stringify({
-        textQuery: data.query,
-        languageCode: "pt-BR",
-        regionCode: "BR",
-        pageSize: 8,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(PLACES_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": key,
+          "X-Goog-FieldMask":
+            "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount",
+        },
+        body: JSON.stringify({
+          textQuery: data.query,
+          languageCode: "pt-BR",
+          regionCode: "BR",
+          pageSize: 8,
+        }),
+      });
+    } catch (error) {
+      console.error("Places searchText indisponível", error);
+      return {
+        ok: false as const,
+        error: "Não conseguimos consultar o Google agora. Cole o link de avaliação manualmente.",
+      };
+    }
 
     if (!response.ok) {
       const body = await response.text();

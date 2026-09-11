@@ -48,7 +48,7 @@ export const Route = createFileRoute("/api/webhooks/mercadopago")({
             payment_status: payment.status,
             payment_provider: provider.name,
             provider_payment_id: payment.providerPaymentId,
-            provider_payment_method: payment.method ?? null,
+            payment_method: payment.method ?? null,
             external_reference: payment.externalReference ?? null,
           };
           if (payment.status === "pago") updates.paid_at = new Date().toISOString();

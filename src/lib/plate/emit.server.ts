@@ -59,7 +59,7 @@ export async function emitPlatesForOrder(orderId: string): Promise<{ created: nu
   const productId = await firstProductId(orderId);
 
   if (order.kind === "revenda") {      // Try to find existing batch
-      let { data: existingBatch, error: existingError } = await supabaseAdmin
+      const { data: existingBatch } = await supabaseAdmin
         .from("batches")
         .select("id")
         .eq("owner_order_id", orderId)

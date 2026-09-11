@@ -132,7 +132,7 @@ function Orders() {
       );
       void load();
     } catch {
-      toast.error("Não foi possível confirmar pagamento ou gerar códigos.");
+          toast.error("Não foi possível confirmar o pagamento ou gerar os códigos. Verifique a estrutura de lotes no Supabase.");
     } finally {
       setConfirmingId(null);
     }

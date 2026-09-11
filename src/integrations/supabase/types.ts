@@ -52,28 +52,52 @@ export type Database = {
           code: string
           created_at: string
           id: string
+          label: string | null
           notes: string | null
           owner_order_id: string | null
+          owner_email: string | null
+          owner_user_id: string | null
+          product_id: string | null
           quantity: number
+          sold_to: string | null
           status: Database["public"]["Enums"]["batch_status"]
+          codes_sent_at: string | null
+          unit_cost_cents: number
+          updated_at: string
         }
         Insert: {
           code: string
           created_at?: string
           id?: string
+          label?: string | null
           notes?: string | null
           owner_order_id?: string | null
+          owner_email?: string | null
+          owner_user_id?: string | null
+          product_id?: string | null
           quantity?: number
+          sold_to?: string | null
           status?: Database["public"]["Enums"]["batch_status"]
+          codes_sent_at?: string | null
+          unit_cost_cents?: number
+          updated_at?: string
         }
         Update: {
           code?: string
           created_at?: string
           id?: string
+          label?: string | null
           notes?: string | null
           owner_order_id?: string | null
+          owner_email?: string | null
+          owner_user_id?: string | null
+          product_id?: string | null
           quantity?: number
+          sold_to?: string | null
           status?: Database["public"]["Enums"]["batch_status"]
+          codes_sent_at?: string | null
+          unit_cost_cents?: number
+          updated_at?: string
         }
         Relationships: [
           {
@@ -677,6 +701,8 @@ export type Database = {
           status: Database["public"]["Enums"]["product_status"]
           tagline: string | null
           updated_at: string
+          has_nfc: boolean
+          has_qr: boolean
         }
         Insert: {
           created_at?: string
@@ -691,6 +717,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"]
           tagline?: string | null
           updated_at?: string
+          has_nfc?: boolean
+          has_qr?: boolean
         }
         Update: {
           created_at?: string
@@ -705,6 +733,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["product_status"]
           tagline?: string | null
           updated_at?: string
+          has_nfc?: boolean
+          has_qr?: boolean
         }
         Relationships: []
       }
