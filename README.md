@@ -33,7 +33,7 @@ fora da API pública. Preço é sempre recalculado no servidor
 
 Ver `.env.example`. Segredos (`SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_MAPS_API_KEY`,
 `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `RESEND_API_KEY` e
-`RESEND_FROM_EMAIL`) só no gerenciador de segredos da hospedagem — nunca no
+`RESEND_FROM` ou `RESEND_FROM_EMAIL`) só no gerenciador de segredos da hospedagem — nunca no
 repositório, nunca em variáveis `VITE_*`.
 
 ## Deploy (Vercel)

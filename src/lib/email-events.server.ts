@@ -26,7 +26,10 @@ function eventTitle(event: OrderEmailEvent) {
 async function sendWithResend(input: { to: string; subject: string; html: string }) {
   const apiKey = process.env["RESEND_API_KEY"];
   if (!apiKey) return { sent: false, reason: "RESEND_API_KEY ausente" };
-  const from = process.env["RESEND_FROM_EMAIL"] ?? "GCard-PRÓ <noreply@gcardpro.com.br>";
+  const from =
+    process.env["RESEND_FROM"] ??
+    process.env["RESEND_FROM_EMAIL"] ??
+    "GCard-PRÓ <noreply@gcardpro.com.br>";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
