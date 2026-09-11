@@ -53,6 +53,8 @@ function applyPublicPageCache(request: Request, response: Response): Response {
 
   const headers = new Headers(response.headers);
   headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+  headers.set("CDN-Cache-Control", "public, max-age=60, stale-while-revalidate=600");
+  headers.set("Vercel-CDN-Cache-Control", "public, max-age=60, stale-while-revalidate=600");
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
