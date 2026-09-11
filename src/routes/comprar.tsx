@@ -135,6 +135,7 @@ function Comprar() {
     );
   }, [plan, product, quantity]);
   const total = unitPrice * quantity;
+  const maxQuantity = plan?.max_quantity ?? 500;
 
   const go = (delta: number) => setStepIndex((i) => Math.min(steps.length - 1, Math.max(0, i + delta)));
 
@@ -427,7 +428,7 @@ function Comprar() {
       case "confirmar":
         return !!business || manualLink.trim().length > 10;
       case "quantidade":
-        return quantity >= plan.min_quantity;
+        return quantity >= plan.min_quantity && quantity <= maxQuantity;
       case "dados":
         return (
           customer.firstName.length >= 2 &&
@@ -983,16 +984,21 @@ function Comprar() {
                     id="qtd"
                     type="number"
                     min={plan.min_quantity}
-                    max={500}
+                    max={maxQuantity}
                     value={quantity}
                     onChange={(e) =>
-                      setQuantity(Math.max(plan.min_quantity, Number(e.target.value) || plan.min_quantity))
+                      setQuantity(
+                        Math.min(
+                          maxQuantity,
+                          Math.max(plan.min_quantity, Number(e.target.value) || plan.min_quantity),
+                        ),
+                      )
                     }
                     className="mt-0 h-12 text-center text-xl font-black input-soft rounded-2xl"
                   />
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.min(500, q + 1))}
+                    onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
                     className="btn-press inline-flex w-12 items-center justify-center rounded-2xl border-2 border-border bg-card text-2xl font-black text-foreground hover:border-primary hover:bg-primary/10"
                     aria-label="Aumentar quantidade"
                   >

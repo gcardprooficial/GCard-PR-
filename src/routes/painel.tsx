@@ -7,6 +7,7 @@ import { PanelCtx } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
 
 export const Route = createFileRoute("/painel")({
   head: () => ({ meta: [{ title: "Painel | GCard-PRÓ" }, { name: "robots", content: "noindex" }] }),
@@ -66,8 +67,8 @@ function PanelLayout() {
     <div className="min-h-screen bg-surface">
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <Link to="/" className="font-display text-lg">
-            GCard<span className="text-primary">-PRÓ</span>{" "}
+          <Link to="/" className="inline-flex items-center gap-3">
+            <img src={logoTransparente} alt="GCard-PRÓ" className="h-9 w-auto" draggable={false} />
             <span className="text-muted-foreground">/ painel</span>
           </Link>
           <div className="flex items-center gap-3 text-sm">
@@ -130,8 +131,8 @@ function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-5">
       <form onSubmit={submit} className="w-full max-w-sm rounded-3xl bg-card p-8 card-soft">
-        <Link to="/" className="font-display text-lg">
-          GCard<span className="text-primary">-PRÓ</span>
+        <Link to="/" className="inline-flex items-center">
+          <img src={logoTransparente} alt="GCard-PRÓ" className="h-10 w-auto" draggable={false} />
         </Link>
         <h1 className="mt-4 text-xl">Painel</h1>
         <div className="mt-6 space-y-4">

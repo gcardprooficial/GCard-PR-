@@ -4,7 +4,7 @@
 
 /*
  * Design system GCard-PRÓ
- * Fundo off-white, tipografia preta, acento amarelo.
+ * Fundo claro, tipografia azul-marinho, acento azul de ação.
  * Tipografia: Unbounded (display) + Manrope (corpo)
  */
 
@@ -117,45 +117,45 @@
 
 :root {
   --radius: 1rem;
-  --background: #F7F5F1;   /* off-white premium */
-  --foreground: #111111;    /* preto suave */
-  --ink: #111111;
-  --surface: #F0ECE5;       /* tom levemente mais escuro que bg */
-  --surface-foreground: #111111;
+  --background: #F8FAFC;
+  --foreground: #101828;
+  --ink: #101828;
+  --surface: #F1F5F9;
+  --surface-foreground: #101828;
   --card: #FFFFFF;          /* cards sobre fundo cream */
   --card-foreground: #111111;
   --popover: #FFFFFF;
   --popover-foreground: #111111;
-  --primary: #FFB900;       /* amarelo GCard (identidade visual) */
-  --primary-foreground: #111111;
-  --secondary: #111111;     /* preto como secondary */
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
+  --secondary: #101828;
   --secondary-foreground: #FFFFFF;
-  --muted: #EBE7DF;         /* tom neutro */
-  --muted-foreground: #5E5A53;
-  --accent: #FFD866;        /* amarelo claro, hover */
-  --accent-foreground: #111111;
+  --muted: #E8EEF5;
+  --muted-foreground: #667085;
+  --accent: #F59E0B;
+  --accent-foreground: #101828;
   --destructive: #E23B3B;
   --destructive-foreground: #FFFFFF;
-  --border: #E5DFD2;        /* borda creme suave */
-  --input:  #E5DFD2;
-  --ring:   #111111;        /* ring preto para foco forte */
+  --border: #DCE4EE;
+  --input:  #DCE4EE;
+  --ring:   #2563EB;
   --g-blue:   #2563EB;
   --g-red:    #E23B3B;
   --g-green:  #16A34A;
   --g-yellow: #FFB900;
-  --chart-1: #FFB900;
-  --chart-2: #111111;
+  --chart-1: #2563EB;
+  --chart-2: #101828;
   --chart-3: #16A34A;
   --chart-4: #E23B3B;
   --chart-5: #5E5A53;
-  --sidebar: #FBF9F5;
-  --sidebar-foreground: #111111;
-  --sidebar-primary: #FFB900;
-  --sidebar-primary-foreground: #111111;
-  --sidebar-accent: #F0ECE5;
-  --sidebar-accent-foreground: #111111;
-  --sidebar-border: #E5DFD2;
-  --sidebar-ring: #111111;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #101828;
+  --sidebar-primary: #2563EB;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E8EEF5;
+  --sidebar-accent-foreground: #101828;
+  --sidebar-border: #DCE4EE;
+  --sidebar-ring: #2563EB;
 }
 
 /* Dark mode disabled – light palette premium only */
@@ -206,7 +206,7 @@
   background-image: linear-gradient(
     180deg,
     transparent 60%,
-    color-mix(in oklab, var(--color-primary) 55%, transparent) 60%
+    color-mix(in oklab, var(--color-accent) 72%, transparent) 60%
   );
   padding-inline: 0.08em;
   border-radius: 2px;
@@ -315,7 +315,8 @@
 }
 
 @utility noise-bg {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-image: linear-gradient(rgba(37, 99, 235, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(37, 99, 235, 0.045) 1px, transparent 1px);
+  background-size: 42px 42px;
 }
 
 @utility section-divider {

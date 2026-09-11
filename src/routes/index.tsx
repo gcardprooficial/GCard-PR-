@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
 import { getCatalog } from "@/lib/catalog.functions";
 import { money } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
@@ -26,16 +26,16 @@ export const Route = createFileRoute("/")({
     meta: [
       {
         title:
-          "GCard-PRÓ | Cartão NFC e QR Code para avaliações no Google",
+          "GCard-PRÓ | Cartão NFC para avaliações no Google",
       },
       {
         name: "description",
         content:
-          "Cartão de bolso (NFC), plaquinha de balcão e placa em L (NFC + QR) para avaliações no Google. Loja própria chega configurada; lotes para revenda com painel de ativação.",
+          "Cartão de bolso NFC para avaliações no Google. Loja própria chega configurada; lotes para revenda com painel de ativação.",
       },
       {
         property: "og:title",
-        content: "GCard-PRÓ | Mais avaliações no Google em 3 segundos",
+        content: "GCard-PRÓ | Mais avaliações no Google com um toque",
       },
       {
         property: "og:description",
@@ -104,7 +104,7 @@ function Header() {
             className="btn-press btn-primary-shadow rounded-2xl px-4 sm:px-5"
           >
             <Link to="/comprar" search={{}}>
-              Quero o meu →
+              Comprar agora →
             </Link>
           </Button>
         </div>
@@ -121,7 +121,7 @@ function HeroBadge() {
         <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
       </span>
       <span className="text-xs font-bold tracking-wide text-foreground/90 sm:text-sm">
-        NFC · QR dinâmico · Sem mensalidade
+        Fornecedor direto · NFC · Sem mensalidade
       </span>
     </div>
   );
@@ -129,6 +129,11 @@ function HeroBadge() {
 
 function Home() {
   const { data } = useSuspenseQuery(catalogQuery);
+  const queryClient = useQueryClient();
+
+  const retry = () => {
+    void queryClient.invalidateQueries({ queryKey: ["catalog"] });
+  };
   const lojista = data.plans.find((p) => p.slug === "lojista");
   const revenda = data.plans.find((p) => p.slug === "renda-extra");
 
@@ -152,17 +157,15 @@ function Home() {
           <HeroBadge />
 
           <h1 className="mt-6 animate-rise delay-1 text-4xl leading-[1.02] tracking-tight sm:text-5xl md:text-[3.35rem] md:leading-[1.03]">
-            Seu cliente{" "}
-            <span className="highlight-yellow relative inline-block">
-              avalia no Google
-            </span>{" "}
-            em <span className="font-black">3 segundos</span>.
+            Mais avaliações no Google{" "}
+            <span className="highlight-yellow relative inline-block">com um toque</span>.
           </h1>
 
           <p className="mt-6 animate-rise delay-2 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            No <strong className="text-foreground/90">cartão de bolso</strong>, só aproxima o celular (NFC).
-            Nas <strong className="text-foreground/90">plaquinhas</strong>, NFC ou QR Code. Pedido da loja chega{" "}
-            <strong className="text-foreground/90">100% configurado</strong>; lote de revenda você ativa em{" "}
+            O <strong className="text-foreground/90">cartão de bolso</strong> usa aproximação NFC e chega pronto para o seu negócio.
+            Somos <strong className="text-foreground/90">fornecedores</strong>: para revendedores, criamos o lote, os códigos únicos e o painel para ativação.{" "}
+            As plaquinhas com QR Code ficam para breve.
+            {" "}
             <Link to="/ativar" className="font-bold text-foreground underline underline-offset-2">
               /ativar
             </Link>
@@ -289,13 +292,13 @@ function Home() {
           <div className="absolute -right-4 top-10 animate-bounce-subtle sm:-right-6 sm:top-14">
             <div className="rounded-2xl border border-border bg-card/95 px-4 py-3 backdrop-blur shadow-2xl shadow-foreground/10">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Após 30 dias
+                Link dinâmico
               </p>
               <p className="mt-0.5 font-display text-2xl font-black leading-none">
-                <span className="text-g-green">+287</span>
+                <span className="text-primary">Sempre editável</span>
               </p>
               <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                avaliações 5 estrelas
+                sem trocar o cartão
               </p>
             </div>
           </div>
@@ -303,6 +306,22 @@ function Home() {
       </section>
 
       {/* ===== DOIS CAMINHOS ===== */}
+      {data.products.length === 0 && (
+        <div className="mx-auto max-w-6xl px-5 py-8">
+          <div className="rounded-2xl bg-card p-6 text-center card-soft">
+            <h3 className="text-lg font-semibold">Catálogo indisponível</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Não foi possível carregar os modelos agora. Isso pode ser temporário — tente novamente.
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <Button onClick={retry}>Tentar novamente</Button>
+              <Button asChild variant="outline">
+                <a href="/ativar">Ir para ativar (se aplicável)</a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       <section id="caminhos" className="relative border-y border-border bg-surface/60">
         <div className="mx-auto max-w-6xl px-5 py-16 md:py-20">
           <div className="max-w-2xl">
@@ -310,7 +329,7 @@ function Home() {
               Escolha seu objetivo
             </p>
             <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-              Dois caminhos, mesmo <span className="highlight-yellow">resultado</span>.
+              Um cartão para o seu negócio. Um sistema para quem revende.
             </h2>
             <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground sm:text-lg">
               Um para o dono de negócio colocar na loja hoje. Outro para você
@@ -363,8 +382,8 @@ function Home() {
 
                 <ul className="mt-6 space-y-3 text-sm sm:text-base">
                   {[
-                    "A partir de 1 unidade, sem limite",
-                    "Cartão de bolso, plaquinha 10x10 ou em L",
+                    "De 1 a 5 cartões por pedido",
+                    "Cartão de bolso NFC, pronto para usar",
                     "Entrega apontando para a avaliação do seu Google",
                     "Pronto pra usar: sem configuração nenhuma",
                   ].map((f, i) => (
@@ -601,15 +620,14 @@ function Home() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-xl">
               <p className="animate-rise text-xs font-black uppercase tracking-[0.2em] text-primary">
-                Modelos disponíveis
+                Produto disponível agora
               </p>
               <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-                Três formatos, <span className="highlight-yellow">zero mensalidade</span>.
+                Comece pelo cartão de bolso.
               </h2>
             </div>
             <p className="animate-rise delay-2 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Um pra carregar no bolso, dois pra deixar fixo no atendimento.
-              Escolhe o seu ou leva um de cada.
+              Hoje o cartão de bolso está disponível. As plaquinhas de balcão e em L entram em breve.
             </p>
           </div>
 
@@ -856,8 +874,7 @@ function Home() {
                 />
               </Link>
               <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                Cartões e plaquinhas com NFC + QR Code. Tudo feito pra fazer o
-                seu negócio aparecer mais no Google.
+                Somos fornecedores de cartões NFC para avaliações no Google, com compra para lojistas e lotes para revenda.
               </p>
               <p className="mt-3 text-xs text-muted-foreground/70">
                 © {new Date().getFullYear()} GCard-PRÓ · CNPJ sob consulta

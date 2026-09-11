@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
 
 export const Route = createFileRoute("/ativar")({
   head: () => ({
@@ -92,8 +93,8 @@ function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-5">
       <form onSubmit={submit} className="w-full max-w-sm rounded-3xl bg-card p-8 card-soft">
-        <Link to="/" className="font-display text-lg">
-          GCard<span className="text-primary">-PRÓ</span>
+        <Link to="/" className="inline-flex items-center">
+          <img src={logoTransparente} alt="GCard-PRÓ" className="h-10 w-auto" draggable={false} />
         </Link>
         <h1 className="mt-4 text-xl">Ativar meus códigos</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -127,19 +128,31 @@ function Login() {
 function Lote({ email, userId }: { email: string; userId: string }) {
   const [batches, setBatches] = useState<Batch[] | null>(null);
   const [plates, setPlates] = useState<Plate[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const load = useCallback(async () => {
-    await supabase.rpc("claim_my_batches");
-    const b = await supabase
-      .from("batches")
-      .select("id, code, label, quantity, codes_sent_at, products(name, has_qr, has_nfc)")
-      .order("created_at", { ascending: false });
-    if (b.error) {
-      toast.error("Não foi possível carregar seus lotes.");
+    setLoadError(null);
+    try {
+      await supabase.rpc("claim_my_batches");
+      const b = await supabase
+        .from("batches")
+        .select("id, code, label, quantity, codes_sent_at, products(name, has_qr, has_nfc)")
+        .order("created_at", { ascending: false });
+      if (b.error) {
+        setLoadError(b.error.message ?? "Não foi possível carregar seus lotes.");
+        setBatches([]);
+        toast.error(b.error.message ?? "Não foi possível carregar seus lotes.");
+        return;
+      }
+      setBatches((b.data ?? []) as unknown as Batch[]);
+    } catch (err: any) {
+      const msg = err?.message ?? "Erro ao carregar lotes.";
+      setLoadError(msg);
+      setBatches([]);
+      toast.error(msg);
       return;
     }
-    setBatches((b.data ?? []) as unknown as Batch[]);
     const p = await supabase
       .from("plates")
       .select("id, token, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count")
@@ -210,8 +223,8 @@ function Lote({ email, userId }: { email: string; userId: string }) {
     <div className="min-h-screen bg-surface">
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <Link to="/" className="font-display text-lg">
-            GCard<span className="text-primary">-PRÓ</span>{" "}
+          <Link to="/" className="inline-flex items-center gap-3">
+            <img src={logoTransparente} alt="GCard-PRÓ" className="h-9 w-auto" draggable={false} />
             <span className="text-muted-foreground">/ meus códigos</span>
           </Link>
           <div className="flex items-center gap-3 text-sm">
@@ -224,6 +237,19 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       </header>
 
       <div className="mx-auto max-w-4xl px-5 py-8">
+        {loadError && (
+          <div className="rounded-2xl bg-card p-6 card-soft mb-4">
+            <h2 className="text-lg text-foreground">Não foi possível carregar lotes</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{loadError}</p>
+            <div className="mt-4 flex gap-2">
+              <Button onClick={() => void load()}>Tentar novamente</Button>
+              <Button variant="outline" onClick={() => supabase.auth.signOut()}>
+                Sair
+              </Button>
+            </div>
+          </div>
+        )}
+
         {batches.length === 0 ? (
           <div className="rounded-2xl bg-card p-6 card-soft">
             <h1 className="text-xl">Nenhum lote vinculado</h1>
