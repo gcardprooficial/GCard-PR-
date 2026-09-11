@@ -123,6 +123,7 @@ function Lotes() {
   }
 
   async function exportCodes(b: Batch) {
+    if (!confirm(`Exportar ${b.quantity} códigos do lote ${b.code} para CSV?`)) return;
     const { data, error } = await supabase
       .from("plates")
       .select("token, status, business_name")
@@ -271,7 +272,10 @@ function Lotes() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => void patch(b, { codes_sent_at: new Date().toISOString() })}
+                        onClick={() => {
+                          if (!confirm(`Marcar códigos do lote ${b.code} como enviados? Essa ação é irreversível.`)) return;
+                          void patch(b, { codes_sent_at: new Date().toISOString() });
+                        }}
                       >
                         Marcar códigos como enviados
                       </Button>

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { getCatalog, type CatalogProduct } from "@/lib/catalog.functions";
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createPendingOrder } from "@/lib/checkout.functions";
+import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { unitPriceForQuantity, money } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +77,7 @@ function Comprar() {
   const { data } = useSuspenseQuery(catalogQuery);
   const runSearch = useServerFn(searchBusinesses);
   const submitOrder = useServerFn(createPendingOrder);
+  const createPref = useServerFn(createCheckoutPreference);
 
   const isResale = caminho === "revenda";
   const plan = data.plans.find((p) => (isResale ? p.slug === "renda-extra" : p.slug === "lojista"));
@@ -202,6 +204,18 @@ function Comprar() {
         },
       });
       setOrderNumber(res.orderNumber);
+      // Try to create a checkout preference (only works if provider configured)
+      try {
+        const pref = await createPref({ data: { orderNumber: res.orderNumber, origin: window.location.origin } });
+        if (pref?.url) {
+          // Redirect the buyer to the hosted checkout
+          window.location.href = pref.url;
+          return;
+        }
+      } catch (e) {
+        // provider not configured or error — fall back to manual flow
+        console.debug("create preference failed", e);
+      }
     } catch (error) {
       console.error(error);
       toast.error("Não conseguimos registrar o pedido. Confira os dados e tente de novo.");
