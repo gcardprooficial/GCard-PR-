@@ -133,6 +133,7 @@ function Comprar() {
   });
   const [saving, setSaving] = useState(false);
   const [orderNumber, setOrderNumber] = useState<number | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Trocar de caminho (meu negócio <-> em quantidade) reinicia o passo a passo:
   // os dois fluxos têm etapas diferentes e não devem compartilhar progresso.
@@ -156,7 +157,16 @@ function Comprar() {
   const total = unitPrice * quantity;
   const maxQuantity = plan?.max_quantity ?? 500;
 
-  const go = (delta: number) => setStepIndex((i) => Math.min(steps.length - 1, Math.max(0, i + delta)));
+  const go = (delta: number) => {
+    if (isTransitioning) return;
+    const nextIndex = Math.min(steps.length - 1, Math.max(0, stepIndex + delta));
+    if (nextIndex === stepIndex) return;
+    setIsTransitioning(true);
+    window.setTimeout(() => {
+      setStepIndex(nextIndex);
+      setIsTransitioning(false);
+    }, 360);
+  };
 
   async function handleSearch() {
     if (term.trim().length < 3) {
@@ -503,71 +513,39 @@ function Comprar() {
       </header>
 
       <div className="relative mx-auto max-w-4xl px-5 pb-20 pt-8 sm:pt-10">
-        {/* Stepper visual */}
-        <div className="mb-6 flex flex-wrap items-center gap-y-3">
-          <div className="mr-4 flex items-center gap-3">
-            <div className="inline-flex h-10 min-w-10 items-center justify-center rounded-2xl bg-primary px-3 font-display text-sm font-black text-primary-foreground shadow-sm">
-              {stepIndex + 1}/{steps.length}
+        <div className="mb-7 flex items-center gap-4">
+          <div className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary font-display text-sm font-black text-primary-foreground shadow-sm">
+            {stepIndex + 1}<span className="text-primary-foreground/60">/{steps.length}</span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+                  {isResale ? "Revenda / lote" : "Loja própria"}
+                </p>
+                <p className="truncate text-sm font-bold text-foreground">
+                  {stepLabels[step] ?? step}
+                  <span className="ml-2 font-medium text-muted-foreground">· {plan.name}</span>
+                </p>
+              </div>
+              <span className="shrink-0 text-xs font-bold text-muted-foreground">
+                {Math.round(((stepIndex + 1) / steps.length) * 100)}%
+              </span>
             </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                {isResale ? "Revenda / lote" : "Loja própria"}
-              </p>
-              <p className="text-sm font-bold text-foreground leading-tight">{plan.name}</p>
+            <div className="flex gap-1.5" aria-hidden>
+              {steps.map((s, idx) => (
+                <span
+                  key={s}
+                  className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${
+                    idx <= stepIndex ? "bg-primary" : "bg-surface"
+                  }`}
+                />
+              ))}
             </div>
           </div>
-
-          <ol className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-2">
-            {steps.map((s, idx) => {
-              const done = idx < stepIndex;
-              const active = idx === stepIndex;
-              return (
-                <li key={s} className="inline-flex min-w-0 items-center gap-2">
-                  <span
-                    className={`inline-flex size-7 items-center justify-center rounded-full text-[11px] font-black transition-all ${
-                      active
-                        ? "bg-foreground text-white shadow-md"
-                        : done
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-surface text-muted-foreground"
-                    }`}
-                    aria-hidden
-                  >
-                    {done ? (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ) : (
-                      idx + 1
-                    )}
-                  </span>
-                  <span
-                    className={`truncate text-xs font-semibold sm:text-sm ${
-                      active
-                        ? "text-foreground"
-                        : done
-                          ? "text-foreground/70"
-                          : "text-muted-foreground"
-                    }`}
-                  >
-                    {stepLabels[s] ?? s}
-                  </span>
-                  {idx < steps.length - 1 && (
-                    <span
-                      className={`mx-1 h-px w-5 sm:w-7 ${
-                        done ? "bg-primary" : "bg-border"
-                      }`}
-                      aria-hidden
-                    />
-                  )}
-                </li>
-              );
-            })}
-          </ol>
         </div>
 
-        {/* Barra de progresso */}
-        <div className="relative h-2 w-full overflow-hidden rounded-full bg-surface">
+        <div className="relative h-1 w-full overflow-hidden rounded-full bg-surface">
           <div
             className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out shadow-sm"
             style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
@@ -1220,7 +1198,7 @@ function Comprar() {
             <Button
               variant="ghost"
               onClick={() => go(-1)}
-              disabled={stepIndex === 0}
+              disabled={stepIndex === 0 || isTransitioning}
               className="btn-press h-12 rounded-2xl px-5 font-bold text-muted-foreground hover:bg-surface hover:text-foreground"
             >
               <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -1237,7 +1215,7 @@ function Comprar() {
               <Button
                 size="lg"
                 onClick={() => void finish()}
-                disabled={saving}
+                disabled={saving || isTransitioning}
                 className="btn-press btn-primary-shadow shine-border h-14 rounded-2xl px-7 text-base font-black"
               >
                 {saving ? (
@@ -1261,7 +1239,7 @@ function Comprar() {
               <Button
                 size="lg"
                 onClick={() => go(1)}
-                disabled={!canAdvance}
+                disabled={!canAdvance || isTransitioning}
                 className="btn-press btn-primary-shadow shine-border h-14 rounded-2xl px-7 text-base font-black disabled:opacity-60 disabled:shadow-none"
               >
                 Continuar
@@ -1274,6 +1252,20 @@ function Comprar() {
           </div>
         </div>
       </div>
+
+      {isTransitioning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/75 px-5 backdrop-blur-md">
+          <div className="animate-pop rounded-[1.5rem] border border-border bg-card px-7 py-6 text-center shadow-2xl shadow-foreground/10">
+            <div className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-primary/15 text-primary-foreground">
+              <svg className="size-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
+            </div>
+            <p className="mt-3 text-sm font-bold text-foreground">Preparando a próxima etapa</p>
+            <p className="mt-1 text-xs text-muted-foreground">Só mais um instante</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
