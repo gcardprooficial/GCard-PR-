@@ -172,6 +172,27 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="pt-BR">
       <head>
         <HeadContent />
+        {import.meta.env.VITE_GA4_MEASUREMENT_ID ? (
+          <>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','${import.meta.env.VITE_GA4_MEASUREMENT_ID}');`,
+              }}
+            />
+            <script
+              async
+              data-ga4={import.meta.env.VITE_GA4_MEASUREMENT_ID}
+              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(import.meta.env.VITE_GA4_MEASUREMENT_ID)}`}
+            />
+          </>
+        ) : null}
+        {import.meta.env.VITE_GTM_ID ? (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.dataset.gtm=i;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${import.meta.env.VITE_GTM_ID}');`,
+            }}
+          />
+        ) : null}
       </head>
       <body className="bg-background antialiased">
         {import.meta.env.VITE_GTM_ID ? (
