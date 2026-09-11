@@ -44,12 +44,29 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+function applyPublicPageCache(request: Request, response: Response): Response {
+  if (request.method !== "GET" || response.status !== 200) return response;
+
+  const { pathname } = new URL(request.url);
+  const isPublicPage = pathname === "/" || pathname === "/guia" || pathname.startsWith("/guia/");
+  if (!isPublicPage) return response;
+
+  const headers = new Headers(response.headers);
+  headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      return applyPublicPageCache(request, normalized);
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
