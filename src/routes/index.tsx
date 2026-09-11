@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery, queryOptions, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { useState } from "react";
 import { getCatalog } from "@/lib/catalog.functions";
 import { money } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,12 @@ const IMAGES: Record<string, string> = {
   "plaquinha-10x10": produto10x10,
   "plaquinha-10x15-l": produto10x15,
 };
+
+const FALLBACK_PRODUCTS = [
+  { id: "fallback-cartao", slug: "cartao-bolso", name: "Cartão de bolso GCard-PRÓ", format: "Cartão NFC 8,5 x 5,4 cm", status: "ativo", has_nfc: true, has_qr: false },
+  { id: "fallback-10x10", slug: "plaquinha-10x10", name: "Plaquinha 10 x 10 cm", format: "Para balcão ou parede", status: "em_breve", has_nfc: true, has_qr: true },
+  { id: "fallback-10x15", slug: "plaquinha-10x15-l", name: "Plaquinha L 10 x 15 cm", format: "Formato L para balcão", status: "em_breve", has_nfc: true, has_qr: true },
+] as const;
 
 function Stars() {
   return (
@@ -127,15 +134,58 @@ function HeroBadge() {
   );
 }
 
+function ImpactCalculator() {
+  const [ticket, setTicket] = useState(80);
+  const [customers, setCustomers] = useState(150);
+  const potential = Math.round(ticket * customers * 0.14);
+
+  return (
+    <section className="border-y border-border bg-secondary text-secondary-foreground">
+      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 md:grid-cols-[0.9fr_1.1fr] md:items-center md:py-20">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Calculadora de impacto</p>
+          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">Quanto uma boa reputação vale?</h2>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-white/65 sm:text-base">
+            Uma experiência simples no balcão ajuda mais clientes satisfeitos a encontrarem a tela de avaliação.
+          </p>
+        </div>
+        <div className="grid gap-5 rounded-[1.75rem] border border-white/10 bg-white/5 p-6 sm:grid-cols-2 sm:p-8">
+          <label className="text-sm font-semibold text-white/75">
+            Ticket médio (R$)
+            <input
+              type="number"
+              min={1}
+              value={ticket}
+              onChange={(event) => setTicket(Number(event.target.value) || 0)}
+              className="mt-2 h-12 w-full rounded-xl border border-white/15 bg-white/10 px-4 text-lg font-bold text-white outline-none focus:border-primary"
+            />
+          </label>
+          <label className="text-sm font-semibold text-white/75">
+            Clientes por mês
+            <input
+              type="number"
+              min={1}
+              value={customers}
+              onChange={(event) => setCustomers(Number(event.target.value) || 0)}
+              className="mt-2 h-12 w-full rounded-xl border border-white/15 bg-white/10 px-4 text-lg font-bold text-white outline-none focus:border-primary"
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">Potencial mensal estimado</p>
+            <p className="mt-1 font-display text-4xl text-primary sm:text-5xl">{money(potential * 100)}</p>
+            <p className="mt-2 text-xs text-white/50">Simulação ilustrativa com 14% de potencial adicional.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Home() {
   const { data } = useSuspenseQuery(catalogQuery);
-  const queryClient = useQueryClient();
-
-  const retry = () => {
-    void queryClient.invalidateQueries({ queryKey: ["catalog"] });
-  };
-  const lojista = data.plans.find((p) => p.slug === "lojista");
-  const revenda = data.plans.find((p) => p.slug === "renda-extra");
+  const lojista = data.plans.find((p) => p.slug === "lojista") ?? { name: "Plano Lojista", audience: "Para usar no seu próprio balcão", unit_price_cents: 5990, tiers: [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }] };
+  const revenda = data.plans.find((p) => p.slug === "renda-extra") ?? { name: "Pack Renda Extra", audience: "Comprar em quantidade e revender", unit_price_cents: 3790, tiers: [{ min_quantity: 1, unit_price_cents: 3790, label: "1 a 10 unidades" }, { min_quantity: 11, unit_price_cents: 2790, label: "11 a 50 unidades" }, { min_quantity: 51, unit_price_cents: 1990, label: "51 unidades ou mais" }] };
+  const products = data.products.length > 0 ? data.products : FALLBACK_PRODUCTS;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
@@ -306,22 +356,6 @@ function Home() {
       </section>
 
       {/* ===== DOIS CAMINHOS ===== */}
-      {data.products.length === 0 && (
-        <div className="mx-auto max-w-6xl px-5 py-8">
-          <div className="rounded-2xl bg-card p-6 text-center card-soft">
-            <h3 className="text-lg font-semibold">Catálogo indisponível</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Não foi possível carregar os modelos agora. Isso pode ser temporário — tente novamente.
-            </p>
-            <div className="mt-4 flex items-center justify-center gap-3">
-              <Button onClick={retry}>Tentar novamente</Button>
-              <Button asChild variant="outline">
-                <a href="/ativar">Ir para ativar (se aplicável)</a>
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
       <section id="caminhos" className="relative border-y border-border bg-surface/60">
         <div className="mx-auto max-w-6xl px-5 py-16 md:py-20">
           <div className="max-w-2xl">
@@ -532,7 +566,7 @@ function Home() {
           </p>
         </div>
 
-        <div className="relative mt-12 grid gap-6 sm:grid-cols-3">
+        <div className="relative mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {/* Linha conectora (desktop) */}
           <div
             aria-hidden
@@ -569,15 +603,26 @@ function Home() {
             },
             {
               n: "03",
-              t: "Chega na sua porta",
+              t: "Aproxime",
               d:
-                "Frete grátis por correios, pronto pra usar. Cola no balcão e deixa trabalhar.",
+                "O cliente aproxima o celular ou escaneia o QR e chega à avaliação em segundos.",
               icon: (
                 <>
                   <circle cx="8" cy="18" r="2" />
                   <circle cx="18" cy="18" r="2" />
                   <path d="M10 18h4M4 18V6a2 2 0 0 1 2-2h11l5 5v9" />
                   <path d="M14 4v6h6" />
+                </>
+              ),
+            },
+            {
+              n: "04",
+              t: "Cresça",
+              d: "Mais avaliações positivas, mais confiança e mais oportunidades para o seu negócio.",
+              icon: (
+                <>
+                  <path d="m4 19 6-6 4 4 6-8" />
+                  <path d="M14 9h6v6" />
                 </>
               ),
             },
@@ -614,6 +659,42 @@ function Home() {
         </div>
       </section>
 
+      <ImpactCalculator />
+
+      <section id="precos" className="mx-auto max-w-6xl px-5 py-16 md:py-20">
+        <div className="max-w-2xl">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Preços transparentes</p>
+          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">Compre para você ou revenda.</h2>
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Sem mensalidade, sem letras miúdas. Pague uma vez e use o cartão no dia a dia.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
+          <div className="rounded-[1.75rem] border-2 border-primary bg-card p-7 shadow-xl shadow-primary/10 sm:p-8">
+            <div className="flex items-center justify-between gap-3">
+              <span className="badge-pill bg-primary/15 text-foreground">Lojista</span>
+              <span className="text-xs font-bold text-primary">Pronto para uso</span>
+            </div>
+            <h3 className="mt-5 text-2xl sm:text-3xl">Cartão de bolso já configurado</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Você envia o link do Google e recebe o cartão pronto. Limite de 5 unidades por pedido.</p>
+            <div className="mt-7 grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-surface p-4"><p className="text-xs text-muted-foreground">1 a 4 unidades</p><p className="mt-1 font-display text-2xl">R$ 59,90</p><p className="text-xs text-muted-foreground">por unidade</p></div>
+              <div className="rounded-xl bg-primary p-4 text-primary-foreground"><p className="text-xs opacity-80">5 unidades</p><p className="mt-1 font-display text-2xl">R$ 49,90</p><p className="text-xs opacity-80">por unidade</p></div>
+            </div>
+            <Button asChild size="lg" className="mt-6 h-12 w-full rounded-xl"><Link to="/comprar" search={{ caminho: "lojista" }}>Comprar agora</Link></Button>
+          </div>
+          <div className="rounded-[1.75rem] border border-border bg-card p-7 card-soft sm:p-8">
+            <div className="flex items-center justify-between gap-3"><span className="badge-pill bg-secondary text-secondary-foreground">Revendedor</span><span className="text-xs font-bold text-muted-foreground">Melhor margem</span></div>
+            <h3 className="mt-5 text-2xl sm:text-3xl">Cartões em branco em lote</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Receba cartões e manual com códigos únicos. Ative pelo painel quando vender.</p>
+            <div className="mt-7 grid gap-2 sm:grid-cols-3">
+              {[['1 a 10', 'R$ 37,90'], ['11 a 50', 'R$ 27,90'], ['51+', 'R$ 19,90']].map(([label, price]) => <div key={label} className="rounded-xl bg-surface p-3"><p className="text-xs text-muted-foreground">{label} unidades</p><p className="mt-1 font-display text-xl">{price}</p><p className="text-xs text-muted-foreground">por unidade</p></div>)}
+            </div>
+            <Button asChild size="lg" variant="outline" className="mt-6 h-12 w-full rounded-xl border-2"><Link to="/comprar" search={{ caminho: "revenda" }}>Começar a revender</Link></Button>
+          </div>
+        </div>
+      </section>
+
       {/* ===== MODELOS ===== */}
       <section id="modelos" className="relative border-y border-border bg-surface/60">
         <div className="mx-auto max-w-6xl px-5 py-16 md:py-20">
@@ -632,7 +713,7 @@ function Home() {
           </div>
 
           <div className="mt-10 grid gap-5 sm:grid-cols-3 md:gap-7">
-            {data.products.map((product, i) => {
+            {products.map((product, i) => {
               const isSoon = product.status !== "ativo";
               return (
                 <div

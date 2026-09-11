@@ -53,6 +53,12 @@ const IMAGES: Record<string, string> = {
   "plaquinha-10x15-l": produto10x15,
 };
 
+const FALLBACK_PRODUCTS: CatalogProduct[] = [
+  { id: "fallback-cartao", slug: "cartao-bolso", name: "Cartão de bolso GCard-PRÓ", tagline: "NFC pronto para avaliações no Google", description: "Cartão de bolso com chip NFC.", format: "Cartão NFC 8,5 x 5,4 cm", status: "ativo", price_delta_cents: 0, has_qr: false, has_nfc: true },
+  { id: "fallback-10x10", slug: "plaquinha-10x10", name: "Plaquinha 10 x 10 cm", tagline: "Em breve", description: "Formato para balcão ou parede.", format: "Plaquinha quadrada 10 x 10 cm", status: "em_breve", price_delta_cents: 0, has_qr: true, has_nfc: true },
+  { id: "fallback-10x15", slug: "plaquinha-10x15-l", name: "Plaquinha L 10 x 15 cm", tagline: "Em breve", description: "Formato L para balcão.", format: "Plaquinha em L 10 x 15 cm", status: "em_breve", price_delta_cents: 0, has_qr: true, has_nfc: true },
+];
+
 type Customer = {
   firstName: string;
   lastName: string;
@@ -80,7 +86,20 @@ function Comprar() {
   const createPref = useServerFn(createCheckoutPreference);
 
   const isResale = caminho === "revenda";
-  const plan = data.plans.find((p) => (isResale ? p.slug === "renda-extra" : p.slug === "lojista"));
+  const plan = data.plans.find((p) => (isResale ? p.slug === "renda-extra" : p.slug === "lojista")) ?? {
+    id: isResale ? "fallback-renda-extra" : "fallback-lojista",
+    slug: isResale ? "renda-extra" : "lojista",
+    name: isResale ? "Pack Renda Extra" : "Plano Lojista",
+    audience: isResale ? "Comprar em quantidade e revender" : "Para usar no seu próprio balcão",
+    description: null,
+    unit_price_cents: isResale ? 3790 : 5990,
+    min_quantity: 1,
+    max_quantity: isResale ? null : 5,
+    is_resale: isResale,
+    tiers: isResale ? [{ min_quantity: 1, unit_price_cents: 3790, label: "1 a 10 unidades" }, { min_quantity: 11, unit_price_cents: 2790, label: "11 a 50 unidades" }, { min_quantity: 51, unit_price_cents: 1990, label: "51 unidades ou mais" }] : [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }],
+    packages: [],
+  };
+  const products = data.products.length > 0 ? data.products : FALLBACK_PRODUCTS;
 
   const steps = isResale
     ? (["estilo", "quantidade", "dados", "entrega", "revisao"] as const)
@@ -585,7 +604,7 @@ function Comprar() {
               </div>
 
               <div className="mt-7 grid gap-5 sm:grid-cols-3 md:gap-6">
-                {data.products.map((item, i) => {
+                {products.map((item, i) => {
                   const disabled = item.status !== "ativo";
                   const selected = product?.id === item.id;
                   return (
