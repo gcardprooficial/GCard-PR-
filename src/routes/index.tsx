@@ -251,11 +251,11 @@ function Home() {
         {/* ===== HERO IMAGEM ===== */}
         <div className="relative animate-pop delay-2">
           <div className="absolute -inset-3 rounded-[2.25rem] bg-gradient-to-br from-primary/25 via-transparent to-foreground/5 blur-xl" />
-          <div className="relative overflow-hidden rounded-[2rem] border border-border card-soft lift shine-border">
+          <div className="relative overflow-hidden rounded-[2rem] border border-border card-soft lift shine-border aspect-[4/3] h-64 sm:h-80 md:h-[480px]">
             <img
               src={heroCartao}
               alt="Cartão GCard-PRÓ sendo aproximado do celular para abrir a avaliação no Google"
-              className="h-full w-full object-cover"
+              className="w-full h-full object-cover"
               loading="eager"
               draggable={false}
             />
