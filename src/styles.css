@@ -117,45 +117,45 @@
 
 :root {
   --radius: 1rem;
-  --background: #F8FAFC;
-  --foreground: #101828;
-  --ink: #101828;
-  --surface: #F1F5F9;
-  --surface-foreground: #101828;
-  --card: #FFFFFF;          /* cards sobre fundo cream */
-  --card-foreground: #111111;
+  --background: #FFFFFF;
+  --foreground: #0F172A;
+  --ink: #0F172A;
+  --surface: #F8FAFC;
+  --surface-foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
   --popover: #FFFFFF;
-  --popover-foreground: #111111;
-  --primary: #2563EB;
-  --primary-foreground: #FFFFFF;
-  --secondary: #101828;
+  --popover-foreground: #0F172A;
+  --primary: #F59E0B;             /* Amarelo Ouro Oficial GCard-PRÓ */
+  --primary-foreground: #0F172A;  /* Texto escuro de alto contraste no botão amarelo */
+  --secondary: #0F172A;           /* Preto/grafite da logo */
   --secondary-foreground: #FFFFFF;
-  --muted: #E8EEF5;
-  --muted-foreground: #667085;
-  --accent: #F59E0B;
-  --accent-foreground: #101828;
-  --destructive: #E23B3B;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #F59E0B;              /* Ouro de destaque */
+  --accent-foreground: #0F172A;
+  --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
-  --border: #DCE4EE;
-  --input:  #DCE4EE;
-  --ring:   #2563EB;
-  --g-blue:   #2563EB;
-  --g-red:    #E23B3B;
+  --border: #E2E8F0;
+  --input:  #E2E8F0;
+  --ring:   #F59E0B;
+  --g-blue:   #1A73E8;
+  --g-red:    #EA4335;
   --g-green:  #16A34A;
-  --g-yellow: #FFB900;
-  --chart-1: #2563EB;
-  --chart-2: #101828;
+  --g-yellow: #FBBC04;
+  --chart-1: #F59E0B;
+  --chart-2: #0F172A;
   --chart-3: #16A34A;
-  --chart-4: #E23B3B;
-  --chart-5: #5E5A53;
+  --chart-4: #EF4444;
+  --chart-5: #64748B;
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #101828;
-  --sidebar-primary: #2563EB;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E8EEF5;
-  --sidebar-accent-foreground: #101828;
-  --sidebar-border: #DCE4EE;
-  --sidebar-ring: #2563EB;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #F59E0B;
+  --sidebar-primary-foreground: #0F172A;
+  --sidebar-accent: #F8FAFC;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #F59E0B;
 }
 
 /* Dark mode disabled – light palette premium only */

@@ -124,14 +124,39 @@ function Calculadora() {
       </div>
 
       <div className="mt-5 rounded-2xl bg-card p-5 card-soft">
-        <div className="max-w-xs">
-          <Label className="text-xs">Preço de venda (un.)</Label>
-          <Input
-            inputMode="decimal"
-            value={salePrice}
-            onChange={(e) => setSalePrice(e.target.value)}
-            className="mt-1 h-10"
-          />
+        <div>
+          <Label className="text-xs font-bold">Preço de venda (un.)</Label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[
+              { label: "Lojista (1-4 un) R$ 59,90", val: "59,90" },
+              { label: "Lojista (5 un) R$ 49,90", val: "49,90" },
+              { label: "Revenda (1-10 un) R$ 37,90", val: "37,90" },
+              { label: "Revenda (11-50 un) R$ 27,90", val: "27,90" },
+              { label: "Revenda (51+ un) R$ 19,90", val: "19,90" },
+            ].map((p) => (
+              <button
+                key={p.val}
+                type="button"
+                onClick={() => setSalePrice(p.val)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+                  salePrice === p.val
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-surface border border-border text-foreground hover:bg-muted"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 max-w-xs">
+            <Input
+              inputMode="decimal"
+              value={salePrice}
+              onChange={(e) => setSalePrice(e.target.value)}
+              className="h-11 font-bold text-lg rounded-xl input-soft"
+              placeholder="Digite outro valor..."
+            />
+          </div>
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

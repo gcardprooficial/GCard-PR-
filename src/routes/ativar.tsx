@@ -264,14 +264,40 @@ function Lote({ email, userId }: { email: string; userId: string }) {
           </div>
         ) : (
           <>
-            <div className="rounded-2xl bg-card p-5 text-sm card-soft">
-              <p className="font-semibold">Como ativar</p>
-              <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
-                <li>Cada unidade do lote tem um código único (no QR da plaquinha ou no verso do cartão de bolso).</li>
-                <li>Cartão de bolso: só NFC — digite o código aqui. Plaquinhas: pode escanear o QR ou digitar o código.</li>
-                <li>Abra o negócio no Google e copie o link de avaliação (search.google.com/local/writereview?placeid=...).</li>
-                <li>Cole no código correspondente, informe o nome do negócio e ative. Dá para trocar depois.</li>
-              </ol>
+            <div className="rounded-2xl bg-card p-6 card-soft border border-border">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <span className="badge-pill bg-primary/20 text-foreground font-black text-xs">
+                    Painel do Revendedor
+                  </span>
+                  <h2 className="mt-2 font-display text-xl font-bold">Como gerenciar e ativar seus cartões</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Todos os seus cartões funcionam com <strong>QR Code e chip dinâmico</strong>. O link de avaliação do seu cliente pode ser atualizado por você a qualquer momento.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-border bg-surface p-4 text-xs leading-relaxed">
+                  <p className="font-bold text-foreground text-sm flex items-center gap-2">
+                    <span className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-black text-xs">1</span>
+                    Ativar o link da loja
+                  </p>
+                  <p className="mt-2 text-muted-foreground">
+                    Localize o código do cartão na lista abaixo, informe o <strong>Nome do Negócio</strong> e cole o <strong>Link de Avaliação do Google</strong> da loja que você atendeu. Clique em <em>Ativar</em>.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-border bg-surface p-4 text-xs leading-relaxed">
+                  <p className="font-bold text-foreground text-sm flex items-center gap-2">
+                    <span className="flex size-6 items-center justify-center rounded-full bg-secondary text-secondary-foreground font-black text-xs">2</span>
+                    Gravar aproximação (NFC Tools)
+                  </p>
+                  <p className="mt-2 text-muted-foreground">
+                    Abra o app <strong>NFC Tools</strong> (grátis para Android/iPhone) &gt; <em>Escrever</em> &gt; <em>Adicionar Registro</em> &gt; <em>URL</em>. Cole o link dinâmico do cartão e encoste no chip!
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -283,14 +309,17 @@ function Lote({ email, userId }: { email: string; userId: string }) {
             {batches.map((b) => (
               <p key={b.id} className="mt-4 text-sm text-muted-foreground">
                 Lote <strong className="text-foreground">{b.code}</strong>
-                {b.label ? ` · ${b.label}` : ""} · {b.products?.name ?? "—"} · {b.quantity} un.
-                {b.products ? ` · ${[b.products.has_qr && "QR", b.products.has_nfc && "NFC"].filter(Boolean).join(" + ")}` : ""}
+                {b.label ? ` · ${b.label}` : ""} · {b.products?.name ?? "Cartão de bolso"} · {b.quantity} un.
+                {b.products ? ` · ${[b.products.has_qr && "QR", b.products.has_nfc && "NFC"].filter(Boolean).join(" + ")}` : " · NFC"}
               </p>
             ))}
 
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold">Códigos</h2>
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código / negócio" className="h-10 w-full sm:w-56" />
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-bold">Cartões do seu lote</h2>
+                <p className="text-xs text-muted-foreground">Clique em copiar link ou edite a loja de destino</p>
+              </div>
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código / negócio" className="h-10 w-full sm:w-64 input-soft rounded-xl" />
             </div>
 
             <div className="mt-3 space-y-3">
@@ -318,49 +347,86 @@ function PlateCard({
   const [url, setUrl] = useState(plate.destination_url ?? "");
   const [soldTo, setSoldTo] = useState(plate.sold_to ?? "");
   const active = plate.status === "ativada";
+  const dynamicUrl = `${typeof window !== "undefined" ? window.location.origin : "https://gcardpro.com.br"}/r/${plate.token}`;
+
+  function copyDynamicUrl() {
+    navigator.clipboard.writeText(dynamicUrl);
+    toast.success("Link do cartão copiado! Cole no NFC Tools.");
+  }
 
   return (
-    <div className="rounded-2xl bg-card p-5 card-soft">
+    <div className="rounded-2xl bg-card p-5 card-soft border border-border">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-mono text-sm font-semibold">{plate.token}</p>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-sm font-bold bg-surface px-2.5 py-1 rounded-lg border border-border">
+            {plate.token}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={copyDynamicUrl}
+            className="h-7 text-xs rounded-lg px-2.5 border-dashed"
+            title="Copiar URL para gravar no chip NFC com NFC Tools"
+          >
+            📋 Copiar URL NFC
+          </Button>
+        </div>
         <span
-          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-            active ? "bg-green-100 text-green-800" : "bg-accent text-accent-foreground"
+          className={`rounded-full px-3 py-0.5 text-xs font-bold ${
+            active ? "bg-green-100 text-green-800 border border-green-200" : "bg-amber-100 text-amber-900 border border-amber-200"
           }`}
         >
-          {active ? "Ativado" : "Em branco"}
+          {active ? "✓ Ativado no Google" : "○ Em branco (Sem loja)"}
         </span>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">{plate.scan_count} leituras</p>
+      <p className="mt-1.5 text-xs text-muted-foreground">{plate.scan_count} toque(s) / leitura(s) registradas</p>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <Label className="text-xs">Nome do negócio</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 h-10" />
+          <Label className="text-xs font-semibold">Nome do negócio / Loja</Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ex: Barbearia Silva"
+            className="mt-1 h-10 input-soft rounded-xl"
+          />
         </div>
         <div>
-          <Label className="text-xs">Cliente / a quem vendeu (opcional)</Label>
-          <Input value={soldTo} onChange={(e) => setSoldTo(e.target.value)} className="mt-1 h-10" />
+          <Label className="text-xs font-semibold">Cliente / quem comprou de você (opcional)</Label>
+          <Input
+            value={soldTo}
+            onChange={(e) => setSoldTo(e.target.value)}
+            placeholder="Ex: Marcos (11) 99999-9999"
+            className="mt-1 h-10 input-soft rounded-xl"
+          />
         </div>
         <div className="sm:col-span-2">
-          <Label className="text-xs">Link de avaliação do Google</Label>
+          <Label className="text-xs font-semibold">Link de avaliação do Google</Label>
           <Input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://search.google.com/local/writereview?placeid=..."
-            className="mt-1 h-10"
+            className="mt-1 h-10 input-soft rounded-xl"
           />
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
-        <Button size="sm" onClick={() => onActivate(plate, name, url, soldTo)}>
-          {active ? "Salvar alterações" : "Ativar"}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Button size="sm" onClick={() => onActivate(plate, name, url, soldTo)} className="rounded-xl font-bold">
+          {active ? "Salvar alterações" : "Ativar cartão"}
         </Button>
         {active && (
-          <Button size="sm" variant="outline" onClick={() => onDeactivate(plate)}>
-            Desativar
-          </Button>
+          <>
+            <Button size="sm" variant="outline" asChild className="rounded-xl">
+              <a href={dynamicUrl} target="_blank" rel="noopener noreferrer">
+                Testar link ↗
+              </a>
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => onDeactivate(plate)} className="text-muted-foreground hover:text-destructive text-xs">
+              Desativar
+            </Button>
+          </>
         )}
       </div>
     </div>

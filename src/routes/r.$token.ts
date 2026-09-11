@@ -5,10 +5,17 @@ const ALLOWED_HOSTS = ["search.google.com", "www.google.com", "google.com", "map
 
 function page(title: string, message: string, status: number) {
   return new Response(
-    `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title>
-<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#1b1a17;color:#f4f1ea;font-family:system-ui,sans-serif;padding:24px}
-div{max-width:26rem;text-align:center}h1{font-size:1.4rem;margin:0 0 .6rem}p{color:#c8c2b4;line-height:1.5;margin:0}</style>
-</head><body><div><h1>${title}</h1><p>${message}</p></div></body></html>`,
+    `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} | GCard-PRÓ</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #FFFFFF; color: #0F172A; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px; box-sizing: border-box; }
+  .box { max-width: 28rem; text-align: center; border: 1px solid #E2E8F0; border-radius: 1.5rem; padding: 2.5rem 2rem; box-shadow: 0 4px 20px -5px rgba(0,0,0,0.06); background: #FFFFFF; }
+  .badge { display: inline-block; background: #FEF3C7; color: #92400E; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 0.75rem; color: #0F172A; font-weight: 800; }
+  p { color: #64748B; line-height: 1.6; margin: 0 0 1.5rem; font-size: 0.95rem; }
+  .btn { display: inline-block; background: #F59E0B; color: #0F172A; font-weight: 700; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 0.875rem; font-size: 0.95rem; transition: background 0.2s; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35); }
+  .btn:hover { background: #D97706; }
+</style>
+</head><body><div class="box"><span class="badge">GCard-PRÓ</span><h1>${title}</h1><p>${message}</p><a href="/ativar" class="btn">Ativar no painel →</a></div></body></html>`,
     { status, headers: { "content-type": "text/html; charset=utf-8" } },
   );
 }
