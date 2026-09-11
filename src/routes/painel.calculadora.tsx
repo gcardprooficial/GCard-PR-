@@ -68,6 +68,18 @@ function Calculadora() {
     return { price, gatewayFee, variable, marginCents, marginPct, markup, breakeven };
   }, [salePrice, a]);
 
+  // Preço mínimo teórico para respeitar a margem mínima, resolvendo a equação
+  // considerando que a taxa do gateway é percentual sobre o preço de venda.
+  const minPrice = useMemo(() => {
+    const fixedVar = a.unit_cost_cents + a.packaging_cents + a.shipping_cents; // sem gateway
+    const g = a.gateway_pct / 100;
+    const m = a.min_margin_pct / 100;
+    const denom = 1 - g - m; // derivado de: P*(1-g) - fixedVar = m*P
+    if (denom <= 0) return null;
+    const p = Math.ceil(fixedVar / denom);
+    return p;
+  }, [a.unit_cost_cents, a.packaging_cents, a.shipping_cents, a.gateway_pct, a.min_margin_pct]);
+
   const viavel = r.marginPct >= a.min_margin_pct && r.marginCents > 0;
 
   const field = (key: keyof Assumptions, label: string, isPct = false) => (
@@ -137,6 +149,18 @@ function Calculadora() {
           <Result
             label="Ponto de equilíbrio"
             value={r.breakeven === null ? "—" : `${r.breakeven} un./mês`}
+          />
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <Result
+            label="Preço mínimo de venda (un.)"
+            value={
+              minPrice === null
+                ? "— (margem impossível com esta taxa/min)"
+                : money(minPrice)
+            }
+            tone={minPrice !== null && r.price >= minPrice ? "pos" : "neg"}
           />
         </div>
 
