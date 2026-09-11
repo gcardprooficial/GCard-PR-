@@ -47,9 +47,9 @@ function Termos() {
         <div className="mt-10 space-y-7 animate-rise-sm delay-2">
           <Section n="1" title="O que é a GCard-PRÓ">
             <p>
-              A GCard-PRÓ vende cartões e plaquinhas físicas com NFC e QR Code que, ao serem
-              aproximados ou escaneados, abrem a tela de avaliação do Google do estabelecimento
-              indicado pelo comprador. O produto é entregue já configurado.
+              A GCard-PRÓ vende cartões físicos com NFC que, ao serem aproximados de um celular
+              compatível, abrem a tela de avaliação do Google do estabelecimento indicado pelo
+              comprador. O cartão de bolso é entregue configurado.
             </p>
           </Section>
 
@@ -64,6 +64,7 @@ function Termos() {
           <Section n="3" title="Configuração da placa">
             <p>
               A placa é vinculada ao negócio informado pelo comprador durante a compra (busca no
+              O cartão é vinculado ao negócio informado pelo comprador durante a compra (busca no
               Google ou link de avaliação colado). É responsabilidade do comprador conferir se o
               negócio selecionado está correto antes de finalizar o pedido.
             </p>

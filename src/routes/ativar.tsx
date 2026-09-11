@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
 
 export const Route = createFileRoute("/ativar")({
+  beforeLoad: () => {
+    throw redirect({ to: "/" });
+  },
   head: () => ({
     meta: [
       { title: "Ativar meus códigos | GCard-PRÓ" },

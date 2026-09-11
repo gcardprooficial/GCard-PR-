@@ -15,7 +15,7 @@ function page(title: string, message: string, status: number) {
   .btn { display: inline-block; background: #F59E0B; color: #0F172A; font-weight: 700; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 0.875rem; font-size: 0.95rem; transition: background 0.2s; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35); }
   .btn:hover { background: #D97706; }
 </style>
-</head><body><div class="box"><span class="badge">GCard-PRÓ</span><h1>${title}</h1><p>${message}</p><a href="/ativar" class="btn">Ativar no painel →</a></div></body></html>`,
+</head><body><div class="box"><span class="badge">GCard-PRÓ</span><h1>${title}</h1><p>${message}</p><a href="/" class="btn">Voltar ao início →</a></div></body></html>`,
     { status, headers: { "content-type": "text/html; charset=utf-8" } },
   );
 }

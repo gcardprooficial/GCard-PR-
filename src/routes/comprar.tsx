@@ -21,7 +21,7 @@ import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
 
 const searchSchema = z.object({
-  caminho: z.enum(["lojista", "revenda"]).optional().catch(undefined),
+  caminho: z.enum(["lojista"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/comprar")({
@@ -78,14 +78,16 @@ type Address = {
 };
 
 function Comprar() {
-  const { caminho } = Route.useSearch();
+  const { caminho: selectedPath } = Route.useSearch();
+  // The NFC card is configured at checkout; legacy resale URLs use this flow.
+  const caminho = selectedPath ?? "lojista";
   const navigate = useNavigate();
   const { data } = useSuspenseQuery(catalogQuery);
   const runSearch = useServerFn(searchBusinesses);
   const submitOrder = useServerFn(createPendingOrder);
   const createPref = useServerFn(createCheckoutPreference);
 
-  const isResale = caminho === "revenda";
+  const isResale = false;
   const plan = data.plans.find((p) => (isResale ? p.slug === "renda-extra" : p.slug === "lojista")) ?? {
     id: isResale ? "fallback-renda-extra" : "fallback-lojista",
     slug: isResale ? "renda-extra" : "lojista",
@@ -99,7 +101,9 @@ function Comprar() {
     tiers: isResale ? [{ min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" }, { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" }, { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" }] : [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }],
     packages: [],
   };
-  const products = data.products.length > 0 ? data.products : FALLBACK_PRODUCTS;
+  const products = (data.products.length > 0 ? data.products : FALLBACK_PRODUCTS).filter(
+    (item) => item.slug === "cartao-bolso" && item.status === "ativo",
+  );
 
   const steps = isResale
     ? (["estilo", "quantidade", "dados", "entrega", "revisao"] as const)
@@ -114,7 +118,7 @@ function Comprar() {
   const [searching, setSearching] = useState(false);
   const [manualLink, setManualLink] = useState("");
   const [business, setBusiness] = useState<BusinessResult | null>(null);
-  const [quantity, setQuantity] = useState(isResale ? 5 : 1);
+  const [quantity, setQuantity] = useState(1);
   const [customer, setCustomer] = useState<Customer>({
     firstName: "",
     lastName: "",
@@ -145,7 +149,7 @@ function Comprar() {
     setResults([]);
     setManualLink("");
     setBusiness(null);
-    setQuantity(caminho === "revenda" ? 10 : 1);
+    setQuantity(1);
   }, [caminho]);
 
   const unitPrice = useMemo(() => {
@@ -240,7 +244,7 @@ function Comprar() {
       setOrderNumber(res.orderNumber);
       // Try to create a checkout preference (only works if provider configured)
       try {
-        const pref = await createPref({ data: { orderNumber: res.orderNumber, origin: window.location.origin } });
+        const pref = await createPref({ data: { orderNumber: res.orderNumber } });
         if (pref?.url) {
           // Redirect the buyer to the hosted checkout
           window.location.href = pref.url;
@@ -439,11 +443,6 @@ function Comprar() {
                 <Button asChild size="lg" className="btn-press group animate-rise delay-2 rounded-2xl px-6 py-3">
                   <Link to="/">← Voltar ao início</Link>
                 </Button>
-                {isResale && (
-                  <Button asChild variant="outline" size="lg" className="btn-press h-14 rounded-2xl border-2 px-6 text-base font-bold hover:bg-card">
-                    <Link to="/ativar">Ativar meus códigos (depois que chegar o lote)</Link>
-                  </Button>
-                )}
               </div>
             </div>
           </div>
@@ -818,7 +817,7 @@ function Comprar() {
                     É <span className="highlight-yellow">este</span> mesmo?
                   </h1>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    Confere aí se é o seu negócio que vai ser gravado no chip NFC e no QR Code.
+                    Confere aí se é o seu negócio que vai ser gravado no chip NFC.
                   </p>
                 </div>
                 <span className="shrink-0 rounded-2xl bg-g-green/12 px-3 py-2 text-g-green">
@@ -1328,4 +1327,3 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
-

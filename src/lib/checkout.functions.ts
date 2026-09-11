@@ -111,7 +111,12 @@ export const createPendingOrder = createServerFn({ method: "POST" })
     ]);
 
     if (!plan || !plan.is_active) throw new Error("Plano indisponível.");
-    if (!product || product.status !== "ativo") throw new Error("Produto indisponível.");
+    // O único fluxo público é o cartão gravado no momento da compra.
+    // Não deixe uma chamada direta criar um lote que exigiria ativação posterior.
+    if (plan.is_resale) throw new Error("Lotes para revenda estão indisponíveis no momento.");
+    if (!product || product.status !== "ativo" || product.slug !== "cartao-bolso") {
+      throw new Error("Produto indisponível no momento.");
+    }
     if (data.quantity < plan.min_quantity) throw new Error("Quantidade abaixo do mínimo do plano.");
     if (plan.max_quantity && data.quantity > plan.max_quantity) {
       throw new Error("Quantidade acima do máximo do plano.");

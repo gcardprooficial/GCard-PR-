@@ -3,7 +3,6 @@ import { z } from "zod";
 
 const schema = z.object({
   orderNumber: z.number().int().positive(),
-  origin: z.string().url(),
 });
 
 export const createCheckoutPreference = createServerFn({ method: "POST" })
@@ -34,6 +33,7 @@ export const createCheckoutPreference = createServerFn({ method: "POST" })
       customer_name: order.customer_name,
     };
 
-    const pref = await provider.createPreference({ order: orderForCheckout as any, origin: data.origin });
+    const origin = process.env["PUBLIC_APP_URL"] ?? "https://gcardpro.com.br";
+    const pref = await provider.createPreference({ order: orderForCheckout as any, origin });
     return { ok: true as const, url: pref.url, reference: pref.reference };
   });

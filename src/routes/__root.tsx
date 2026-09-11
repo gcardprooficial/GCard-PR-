@@ -105,11 +105,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "theme-color", content: "#F7F5F1" },
       { name: "color-scheme", content: "light" },
-      { title: "GCard-PRÓ | Cartão NFC + QR para avaliações no Google" },
+      { title: "GCard-PRÓ | Cartão NFC para avaliações no Google" },
       {
         name: "description",
         content:
-          "Cartões e plaquinhas com NFC e QR Code que levam seu cliente direto para a avaliação do seu Google. Chega 100% configurado, sem mensalidade.",
+          "Cartão de bolso com NFC que leva seu cliente direto para a avaliação do Google. Chega configurado, sem mensalidade.",
       },
       { name: "author", content: "GCard-PRÓ" },
       { name: "robots", content: "index,follow,max-image-preview:large" },
@@ -120,7 +120,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "Cartão de bolso e plaquinha de balcão com NFC + QR Code, já configurados com o link de avaliação do seu negócio.",
+          "Cartão de bolso NFC já configurado com o link de avaliação do seu negócio.",
       },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "pt_BR" },
@@ -134,7 +134,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "twitter:description",
         content:
-          "Cartão de bolso e plaquinha de balcão com NFC + QR Code, já configurados.",
+          "Cartão de bolso NFC já configurado para avaliações no Google.",
       },
       { name: "twitter:image", content: "/og-image.png" },
     ],

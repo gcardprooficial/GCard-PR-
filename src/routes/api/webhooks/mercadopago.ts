@@ -30,6 +30,14 @@ export const Route = createFileRoute("/api/webhooks/mercadopago")({
           // Try to resolve order by externalReference (recommended) or by provider id
           let orderId: string | null = payment.externalReference ?? null;
           if (!orderId) {
+
+                      if (payment.externalReference && payment.externalReference !== orderId) {
+                        console.warn("Webhook: referência externa não corresponde ao pedido", {
+                          orderId,
+                          externalReference: payment.externalReference,
+                        });
+                        return new Response(null, { status: 400 });
+                      }
             const { data: found } = await supabaseAdmin
               .from("orders")
               .select("id")

@@ -105,6 +105,11 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
       const v1 = parts["v1"];
       if (!ts || !v1) return null;
 
+      const timestamp = Number(ts);
+      if (!Number.isFinite(timestamp) || Math.abs(Date.now() - timestamp * 1000) > 5 * 60 * 1000) {
+        return null;
+      }
+
       const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
       const expected = await hmacSha256Hex(webhookSecret, manifest);
       if (!safeEqualHex(expected, v1)) return null;

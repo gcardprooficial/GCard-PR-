@@ -12,8 +12,6 @@ import {
 } from "@/components/ui/accordion";
 import heroCartao from "@/assets/hero-cartao.jpg";
 import produtoCartao from "@/assets/produto-cartao.jpg";
-import produto10x10 from "@/assets/produto-plaquinha-10x10.jpg";
-import produto10x15 from "@/assets/produto-plaquinha-10x15.jpg";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
 
 const catalogQuery = queryOptions({
@@ -32,7 +30,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Cartão de bolso NFC para avaliações no Google. Loja própria chega configurada; lotes para revenda com painel de ativação.",
+          "Cartão de bolso NFC para avaliações no Google, entregue configurado para o seu negócio.",
       },
       {
         property: "og:title",
@@ -52,14 +50,10 @@ export const Route = createFileRoute("/")({
 
 const IMAGES: Record<string, string> = {
   "cartao-bolso": produtoCartao,
-  "plaquinha-10x10": produto10x10,
-  "plaquinha-10x15-l": produto10x15,
 };
 
 const FALLBACK_PRODUCTS = [
   { id: "fallback-cartao", slug: "cartao-bolso", name: "Cartão de bolso GCard-PRÓ", format: "Cartão NFC 8,5 x 5,4 cm", status: "ativo", has_nfc: true, has_qr: false },
-  { id: "fallback-10x10", slug: "plaquinha-10x10", name: "Plaquinha 10 x 10 cm", format: "Para balcão ou parede", status: "em_breve", has_nfc: true, has_qr: true },
-  { id: "fallback-10x15", slug: "plaquinha-10x15-l", name: "Plaquinha L 10 x 15 cm", format: "Formato L para balcão", status: "em_breve", has_nfc: true, has_qr: true },
 ] as const;
 
 function Stars() {
@@ -184,8 +178,10 @@ function ImpactCalculator() {
 function Home() {
   const { data } = useSuspenseQuery(catalogQuery);
   const lojista = data.plans.find((p) => p.slug === "lojista") ?? { name: "Plano Lojista", audience: "Para usar no seu próprio balcão", unit_price_cents: 5990, tiers: [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }] };
-  const revenda = data.plans.find((p) => p.slug === "renda-extra") ?? { name: "Pack Renda Extra", audience: "Comprar em quantidade e revender", unit_price_cents: 3790, tiers: [{ min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" }, { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" }, { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" }] };
-  const products = data.products.length > 0 ? data.products : FALLBACK_PRODUCTS;
+  const revenda = data.plans.find((p) => p.slug === "renda-extra");
+  const products = (data.products.length > 0 ? data.products : FALLBACK_PRODUCTS).filter(
+    (product) => product.slug === "cartao-bolso" && product.status === "ativo",
+  );
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
@@ -213,13 +209,7 @@ function Home() {
 
           <p className="mt-6 animate-rise delay-2 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
             O <strong className="text-foreground/90">cartão de bolso</strong> usa aproximação NFC e chega pronto para o seu negócio.
-            Somos <strong className="text-foreground/90">fornecedores</strong>: para revendedores, criamos o lote, os códigos únicos e o painel para ativação.{" "}
-            As plaquinhas com QR Code ficam para breve.
-            {" "}
-            <Link to="/ativar" className="font-bold text-foreground underline underline-offset-2">
-              /ativar
-            </Link>
-            .
+            Você informa a empresa na compra; nós gravamos o chip e enviamos pronto para usar.
           </p>
 
           <div className="mt-8 flex animate-rise delay-3 flex-wrap gap-3 sm:gap-4">
@@ -245,16 +235,6 @@ function Home() {
               </Link>
             </Button>
 
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="btn-press h-14 rounded-2xl border-2 px-6 text-base font-bold hover:bg-card"
-            >
-              <Link to="/comprar" search={{ caminho: "revenda" }}>
-                Comprar em quantidade
-              </Link>
-            </Button>
           </div>
 
           <div className="mt-8 flex animate-rise delay-4 flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
@@ -341,14 +321,12 @@ function Home() {
           {/* Card flutuante "+ 287 avaliações" */}
           <div className="absolute -right-4 top-10 animate-bounce-subtle sm:-right-6 sm:top-14">
             <div className="rounded-2xl border border-border bg-card/95 px-4 py-3 backdrop-blur shadow-2xl shadow-foreground/10">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Link dinâmico
-              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Cartão NFC</p>
               <p className="mt-0.5 font-display text-2xl font-black leading-none">
-                <span className="text-primary">Sempre editável</span>
+                <span className="text-primary">Pronto para usar</span>
               </p>
               <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                sem trocar o cartão
+                configurado para seu negócio
               </p>
             </div>
           </div>
@@ -363,15 +341,14 @@ function Home() {
               Escolha seu objetivo
             </p>
             <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-              Um cartão para o seu negócio. Um sistema para quem revende.
+              Seu cartão, pronto para o seu negócio.
             </h2>
             <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Um para o dono de negócio colocar na loja hoje. Outro para você
-              revender e lucrar com os amigos donos de comércio.
+              Informe o seu negócio na compra e receba o cartão NFC já configurado.
             </p>
           </div>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-2 md:gap-7">
+          <div className="mt-10 max-w-xl">
             {/* CAMINHO 1 — LOJISTA */}
             {lojista && (
               <div className="group relative animate-rise delay-2 rounded-[1.75rem] border-2 border-transparent bg-card p-7 sm:p-8 card-soft card-soft-hover shine-border">
@@ -447,14 +424,14 @@ function Home() {
                   className="btn-press btn-primary-shadow mt-8 h-14 w-full rounded-2xl text-base font-bold"
                 >
                   <Link to="/comprar" search={{ caminho: "lojista" }}>
-                    Configurar a minha placa →
+                    Comprar meu cartão →
                   </Link>
                 </Button>
               </div>
             )}
 
             {/* CAMINHO 2 — REVENDA */}
-            {revenda && (
+            {false && revenda && (
               <div className="group relative animate-rise delay-3 rounded-[1.75rem] border-2 border-foreground/5 bg-card p-7 sm:p-8 card-soft card-soft-hover shine-border">
                 <div className="absolute inset-x-0 top-0 h-1 rounded-t-[1.75rem] bg-foreground/0 transition-all duration-500 group-hover:bg-foreground" />
                 <div className="flex items-start justify-between gap-4">
@@ -664,12 +641,12 @@ function Home() {
       <section id="precos" className="mx-auto max-w-6xl px-5 py-16 md:py-20">
         <div className="max-w-2xl">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Preços transparentes</p>
-          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">Compre para você ou revenda.</h2>
+          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">Preço simples e transparente.</h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
             Sem mensalidade, sem letras miúdas. Pague uma vez e use o cartão no dia a dia.
           </p>
         </div>
-        <div className="mt-10 grid gap-5 md:grid-cols-2">
+        <div className="mt-10 max-w-xl">
           <div className="rounded-[1.75rem] border-2 border-primary bg-card p-7 shadow-xl shadow-primary/10 sm:p-8">
             <div className="flex items-center justify-between gap-3">
               <span className="badge-pill bg-primary/15 text-foreground">Lojista</span>
@@ -683,7 +660,7 @@ function Home() {
             </div>
             <Button asChild size="lg" className="mt-6 h-12 w-full rounded-xl"><Link to="/comprar" search={{ caminho: "lojista" }}>Comprar agora</Link></Button>
           </div>
-          <div className="rounded-[1.75rem] border border-border bg-card p-7 card-soft sm:p-8">
+          {false && <div className="rounded-[1.75rem] border border-border bg-card p-7 card-soft sm:p-8">
             <div className="flex items-center justify-between gap-3"><span className="badge-pill bg-secondary text-secondary-foreground">Revendedor</span><span className="text-xs font-bold text-muted-foreground">Melhor margem</span></div>
             <h3 className="mt-5 text-2xl sm:text-3xl">Cartões em branco em lote</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Receba cartões e manual com códigos únicos. Ative pelo painel quando vender.</p>
@@ -691,7 +668,7 @@ function Home() {
               {[['10 a 24', 'R$ 37,90'], ['25 a 99', 'R$ 27,90'], ['100+', 'R$ 19,90']].map(([label, price]) => <div key={label} className="rounded-xl bg-surface p-3"><p className="text-xs text-muted-foreground">{label} unidades</p><p className="mt-1 font-display text-xl">{price}</p><p className="text-xs text-muted-foreground">por unidade</p></div>)}
             </div>
             <Button asChild size="lg" variant="outline" className="mt-6 h-12 w-full rounded-xl border-2"><Link to="/comprar" search={{ caminho: "revenda" }}>Começar a revender</Link></Button>
-          </div>
+          </div>}
         </div>
       </section>
 
@@ -708,7 +685,7 @@ function Home() {
               </h2>
             </div>
             <p className="animate-rise delay-2 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Hoje o cartão de bolso está disponível. As plaquinhas de balcão e em L entram em breve.
+              O cartão de bolso com NFC está disponível agora.
             </p>
           </div>
 
@@ -811,7 +788,7 @@ function Home() {
               Tem mensalidade?
             </AccordionTrigger>
             <AccordionContent className="!px-5 sm:!px-6 !pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Não. Você paga uma vez pelo cartão ou plaquinha e usa para sempre.
+              Não. Você paga uma vez pelo cartão e usa para sempre.
               Nenhum custo recorrente, nenhuma assinatura escondida.
             </AccordionContent>
           </AccordionItem>
@@ -821,9 +798,7 @@ function Home() {
               Funciona em qualquer celular?
             </AccordionTrigger>
             <AccordionContent className="!px-5 sm:!px-6 !pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Sim. O cartão de bolso funciona por NFC (iPhone XS+ e a maioria dos Androids).
-              As plaquinhas de balcão e em L têm NFC e QR Code — se o celular não tiver NFC,
-              a câmera lê o QR direto.
+              O cartão de bolso funciona por NFC em iPhone XS+ e na maioria dos Androids compatíveis.
             </AccordionContent>
           </AccordionItem>
 
@@ -832,13 +807,7 @@ function Home() {
               Preciso configurar algo?
             </AccordionTrigger>
             <AccordionContent className="!px-5 sm:!px-6 !pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Para pedido individual (loja própria): <strong className="text-foreground">não.</strong>{" "}
-              Você busca o seu negócio pelo nome durante a compra e nós
-              entregamos já configurado. Para lote de revenda: um painel em{" "}
-              <Link to="/ativar" className="font-bold text-foreground underline underline-offset-2 hover:text-primary decoration-primary decoration-2">
-                gcardpro.com.br/ativar
-              </Link>{" "}
-              deixa cada placa apontar para o negócio do seu cliente em 30s.
+              Não. Você informa o seu negócio durante a compra e nós entregamos o cartão já configurado.
             </AccordionContent>
           </AccordionItem>
 
@@ -955,7 +924,7 @@ function Home() {
                 />
               </Link>
               <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                Somos fornecedores de cartões NFC para avaliações no Google, com compra para lojistas e lotes para revenda.
+                Cartões NFC para levar seus clientes direto à avaliação do Google.
               </p>
               <p className="mt-3 text-xs text-muted-foreground/70">
                 © {new Date().getFullYear()} GCard-PRÓ · CNPJ sob consulta
@@ -978,15 +947,6 @@ function Home() {
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      to="/comprar"
-                      search={{ caminho: "revenda" }}
-                      className="transition-colors hover:text-foreground hover:underline underline-offset-4"
-                    >
-                      Revender lotes
-                    </Link>
-                  </li>
-                  <li>
                     <a
                       href="#modelos"
                       className="transition-colors hover:text-foreground hover:underline underline-offset-4"
@@ -1003,12 +963,6 @@ function Home() {
                 </h4>
                 <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
                   <li>
-                    <Link
-                      to="/ativar"
-                      className="transition-colors hover:text-foreground hover:underline underline-offset-4"
-                    >
-                      Ativar meus códigos
-                    </Link>
                   </li>
                   <li>
                     <a
