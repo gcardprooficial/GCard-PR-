@@ -11,6 +11,12 @@ export const Route = createFileRoute("/guia/melhor-cartao-digital-para-empresa")
       },
       { name: "robots", content: "index,follow,max-image-preview:large" },
     ],
+    links: [
+      {
+        rel: "canonical",
+        href: "https://www.gcardpro.com.br/guia/melhor-cartao-digital-para-empresa",
+      },
+    ],
   }),
   component: Article,
 });

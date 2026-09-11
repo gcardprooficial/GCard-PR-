@@ -19,6 +19,7 @@ export const Route = createFileRoute("/guia")({
       },
       { property: "og:type", content: "website" },
     ],
+    links: [{ rel: "canonical", href: "https://www.gcardpro.com.br/guia" }],
   }),
   component: Guide,
 });

@@ -11,6 +11,12 @@ export const Route = createFileRoute("/guia/cartao-de-visita-por-aproximacao")({
       },
       { name: "robots", content: "index,follow,max-image-preview:large" },
     ],
+    links: [
+      {
+        rel: "canonical",
+        href: "https://www.gcardpro.com.br/guia/cartao-de-visita-por-aproximacao",
+      },
+    ],
   }),
   component: Article,
 });

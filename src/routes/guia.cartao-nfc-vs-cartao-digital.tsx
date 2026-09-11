@@ -26,12 +26,32 @@ export const Route = createFileRoute("/guia/cartao-nfc-vs-cartao-digital")({
       },
       { name: "robots", content: "index,follow,max-image-preview:large" },
     ],
+    links: [
+      {
+        rel: "canonical",
+        href: "https://www.gcardpro.com.br/guia/cartao-nfc-vs-cartao-digital",
+      },
+    ],
   }),
   component: Article,
 });
 function Article() {
   return (
     <Page>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: questions.map(([name, text]) => ({
+              "@type": "Question",
+              name,
+              acceptedAnswer: { "@type": "Answer", text },
+            })),
+          }),
+        }}
+      />
       <article>
         <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Guia GCard-PRÓ</p>
         <h1 className="mt-4 text-4xl leading-tight sm:text-5xl">
