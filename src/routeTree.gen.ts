@@ -10,12 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AtivarRouteImport } from './routes/ativar'
 import { Route as ComprarRouteImport } from './routes/comprar'
+import { Route as PainelRouteImport } from './routes/painel'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as TermosRouteImport } from './routes/termos'
+import { Route as PainelIndexRouteImport } from './routes/painel.index'
+import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculadora'
+import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
+import { Route as PainelLotesRouteImport } from './routes/painel.lotes'
+import { Route as PainelPlacasRouteImport } from './routes/painel.placas'
+import { Route as PainelScansRouteImport } from './routes/painel.scans'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AtivarRoute = AtivarRouteImport.update({
+  id: '/ativar',
+  path: '/ativar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComprarRoute = ComprarRouteImport.update({
@@ -23,40 +39,169 @@ const ComprarRoute = ComprarRouteImport.update({
   path: '/comprar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PainelRoute = PainelRouteImport.update({
+  id: '/painel',
+  path: '/painel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PainelIndexRoute = PainelIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelCalculadoraRoute = PainelCalculadoraRouteImport.update({
+  id: '/calculadora',
+  path: '/calculadora',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelFinanceiroRoute = PainelFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelLotesRoute = PainelLotesRouteImport.update({
+  id: '/lotes',
+  path: '/lotes',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelPlacasRoute = PainelPlacasRouteImport.update({
+  id: '/placas',
+  path: '/placas',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelScansRoute = PainelScansRouteImport.update({
+  id: '/scans',
+  path: '/scans',
+  getParentRoute: () => PainelRoute,
+} as any)
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksMercadopagoRoute = ApiWebhooksMercadopagoRouteImport.update({
+  id: '/api/webhooks/mercadopago',
+  path: '/api/webhooks/mercadopago',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/painel': typeof PainelRouteWithChildren
+  '/privacidade': typeof PrivacidadeRoute
+  '/termos': typeof TermosRoute
+  '/painel/calculadora': typeof PainelCalculadoraRoute
+  '/painel/financeiro': typeof PainelFinanceiroRoute
+  '/painel/lotes': typeof PainelLotesRoute
+  '/painel/placas': typeof PainelPlacasRoute
+  '/painel/scans': typeof PainelScansRoute
   '/r/$token': typeof RTokenRoute
+  '/painel/': typeof PainelIndexRoute
+  '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/termos': typeof TermosRoute
+  '/painel/calculadora': typeof PainelCalculadoraRoute
+  '/painel/financeiro': typeof PainelFinanceiroRoute
+  '/painel/lotes': typeof PainelLotesRoute
+  '/painel/placas': typeof PainelPlacasRoute
+  '/painel/scans': typeof PainelScansRoute
   '/r/$token': typeof RTokenRoute
+  '/painel': typeof PainelIndexRoute
+  '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/painel': typeof PainelRouteWithChildren
+  '/privacidade': typeof PrivacidadeRoute
+  '/termos': typeof TermosRoute
+  '/painel/calculadora': typeof PainelCalculadoraRoute
+  '/painel/financeiro': typeof PainelFinanceiroRoute
+  '/painel/lotes': typeof PainelLotesRoute
+  '/painel/placas': typeof PainelPlacasRoute
+  '/painel/scans': typeof PainelScansRoute
   '/r/$token': typeof RTokenRoute
+  '/painel/': typeof PainelIndexRoute
+  '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/comprar' | '/r/$token'
+  fullPaths:
+    | '/'
+    | '/ativar'
+    | '/comprar'
+    | '/painel'
+    | '/privacidade'
+    | '/termos'
+    | '/painel/calculadora'
+    | '/painel/financeiro'
+    | '/painel/lotes'
+    | '/painel/placas'
+    | '/painel/scans'
+    | '/r/$token'
+    | '/painel/'
+    | '/api/webhooks/mercadopago'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/comprar' | '/r/$token'
-  id: '__root__' | '/' | '/comprar' | '/r/$token'
+  to:
+    | '/'
+    | '/ativar'
+    | '/comprar'
+    | '/privacidade'
+    | '/termos'
+    | '/painel/calculadora'
+    | '/painel/financeiro'
+    | '/painel/lotes'
+    | '/painel/placas'
+    | '/painel/scans'
+    | '/r/$token'
+    | '/painel'
+    | '/api/webhooks/mercadopago'
+  id:
+    | '__root__'
+    | '/'
+    | '/ativar'
+    | '/comprar'
+    | '/painel'
+    | '/privacidade'
+    | '/termos'
+    | '/painel/calculadora'
+    | '/painel/financeiro'
+    | '/painel/lotes'
+    | '/painel/placas'
+    | '/painel/scans'
+    | '/r/$token'
+    | '/painel/'
+    | '/api/webhooks/mercadopago'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AtivarRoute: typeof AtivarRoute
   ComprarRoute: typeof ComprarRoute
+  PainelRoute: typeof PainelRouteWithChildren
+  PrivacidadeRoute: typeof PrivacidadeRoute
+  TermosRoute: typeof TermosRoute
   RTokenRoute: typeof RTokenRoute
+  ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -68,12 +213,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ativar': {
+      id: '/ativar'
+      path: '/ativar'
+      fullPath: '/ativar'
+      preLoaderRoute: typeof AtivarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/comprar': {
       id: '/comprar'
       path: '/comprar'
       fullPath: '/comprar'
       preLoaderRoute: typeof ComprarRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/painel': {
+      id: '/painel'
+      path: '/painel'
+      fullPath: '/painel'
+      preLoaderRoute: typeof PainelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/painel/': {
+      id: '/painel/'
+      path: '/'
+      fullPath: '/painel/'
+      preLoaderRoute: typeof PainelIndexRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/calculadora': {
+      id: '/painel/calculadora'
+      path: '/calculadora'
+      fullPath: '/painel/calculadora'
+      preLoaderRoute: typeof PainelCalculadoraRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/financeiro': {
+      id: '/painel/financeiro'
+      path: '/financeiro'
+      fullPath: '/painel/financeiro'
+      preLoaderRoute: typeof PainelFinanceiroRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/lotes': {
+      id: '/painel/lotes'
+      path: '/lotes'
+      fullPath: '/painel/lotes'
+      preLoaderRoute: typeof PainelLotesRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/placas': {
+      id: '/painel/placas'
+      path: '/placas'
+      fullPath: '/painel/placas'
+      preLoaderRoute: typeof PainelPlacasRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/scans': {
+      id: '/painel/scans'
+      path: '/scans'
+      fullPath: '/painel/scans'
+      preLoaderRoute: typeof PainelScansRouteImport
+      parentRoute: typeof PainelRoute
     }
     '/r/$token': {
       id: '/r/$token'
@@ -82,13 +297,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/mercadopago': {
+      id: '/api/webhooks/mercadopago'
+      path: '/api/webhooks/mercadopago'
+      fullPath: '/api/webhooks/mercadopago'
+      preLoaderRoute: typeof ApiWebhooksMercadopagoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface PainelRouteChildren {
+  PainelCalculadoraRoute: typeof PainelCalculadoraRoute
+  PainelFinanceiroRoute: typeof PainelFinanceiroRoute
+  PainelLotesRoute: typeof PainelLotesRoute
+  PainelPlacasRoute: typeof PainelPlacasRoute
+  PainelScansRoute: typeof PainelScansRoute
+  PainelIndexRoute: typeof PainelIndexRoute
+}
+
+const PainelRouteChildren: PainelRouteChildren = {
+  PainelCalculadoraRoute: PainelCalculadoraRoute,
+  PainelFinanceiroRoute: PainelFinanceiroRoute,
+  PainelLotesRoute: PainelLotesRoute,
+  PainelPlacasRoute: PainelPlacasRoute,
+  PainelScansRoute: PainelScansRoute,
+  PainelIndexRoute: PainelIndexRoute,
+}
+
+const PainelRouteWithChildren =
+  PainelRoute._addFileChildren(PainelRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AtivarRoute: AtivarRoute,
   ComprarRoute: ComprarRoute,
+  PainelRoute: PainelRouteWithChildren,
+  PrivacidadeRoute: PrivacidadeRoute,
+  TermosRoute: TermosRoute,
   RTokenRoute: RTokenRoute,
+  ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
