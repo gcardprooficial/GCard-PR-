@@ -402,18 +402,11 @@ function Comprar() {
               </p>
 
               <div className="relative mt-8 grid gap-3">
-                  asChild
-                  size="lg"
-                  className="group animate-rise delay-2 relative overflow-hidden rounded-[1.75rem] border-2 border-border bg-card p-7 sm:p-8 text-left card-soft card-soft-hover shine-border"
-                >
+                <Button asChild size="lg" className="btn-press group animate-rise delay-2 rounded-2xl px-6 py-3">
                   <Link to="/">← Voltar ao início</Link>
                 </Button>
                 {isResale && (
-                    asChild
-                    variant="outline"
-                    className="group animate-rise delay-3 relative overflow-hidden rounded-[1.75rem] border-2 border-foreground/5 bg-card p-7 sm:p-8 text-left card-soft card-soft-hover shine-border"
-                    className="btn-press h-14 rounded-2xl border-2 text-base font-bold hover:bg-card"
-                  >
+                  <Button asChild variant="outline" size="lg" className="btn-press h-14 rounded-2xl border-2 px-6 text-base font-bold hover:bg-card">
                     <Link to="/ativar">Ativar meus códigos (depois que chegar o lote)</Link>
                   </Button>
                 )}
