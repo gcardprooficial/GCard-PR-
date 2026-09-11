@@ -3,10 +3,18 @@ import { z } from "zod";
 import { unitPriceForQuantity } from "@/lib/pricing";
 import { rateLimit } from "@/lib/rateLimit";
 
-const GOOGLE_HOSTS = ["search.google.com", "www.google.com", "google.com", "maps.google.com", "g.page"];
+const GOOGLE_HOSTS = [
+  "search.google.com",
+  "www.google.com",
+  "google.com",
+  "maps.google.com",
+  "g.page",
+];
 
 /** Normalizes a pasted Google link into a review URL + place id when possible. */
-export function parseGoogleReviewLink(raw: string): { reviewUrl: string; placeId: string | null } | null {
+export function parseGoogleReviewLink(
+  raw: string,
+): { reviewUrl: string; placeId: string | null } | null {
   let url: URL;
   try {
     url = new URL(raw.trim());
@@ -65,6 +73,7 @@ const orderSchema = z.object({
   productSlug: z.string().trim().min(2).max(60),
   quantity: z.number().int().min(1).max(500),
   teamSize: z.string().trim().max(40).optional().nullable(),
+  marketingConsent: z.boolean().default(false),
   customer: z.object({
     firstName: z.string().trim().min(2).max(60),
     lastName: z.string().trim().min(1).max(60),
@@ -100,7 +109,9 @@ export const createPendingOrder = createServerFn({ method: "POST" })
     const [{ data: plan }, { data: product }] = await Promise.all([
       supabaseAdmin
         .from("plans")
-        .select("id, name, slug, unit_price_cents, min_quantity, max_quantity, is_active, is_resale")
+        .select(
+          "id, name, slug, unit_price_cents, min_quantity, max_quantity, is_active, is_resale",
+        )
         .eq("slug", data.planSlug)
         .maybeSingle(),
       supabaseAdmin
@@ -166,7 +177,8 @@ export const createPendingOrder = createServerFn({ method: "POST" })
         subtotal_cents: subtotal,
         shipping_cents: 0,
         total_cents: subtotal,
-      })
+        marketing_consent_at: data.marketingConsent ? new Date().toISOString() : null,
+      } as never)
       .select("id, order_number")
       .single();
     if (orderError) throw orderError;
@@ -180,6 +192,15 @@ export const createPendingOrder = createServerFn({ method: "POST" })
       total_cents: subtotal,
     });
     if (itemError) throw itemError;
+
+    const { upsertCustomerConsent, dispatchOrderEmailEvent } =
+      await import("@/lib/email-events.server");
+    await upsertCustomerConsent({
+      email: data.customer.email,
+      name: `${data.customer.firstName} ${data.customer.lastName}`.trim(),
+      consent: data.marketingConsent,
+    });
+    await dispatchOrderEmailEvent(order.id, "pedido_recebido");
 
     return {
       orderNumber: order.order_number,

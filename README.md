@@ -32,7 +32,8 @@ fora da API pública. Preço é sempre recalculado no servidor
 ## Variáveis de ambiente
 
 Ver `.env.example`. Segredos (`SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_MAPS_API_KEY`,
-`MERCADOPAGO_ACCESS_TOKEN`) só no gerenciador de segredos da hospedagem — nunca no
+`MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET`, `RESEND_API_KEY` e
+`RESEND_FROM_EMAIL`) só no gerenciador de segredos da hospedagem — nunca no
 repositório, nunca em variáveis `VITE_*`.
 
 ## Deploy (Vercel)
@@ -42,4 +43,12 @@ repositório, nunca em variáveis `VITE_*`.
 3. Definir `NITRO_PRESET=vercel` (também em `vercel.json`).
 4. Build: `bun run build` · Output: automático (Nitro → `.vercel/output`).
 
-Pagamento (Mercado Pago) e e-mail transacional (Resend) entram depois.
+O endpoint do webhook do Mercado Pago é `/api/webhooks/mercadopago`. Ele valida a
+assinatura `x-signature`, consulta o pagamento na API do Mercado Pago e só então
+marca o pedido como pago e envia o evento `pagamento_confirmado`. Os eventos
+`pedido_recebido` e `pedido_enviado` também usam a tabela `email_events`, com
+chave única por pedido/evento para impedir duplicidade em reenvios.
+
+Atualizações estratégicas são opcionais no checkout e só são enviadas para
+contatos com consentimento registrado em `marketing_contacts`. O link
+`/api/unsubscribe?token=...` registra o descadastro.

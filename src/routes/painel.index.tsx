@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
-import { confirmOrderPayment } from "@/lib/panel.functions";
+import { saveOrderTracking } from "@/lib/panel.functions";
 import { usePanel } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,10 +55,9 @@ type BatchByOrder = { orderId: string; code: string; codes_sent_at: string | nul
 
 function Orders() {
   const { userId, email } = usePanel();
-  const runConfirmPayment = useServerFn(confirmOrderPayment);
+  const runSaveTracking = useServerFn(saveOrderTracking);
   const [rows, setRows] = useState<OrderRow[] | null>(null);
   const [batchesByOrder, setBatchesByOrder] = useState<Record<string, BatchByOrder>>({});
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<"all" | "individual" | "revenda">("all");
 
   const load = useCallback(async () => {
@@ -113,31 +112,6 @@ function Orders() {
     toast.success(`Pedido #${row.order_number} atualizado.`);
   }
 
-  async function markPaidAndEmit(row: OrderRow) {
-    setConfirmingId(row.id);
-    try {
-      const res = await runConfirmPayment({ data: { orderId: row.id } });
-      await supabase.from("audit_log").insert({
-        actor_id: userId,
-        actor_email: email,
-        action: "confirm_payment",
-        entity: "orders",
-        entity_id: row.id,
-        details: { created: res.created, total: res.total },
-      });
-      toast.success(
-        res.created > 0
-          ? `Pagamento confirmado. ${res.created} código(s)/placa(s) gerados (total ${res.total}).`
-          : `Pagamento confirmado. ${res.total} item(ns) já estavam no sistema.`,
-      );
-      void load();
-    } catch {
-          toast.error("Não foi possível confirmar o pagamento ou gerar os códigos. Verifique a estrutura de lotes no Supabase.");
-    } finally {
-      setConfirmingId(null);
-    }
-  }
-
   const counts = {
     all: rows?.length ?? 0,
     individual: rows?.filter((r) => r.kind === "individual").length ?? 0,
@@ -155,11 +129,13 @@ function Orders() {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2 rounded-full bg-secondary p-1 text-xs font-semibold">
-        {([
-          ["all", `Todos (${counts.all})`],
-          ["individual", `Loja própria (${counts.individual})`],
-          ["revenda", `Revenda / lote (${counts.revenda})`],
-        ] as const).map(([k, label]) => (
+        {(
+          [
+            ["all", `Todos (${counts.all})`],
+            ["individual", `Loja própria (${counts.individual})`],
+            ["revenda", `Revenda / lote (${counts.revenda})`],
+          ] as const
+        ).map(([k, label]) => (
           <button
             key={k}
             type="button"
@@ -236,7 +212,8 @@ function Orders() {
                   )}
                   {r.kind === "revenda" && r.payment_status === "pago" && !batchesByOrder[r.id] && (
                     <p className="mt-2 text-sm text-amber-800">
-                      Pago, mas ainda sem lote — use &quot;Confirmar pagamento e gerar códigos&quot;.
+                      Pago, mas ainda sem lote — use &quot;Confirmar pagamento e gerar
+                      códigos&quot;.
                     </p>
                   )}
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -268,26 +245,13 @@ function Orders() {
               </div>
 
               <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-border pt-4">
-                {r.payment_status !== "pago" && (
-                  <Button
-                    size="sm"
-                    className="btn-press btn-primary-shadow"
-                    disabled={confirmingId === r.id}
-                    onClick={() => void markPaidAndEmit(r)}
-                  >
-                    {confirmingId === r.id ? "Gerando…" : "Confirmar pagamento e gerar códigos"}
-                  </Button>
-                )}
                 <div>
                   <Label className="text-xs">Pagamento</Label>
                   <select
                     value={r.payment_status}
                     onChange={(e) => {
                       const next = e.target.value;
-                      if (next === "pago" && r.payment_status !== "pago") {
-                        void markPaidAndEmit(r);
-                        return;
-                      }
+                      if (next === "pago") return;
                       void patch(r, { payment_status: next });
                     }}
                     className="mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -327,7 +291,17 @@ function Orders() {
                       variant="outline"
                       onClick={() => {
                         const el = document.getElementById(`t-${r.id}`) as HTMLInputElement | null;
-                        void patch(r, { tracking_code: el?.value.trim() || null });
+                        void (async () => {
+                          try {
+                            await runSaveTracking({
+                              data: { orderId: r.id, trackingCode: el?.value.trim() || null },
+                            });
+                            await load();
+                            toast.success(`Rastreio do pedido #${r.order_number} salvo.`);
+                          } catch {
+                            toast.error("Não foi possível salvar o rastreio.");
+                          }
+                        })();
                       }}
                     >
                       Salvar

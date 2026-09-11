@@ -15,6 +15,7 @@ import { Route as ComprarRouteImport } from './routes/comprar'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as TermosRouteImport } from './routes/termos'
+import { Route as ApiUnsubscribeRouteImport } from './routes/api/unsubscribe'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculadora'
 import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
@@ -52,6 +53,11 @@ const PrivacidadeRoute = PrivacidadeRouteImport.update({
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
   path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUnsubscribeRoute = ApiUnsubscribeRouteImport.update({
+  id: '/api/unsubscribe',
+  path: '/api/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PainelIndexRoute = PainelIndexRouteImport.update({
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/painel': typeof PainelRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
+  '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/comprar': typeof ComprarRoute
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
+  '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/painel': typeof PainelRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
+  '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/privacidade'
     | '/termos'
+    | '/api/unsubscribe'
     | '/painel/calculadora'
     | '/painel/financeiro'
     | '/painel/lotes'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/comprar'
     | '/privacidade'
     | '/termos'
+    | '/api/unsubscribe'
     | '/painel/calculadora'
     | '/painel/financeiro'
     | '/painel/lotes'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/privacidade'
     | '/termos'
+    | '/api/unsubscribe'
     | '/painel/calculadora'
     | '/painel/financeiro'
     | '/painel/lotes'
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   PainelRoute: typeof PainelRouteWithChildren
   PrivacidadeRoute: typeof PrivacidadeRoute
   TermosRoute: typeof TermosRoute
+  ApiUnsubscribeRoute: typeof ApiUnsubscribeRoute
   RTokenRoute: typeof RTokenRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
 }
@@ -246,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/termos'
       fullPath: '/termos'
       preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/unsubscribe': {
+      id: '/api/unsubscribe'
+      path: '/api/unsubscribe'
+      fullPath: '/api/unsubscribe'
+      preLoaderRoute: typeof ApiUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/painel/': {
@@ -335,6 +355,7 @@ const rootRouteChildren: RootRouteChildren = {
   PainelRoute: PainelRouteWithChildren,
   PrivacidadeRoute: PrivacidadeRoute,
   TermosRoute: TermosRoute,
+  ApiUnsubscribeRoute: ApiUnsubscribeRoute,
   RTokenRoute: RTokenRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
 }

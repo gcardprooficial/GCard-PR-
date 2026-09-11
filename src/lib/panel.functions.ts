@@ -51,3 +51,41 @@ export const confirmOrderPayment = createServerFn({ method: "POST" })
     const emitted = await emitPlatesForOrder(data.orderId);
     return { ok: true as const, ...emitted };
   });
+
+const trackingSchema = z.object({
+  orderId: z.string().uuid(),
+  trackingCode: z.string().trim().max(120).nullable(),
+});
+
+export const saveOrderTracking = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => trackingSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeam(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabaseAdmin as any;
+    const { data: order, error: fetchError } = await db
+      .from("orders")
+      .select("tracking_code")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+    if (!order) throw new Error("Pedido não encontrado.");
+    const trackingCode = data.trackingCode || null;
+    const { error } = await db
+      .from("orders")
+      .update({
+        tracking_code: trackingCode,
+        ...(trackingCode
+          ? { fulfillment_status: "enviado", shipped_at: new Date().toISOString() }
+          : {}),
+      })
+      .eq("id", data.orderId);
+    if (error) throw error;
+    if (trackingCode && order.tracking_code !== trackingCode) {
+      const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
+      await dispatchOrderEmailEvent(data.orderId, "pedido_enviado");
+    }
+    return { ok: true as const };
+  });

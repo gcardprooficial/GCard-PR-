@@ -10,8 +10,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import heroCartao from "@/assets/hero-cartao.jpg";
-import produtoCartao from "@/assets/produto-cartao.jpg";
+import heroCartao from "@/assets/gcard-mockup-real.png";
+import produtoCartao from "@/assets/gcard-cartao-arte.png";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
 
 const catalogQuery = queryOptions({
@@ -24,8 +24,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       {
-        title:
-          "GCard-PRÓ | Cartão NFC para avaliações no Google",
+        title: "GCard-PRÓ | Cartão NFC para avaliações no Google",
       },
       {
         name: "description",
@@ -53,19 +52,22 @@ const IMAGES: Record<string, string> = {
 };
 
 const FALLBACK_PRODUCTS = [
-  { id: "fallback-cartao", slug: "cartao-bolso", name: "Cartão de bolso GCard-PRÓ", format: "Cartão NFC 8,5 x 5,4 cm", status: "ativo", has_nfc: true, has_qr: false },
+  {
+    id: "fallback-cartao",
+    slug: "cartao-bolso",
+    name: "Cartão de bolso GCard-PRÓ",
+    format: "Cartão NFC 8,5 x 5,4 cm",
+    status: "ativo",
+    has_nfc: true,
+    has_qr: false,
+  },
 ] as const;
 
 function Stars() {
   return (
     <span className="inline-flex gap-0.5 align-middle">
       {[0, 1, 2, 3, 4].map((i) => (
-        <svg
-          key={i}
-          viewBox="0 0 24 24"
-          className="size-4 fill-primary"
-          aria-hidden="true"
-        >
+        <svg key={i} viewBox="0 0 24 24" className="size-4 fill-primary" aria-hidden="true">
           <path d="M12 2l3 6.5 7 .9-5 4.8 1.2 7-6.2-3.4L5.8 21 7 14.2 2 9.4l7-.9L12 2z" />
         </svg>
       ))}
@@ -77,7 +79,10 @@ function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:py-4">
-        <Link to="/" className="group flex items-center gap-2 -m-1 p-1 rounded-xl transition-transform duration-300 hover:scale-[1.01]">
+        <Link
+          to="/"
+          className="group flex items-center gap-2 -m-1 p-1 rounded-xl transition-transform duration-300 hover:scale-[1.01]"
+        >
           <img
             src={logoTransparente}
             alt="GCard-PRÓ"
@@ -137,10 +142,15 @@ function ImpactCalculator() {
     <section className="border-y border-border bg-secondary text-secondary-foreground">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 md:grid-cols-[0.9fr_1.1fr] md:items-center md:py-20">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Calculadora de impacto</p>
-          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">Quanto uma boa reputação vale?</h2>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
+            Calculadora de impacto
+          </p>
+          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">
+            Quanto uma boa reputação vale?
+          </h2>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-white/65 sm:text-base">
-            Uma experiência simples no balcão ajuda mais clientes satisfeitos a encontrarem a tela de avaliação.
+            Uma experiência simples no balcão ajuda mais clientes satisfeitos a encontrarem a tela
+            de avaliação.
           </p>
         </div>
         <div className="grid gap-5 rounded-[1.75rem] border border-white/10 bg-white/5 p-6 sm:grid-cols-2 sm:p-8">
@@ -165,9 +175,15 @@ function ImpactCalculator() {
             />
           </label>
           <div className="sm:col-span-2">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">Potencial mensal estimado</p>
-            <p className="mt-1 font-display text-4xl text-primary sm:text-5xl">{money(potential * 100)}</p>
-            <p className="mt-2 text-xs text-white/50">Simulação ilustrativa com 14% de potencial adicional.</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
+              Potencial mensal estimado
+            </p>
+            <p className="mt-1 font-display text-4xl text-primary sm:text-5xl">
+              {money(potential * 100)}
+            </p>
+            <p className="mt-2 text-xs text-white/50">
+              Simulação ilustrativa com 14% de potencial adicional.
+            </p>
           </div>
         </div>
       </div>
@@ -177,8 +193,25 @@ function ImpactCalculator() {
 
 function Home() {
   const { data } = useSuspenseQuery(catalogQuery);
-  const lojista = data.plans.find((p) => p.slug === "lojista") ?? { name: "Plano Lojista", audience: "Para usar no seu próprio balcão", unit_price_cents: 5990, tiers: [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }] };
-  const revenda = data.plans.find((p) => p.slug === "renda-extra") ?? { name: "Pack Renda Extra", audience: "Comprar em quantidade e revender", unit_price_cents: 3790, tiers: [{ min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" }, { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" }, { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" }] };
+  const lojista = data.plans.find((p) => p.slug === "lojista") ?? {
+    name: "Plano Lojista",
+    audience: "Para usar no seu próprio balcão",
+    unit_price_cents: 5990,
+    tiers: [
+      { min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" },
+      { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" },
+    ],
+  };
+  const revenda = data.plans.find((p) => p.slug === "renda-extra") ?? {
+    name: "Pack Renda Extra",
+    audience: "Comprar em quantidade e revender",
+    unit_price_cents: 3790,
+    tiers: [
+      { min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" },
+      { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" },
+      { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
+    ],
+  };
   const products = (data.products.length > 0 ? data.products : FALLBACK_PRODUCTS).filter(
     (product) => product.slug === "cartao-bolso" && product.status === "ativo",
   );
@@ -208,8 +241,9 @@ function Home() {
           </h1>
 
           <p className="mt-6 animate-rise delay-2 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            O <strong className="text-foreground/90">cartão de bolso</strong> usa aproximação NFC e chega pronto para o seu negócio.
-            Você informa a empresa na compra; nós gravamos o chip e enviamos pronto para usar.
+            O <strong className="text-foreground/90">cartão de bolso</strong> usa aproximação NFC e
+            chega pronto para o seu negócio. Você informa a empresa na compra; nós gravamos o chip e
+            enviamos pronto para usar.
           </p>
 
           <div className="mt-8 flex animate-rise delay-3 flex-wrap gap-3 sm:gap-4">
@@ -235,18 +269,22 @@ function Home() {
               </Link>
             </Button>
 
-            <Button asChild size="lg" variant="outline" className="btn-press h-14 rounded-2xl border-2 px-6 text-base font-bold hover:bg-card">
-              <Link to="/comprar" search={{ caminho: "revenda" }}>Comprar em quantidade</Link>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="btn-press h-14 rounded-2xl border-2 px-6 text-base font-bold hover:bg-card"
+            >
+              <Link to="/comprar" search={{ caminho: "revenda" }}>
+                Comprar em quantidade
+              </Link>
             </Button>
-
           </div>
 
           <div className="mt-8 flex animate-rise delay-4 flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Stars />
-              <span className="font-semibold text-foreground/80">
-                + estrelas no Google
-              </span>
+              <span className="font-semibold text-foreground/80">+ estrelas no Google</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="inline-flex size-5 items-center justify-center rounded-full bg-g-green/15 text-g-green">
@@ -325,7 +363,9 @@ function Home() {
           {/* Card flutuante "+ 287 avaliações" */}
           <div className="absolute -right-4 top-10 animate-bounce-subtle sm:-right-6 sm:top-14">
             <div className="rounded-2xl border border-border bg-card/95 px-4 py-3 backdrop-blur shadow-2xl shadow-foreground/10">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Cartão NFC</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Cartão NFC
+              </p>
               <p className="mt-0.5 font-display text-2xl font-black leading-none">
                 <span className="text-primary">Pronto para usar</span>
               </p>
@@ -482,9 +522,7 @@ function Home() {
                         <span className="text-muted-foreground">
                           {tier.label ?? `${tier.min_quantity}+`}
                         </span>
-                        <span className="text-foreground">
-                          {money(tier.unit_price_cents)}
-                        </span>
+                        <span className="text-foreground">{money(tier.unit_price_cents)}</span>
                       </span>
                     ))}
                   </div>
@@ -562,8 +600,7 @@ function Home() {
             {
               n: "01",
               t: "Você compra",
-              d:
-                "Escolhe o modelo, informa o negócio do Google e paga pelo site. 2 minutos.",
+              d: "Escolhe o modelo, informa o negócio do Google e paga pelo site. 2 minutos.",
               icon: (
                 <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4M4 6v12c0 1.1.9 2 2 2h14v-4" />
               ),
@@ -571,8 +608,7 @@ function Home() {
             {
               n: "02",
               t: "Nós produzimos",
-              d:
-                "Imprimimos com a sua arte, gravamos o chip NFC e configuramos o QR dinâmico.",
+              d: "Imprimimos com a sua arte, gravamos o chip NFC e configuramos o QR dinâmico.",
               icon: (
                 <>
                   <path d="m7.5 4.27 9 5.15" />
@@ -585,8 +621,7 @@ function Home() {
             {
               n: "03",
               t: "Aproxime",
-              d:
-                "O cliente aproxima o celular ou escaneia o QR e chega à avaliação em segundos.",
+              d: "O cliente aproxima o celular ou escaneia o QR e chega à avaliação em segundos.",
               icon: (
                 <>
                   <circle cx="8" cy="18" r="2" />
@@ -644,8 +679,12 @@ function Home() {
 
       <section id="precos" className="mx-auto max-w-6xl px-5 py-16 md:py-20">
         <div className="max-w-2xl">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Preços transparentes</p>
-          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">Compre para você ou revenda.</h2>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
+            Preços transparentes
+          </p>
+          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">
+            Compre para você ou revenda.
+          </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
             Sem mensalidade, sem letras miúdas. Pague uma vez e use o cartão no dia a dia.
           </p>
@@ -657,21 +696,59 @@ function Home() {
               <span className="text-xs font-bold text-primary">Pronto para uso</span>
             </div>
             <h3 className="mt-5 text-2xl sm:text-3xl">Cartão de bolso já configurado</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Você envia o link do Google e recebe o cartão pronto. Limite de 5 unidades por pedido.</p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Você envia o link do Google e recebe o cartão pronto. Limite de 5 unidades por pedido.
+            </p>
             <div className="mt-7 grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-surface p-4"><p className="text-xs text-muted-foreground">1 a 4 unidades</p><p className="mt-1 font-display text-2xl">R$ 59,90</p><p className="text-xs text-muted-foreground">por unidade</p></div>
-              <div className="rounded-xl bg-primary p-4 text-primary-foreground"><p className="text-xs opacity-80">5 unidades</p><p className="mt-1 font-display text-2xl">R$ 49,90</p><p className="text-xs opacity-80">por unidade</p></div>
+              <div className="rounded-xl bg-surface p-4">
+                <p className="text-xs text-muted-foreground">1 a 4 unidades</p>
+                <p className="mt-1 font-display text-2xl">R$ 59,90</p>
+                <p className="text-xs text-muted-foreground">por unidade</p>
+              </div>
+              <div className="rounded-xl bg-primary p-4 text-primary-foreground">
+                <p className="text-xs opacity-80">5 unidades</p>
+                <p className="mt-1 font-display text-2xl">R$ 49,90</p>
+                <p className="text-xs opacity-80">por unidade</p>
+              </div>
             </div>
-            <Button asChild size="lg" className="mt-6 h-12 w-full rounded-xl"><Link to="/comprar" search={{ caminho: "lojista" }}>Comprar agora</Link></Button>
+            <Button asChild size="lg" className="mt-6 h-12 w-full rounded-xl">
+              <Link to="/comprar" search={{ caminho: "lojista" }}>
+                Comprar agora
+              </Link>
+            </Button>
           </div>
           <div className="rounded-[1.75rem] border border-border bg-card p-7 card-soft sm:p-8">
-            <div className="flex items-center justify-between gap-3"><span className="badge-pill bg-secondary text-secondary-foreground">Revendedor</span><span className="text-xs font-bold text-muted-foreground">Melhor margem</span></div>
-            <h3 className="mt-5 text-2xl sm:text-3xl">Cartões em branco em lote</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Cartões de bolso NFC para compras em quantidade e revenda.</p>
-            <div className="mt-7 grid gap-2 sm:grid-cols-3">
-              {[['10 a 24', 'R$ 37,90'], ['25 a 99', 'R$ 27,90'], ['100+', 'R$ 19,90']].map(([label, price]) => <div key={label} className="rounded-xl bg-surface p-3"><p className="text-xs text-muted-foreground">{label} unidades</p><p className="mt-1 font-display text-xl">{price}</p><p className="text-xs text-muted-foreground">por unidade</p></div>)}
+            <div className="flex items-center justify-between gap-3">
+              <span className="badge-pill bg-secondary text-secondary-foreground">Revendedor</span>
+              <span className="text-xs font-bold text-muted-foreground">Melhor margem</span>
             </div>
-            <Button asChild size="lg" variant="outline" className="mt-6 h-12 w-full rounded-xl border-2"><Link to="/comprar" search={{ caminho: "revenda" }}>Começar a revender</Link></Button>
+            <h3 className="mt-5 text-2xl sm:text-3xl">Cartões em branco em lote</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Cartões de bolso NFC para compras em quantidade e revenda.
+            </p>
+            <div className="mt-7 grid gap-2 sm:grid-cols-3">
+              {[
+                ["10 a 24", "R$ 37,90"],
+                ["25 a 99", "R$ 27,90"],
+                ["100+", "R$ 19,90"],
+              ].map(([label, price]) => (
+                <div key={label} className="rounded-xl bg-surface p-3">
+                  <p className="text-xs text-muted-foreground">{label} unidades</p>
+                  <p className="mt-1 font-display text-xl">{price}</p>
+                  <p className="text-xs text-muted-foreground">por unidade</p>
+                </div>
+              ))}
+            </div>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="mt-6 h-12 w-full rounded-xl border-2"
+            >
+              <Link to="/comprar" search={{ caminho: "revenda" }}>
+                Começar a revender
+              </Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -723,12 +800,8 @@ function Home() {
                   <div className="p-5 sm:p-6">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="text-lg font-bold sm:text-xl">
-                          {product.name}
-                        </h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {product.format}
-                        </p>
+                        <h3 className="text-lg font-bold sm:text-xl">{product.name}</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">{product.format}</p>
                       </div>
                     </div>
 
@@ -740,8 +813,7 @@ function Home() {
                         },
                         product.has_qr && {
                           label: "QR Code",
-                          color:
-                            "bg-foreground/10 text-foreground",
+                          color: "bg-foreground/10 text-foreground",
                         },
                       ]
                         .filter(Boolean)
@@ -792,8 +864,8 @@ function Home() {
               Tem mensalidade?
             </AccordionTrigger>
             <AccordionContent className="!px-5 sm:!px-6 !pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Não. Você paga uma vez pelo cartão e usa para sempre.
-              Nenhum custo recorrente, nenhuma assinatura escondida.
+              Não. Você paga uma vez pelo cartão e usa para sempre. Nenhum custo recorrente, nenhuma
+              assinatura escondida.
             </AccordionContent>
           </AccordionItem>
 
@@ -802,7 +874,8 @@ function Home() {
               Funciona em qualquer celular?
             </AccordionTrigger>
             <AccordionContent className="!px-5 sm:!px-6 !pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              O cartão de bolso funciona por NFC em iPhone XS+ e na maioria dos Androids compatíveis.
+              O cartão de bolso funciona por NFC em iPhone XS+ e na maioria dos Androids
+              compatíveis.
             </AccordionContent>
           </AccordionItem>
 
@@ -811,7 +884,8 @@ function Home() {
               Preciso configurar algo?
             </AccordionTrigger>
             <AccordionContent className="!px-5 sm:!px-6 !pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Não. Você informa o seu negócio durante a compra e nós entregamos o cartão já configurado.
+              Não. Você informa o seu negócio durante a compra e nós entregamos o cartão já
+              configurado.
             </AccordionContent>
           </AccordionItem>
 
@@ -820,9 +894,8 @@ function Home() {
               Quanto custa o frete?
             </AccordionTrigger>
             <AccordionContent className="!px-5 sm:!px-6 !pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Frete <strong className="text-foreground">grátis</strong> para
-              todo o território nacional. Enviamos pelos Correios (PAC ou
-              Sedex, conforme o prazo disponível).
+              Frete <strong className="text-foreground">grátis</strong> para todo o território
+              nacional. Enviamos pelos Correios (PAC ou Sedex, conforme o prazo disponível).
             </AccordionContent>
           </AccordionItem>
 
@@ -840,8 +913,8 @@ function Home() {
               >
                 @gcardpro.oficial
               </a>{" "}
-              que a gente atualiza. Não precisa reimprimir nada, é só o link
-              dinâmico do nosso painel.
+              que a gente atualiza. Não precisa reimprimir nada, é só o link dinâmico do nosso
+              painel.
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -870,9 +943,8 @@ function Home() {
                   <span className="highlight-yellow">5 estrelas</span>?
                 </h2>
                 <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground sm:text-lg">
-                  Entre no grupo de lançamento: condição especial para os
-                  primeiros, novidades dos novos formatos e uma comunidade de
-                  donos de negócio crescendo juntos.
+                  Entre no grupo de lançamento: condição especial para os primeiros, novidades dos
+                  novos formatos e uma comunidade de donos de negócio crescendo juntos.
                 </p>
               </div>
 

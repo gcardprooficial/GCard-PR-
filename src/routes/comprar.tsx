@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import produtoCartao from "@/assets/produto-cartao.jpg";
+import produtoCartao from "@/assets/gcard-cartao-arte.png";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
@@ -50,7 +50,18 @@ const IMAGES: Record<string, string> = {
 };
 
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
-  { id: "fallback-cartao", slug: "cartao-bolso", name: "Cartão de bolso GCard-PRÓ", tagline: "NFC pronto para avaliações no Google", description: "Cartão de bolso com chip NFC.", format: "Cartão NFC 8,5 x 5,4 cm", status: "ativo", price_delta_cents: 0, has_qr: false, has_nfc: true },
+  {
+    id: "fallback-cartao",
+    slug: "cartao-bolso",
+    name: "Cartão de bolso GCard-PRÓ",
+    tagline: "NFC pronto para avaliações no Google",
+    description: "Cartão de bolso com chip NFC.",
+    format: "Cartão NFC 8,5 x 5,4 cm",
+    status: "ativo",
+    price_delta_cents: 0,
+    has_qr: false,
+    has_nfc: true,
+  },
 ];
 
 type Customer = {
@@ -80,7 +91,9 @@ function Comprar() {
   const createPref = useServerFn(createCheckoutPreference);
 
   const isResale = caminho === "revenda";
-  const plan = data.plans.find((p) => (isResale ? p.slug === "renda-extra" : p.slug === "lojista")) ?? {
+  const plan = data.plans.find((p) =>
+    isResale ? p.slug === "renda-extra" : p.slug === "lojista",
+  ) ?? {
     id: isResale ? "fallback-renda-extra" : "fallback-lojista",
     slug: isResale ? "renda-extra" : "lojista",
     name: isResale ? "Pack Renda Extra" : "Plano Lojista",
@@ -90,7 +103,16 @@ function Comprar() {
     min_quantity: isResale ? 10 : 1,
     max_quantity: isResale ? null : 5,
     is_resale: isResale,
-    tiers: isResale ? [{ min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" }, { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" }, { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" }] : [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }],
+    tiers: isResale
+      ? [
+          { min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" },
+          { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" },
+          { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
+        ]
+      : [
+          { min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" },
+          { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" },
+        ],
     packages: [],
   };
   const products = (data.products.length > 0 ? data.products : FALLBACK_PRODUCTS).filter(
@@ -118,6 +140,7 @@ function Comprar() {
     phone: "",
     email: "",
   });
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [address, setAddress] = useState<Address>({
     zip: "",
     street: "",
@@ -230,6 +253,7 @@ function Comprar() {
           productSlug: product.slug,
           quantity,
           customer,
+          marketingConsent,
           address: { ...address, complement: address.complement || null },
         },
       });
@@ -269,16 +293,35 @@ function Comprar() {
       ? Math.min(...revenda.tiers.map((t) => t.unit_price_cents), revenda.unit_price_cents)
       : 0;
     return (
-   <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
-        <div aria-hidden className="pointer-events-none absolute -top-20 -left-24 size-[500px] rounded-full bg-primary/15 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute top-40 -right-20 size-[420px] rounded-full bg-foreground/5 blur-3xl" />
+      <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-20 -left-24 size-[500px] rounded-full bg-primary/15 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-40 -right-20 size-[420px] rounded-full bg-foreground/5 blur-3xl"
+        />
 
         <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-3.5">
-            <Link to="/" className="group -m-1 p-1 rounded-xl transition-transform duration-300 hover:scale-[1.02]">
-              <img src={logoTransparente} alt="GCard-PRÓ" className="h-8 w-auto sm:h-9 select-none" draggable={false} />
+            <Link
+              to="/"
+              className="group -m-1 p-1 rounded-xl transition-transform duration-300 hover:scale-[1.02]"
+            >
+              <img
+                src={logoTransparente}
+                alt="GCard-PRÓ"
+                className="h-8 w-auto sm:h-9 select-none"
+                draggable={false}
+              />
             </Link>
-            <Button asChild variant="ghost" size="sm" className="btn-press rounded-xl hover:bg-surface">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="btn-press rounded-xl hover:bg-surface"
+            >
               <Link to="/">← Voltar</Link>
             </Button>
           </div>
@@ -294,8 +337,8 @@ function Comprar() {
               Como você vai usar o <span className="highlight-yellow">GCard-PRÓ</span>?
             </h1>
             <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Dois fluxos separados — um para você colocar na sua loja, outro para revender e
-              lucrar com donos de negócio.
+              Dois fluxos separados — um para você colocar na sua loja, outro para revender e lucrar
+              com donos de negócio.
             </p>
           </div>
 
@@ -312,7 +355,16 @@ function Comprar() {
                   Loja própria
                 </div>
                 <span className="rounded-2xl bg-primary/15 p-2.5 text-primary-foreground transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-md">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M3 7h18v12H3z" />
                     <path d="M3 11h18" />
                   </svg>
@@ -338,7 +390,15 @@ function Comprar() {
 
               <div className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-sm transition-all duration-300 group-hover:bg-foreground group-hover:text-white group-hover:shadow-md">
                 Começar agora
-                <svg className="size-4 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  className="size-4 transition-transform duration-300 group-hover:translate-x-1"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M5 12h14" />
                   <path d="m12 5 7 7-7 7" />
                 </svg>
@@ -357,7 +417,16 @@ function Comprar() {
                   Revenda / lote
                 </div>
                 <span className="rounded-2xl bg-foreground/5 p-2.5 text-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-foreground group-hover:text-white group-hover:shadow-md">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <circle cx="17" cy="17" r="3" />
                     <circle cx="6" cy="6" r="3" />
                     <path d="M8.59 8.59 14.41 14.41" />
@@ -371,8 +440,8 @@ function Comprar() {
                 Comprar em <span className="font-black">quantidade</span>
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Lote em branco pra revender. Quanto mais unidades, menor o custo por placa —
-                margem acima de 100% no preço sugerido.
+                Lote em branco pra revender. Quanto mais unidades, menor o custo por placa — margem
+                acima de 100% no preço sugerido.
               </p>
 
               <div className="mt-6 flex items-end gap-2">
@@ -389,7 +458,15 @@ function Comprar() {
 
               <div className="mt-7 inline-flex items-center gap-2 rounded-2xl border-2 border-foreground/10 bg-background px-5 py-3 text-sm font-bold text-foreground transition-all duration-300 group-hover:border-foreground group-hover:bg-foreground group-hover:text-white group-hover:shadow-md">
                 Escolher lote
-                <svg className="size-4 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  className="size-4 transition-transform duration-300 group-hover:translate-x-1"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M5 12h14" />
                   <path d="m12 5 7 7-7 7" />
                 </svg>
@@ -404,15 +481,30 @@ function Comprar() {
   if (orderNumber) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
-        <div aria-hidden className="pointer-events-none absolute -top-20 left-1/2 size-[600px] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-20 left-1/2 size-[600px] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl"
+        />
         <div className="relative flex min-h-screen items-center justify-center px-5 py-16">
           <div className="w-full max-w-lg animate-pop">
             <div className="relative overflow-hidden rounded-[2rem] border border-border bg-card p-8 sm:p-10 text-center card-soft">
-              <div aria-hidden className="pointer-events-none absolute -top-10 right-0 size-40 rounded-full bg-primary/20 blur-2xl" />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -top-10 right-0 size-40 rounded-full bg-primary/20 blur-2xl"
+              />
 
               <div className="relative mx-auto mb-5 inline-flex size-20 items-center justify-center rounded-3xl bg-primary/15 text-primary-foreground">
                 <div className="absolute inline-flex size-20 animate-ping-slow rounded-3xl bg-primary opacity-40" />
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="36"
+                  height="36"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
@@ -427,12 +519,16 @@ function Comprar() {
                 </strong>
               </p>
               <p className="relative mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-                O pagamento pelo Mercado Pago entra no ar em breve. Vamos te chamar
-                no WhatsApp para concluir e enviar o código de rastreio.
+                O pagamento pelo Mercado Pago entra no ar em breve. Vamos te chamar no WhatsApp para
+                concluir e enviar o código de rastreio.
               </p>
 
               <div className="relative mt-8 grid gap-3">
-                <Button asChild size="lg" className="btn-press group animate-rise delay-2 rounded-2xl px-6 py-3">
+                <Button
+                  asChild
+                  size="lg"
+                  className="btn-press group animate-rise delay-2 rounded-2xl px-6 py-3"
+                >
                   <Link to="/">← Voltar ao início</Link>
                 </Button>
               </div>
@@ -487,19 +583,40 @@ function Comprar() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
-      <div aria-hidden className="pointer-events-none absolute -top-24 -left-24 size-[480px] rounded-full bg-primary/12 blur-3xl" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -left-24 size-[480px] rounded-full bg-primary/12 blur-3xl"
+      />
 
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-3.5">
-          <Link to="/" className="group -m-1 p-1 rounded-xl transition-transform duration-300 hover:scale-[1.02]">
-            <img src={logoTransparente} alt="GCard-PRÓ" className="h-8 w-auto sm:h-9 select-none" draggable={false} />
+          <Link
+            to="/"
+            className="group -m-1 p-1 rounded-xl transition-transform duration-300 hover:scale-[1.02]"
+          >
+            <img
+              src={logoTransparente}
+              alt="GCard-PRÓ"
+              className="h-8 w-auto sm:h-9 select-none"
+              draggable={false}
+            />
           </Link>
           <button
             type="button"
             onClick={() => navigate({ to: "/comprar" })}
             className="btn-press inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
               <path d="m15 18-6-6 6-6" />
             </svg>
             Trocar opção
@@ -510,7 +627,8 @@ function Comprar() {
       <div className="relative mx-auto max-w-4xl px-5 pb-20 pt-8 sm:pt-10">
         <div className="mb-7 flex items-center gap-4">
           <div className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary font-display text-sm font-black text-primary-foreground shadow-sm">
-            {stepIndex + 1}<span className="text-primary-foreground/60">/{steps.length}</span>
+            {stepIndex + 1}
+            <span className="text-primary-foreground/60">/{steps.length}</span>
           </div>
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex items-center justify-between gap-3">
@@ -568,7 +686,16 @@ function Comprar() {
                   </p>
                 </div>
                 <span className="shrink-0 rounded-2xl bg-primary/15 px-3 py-2 text-primary-foreground">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M4 7V4h16v3" />
                     <path d="M9 20h6" />
                     <path d="M12 4v16" />
@@ -594,13 +721,24 @@ function Comprar() {
                     >
                       {selected && (
                         <div className="absolute right-3 top-3 z-10 inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md animate-pop">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         </div>
                       )}
 
-                      <div className={`relative aspect-4/3 overflow-hidden bg-surface transition-all ${!disabled ? "group-hover:scale-[1.02]" : ""}`}>
+                      <div
+                        className={`relative aspect-4/3 overflow-hidden bg-surface transition-all ${!disabled ? "group-hover:scale-[1.02]" : ""}`}
+                      >
                         <img
                           src={IMAGES[item.slug] ?? produtoCartao}
                           alt={item.name}
@@ -625,12 +763,21 @@ function Comprar() {
 
                         <div className="mt-3 flex items-center gap-1.5">
                           {[
-                            item.has_nfc && { label: "NFC", color: "bg-primary/20 text-primary-foreground" },
-                            item.has_qr && { label: "QR", color: "bg-foreground/10 text-foreground" },
+                            item.has_nfc && {
+                              label: "NFC",
+                              color: "bg-primary/20 text-primary-foreground",
+                            },
+                            item.has_qr && {
+                              label: "QR",
+                              color: "bg-foreground/10 text-foreground",
+                            },
                           ]
                             .filter(Boolean)
                             .map((tag) => (
-                              <span key={tag!.label} className={`rounded-lg px-2 py-0.5 text-[11px] font-black tracking-wide ${tag!.color}`}>
+                              <span
+                                key={tag!.label}
+                                className={`rounded-lg px-2 py-0.5 text-[11px] font-black tracking-wide ${tag!.color}`}
+                              >
                                 {tag!.label}
                               </span>
                             ))}
@@ -665,12 +812,21 @@ function Comprar() {
                     Encontre o seu <span className="highlight-yellow">negócio</span>
                   </h1>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    Digite o nome igual aparece no Google Maps e escolha na lista. A gente já
-                    busca o link de avaliação por você.
+                    Digite o nome igual aparece no Google Maps e escolha na lista. A gente já busca
+                    o link de avaliação por você.
                   </p>
                 </div>
                 <span className="shrink-0 rounded-2xl bg-g-blue/10 px-3 py-2 text-g-blue">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <circle cx="12" cy="10" r="3" />
                     <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
                   </svg>
@@ -682,7 +838,14 @@ function Comprar() {
                   <svg
                     aria-hidden
                     className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
-                    width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.3-4.3" />
@@ -707,7 +870,14 @@ function Comprar() {
                 >
                   {searching ? (
                     <span className="inline-flex items-center gap-2">
-                      <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <svg
+                        className="size-4 animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      >
                         <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                       </svg>
                       Buscando
@@ -720,7 +890,8 @@ function Comprar() {
 
               {results.length > 0 && (
                 <p className="mt-6 text-sm font-bold text-foreground/80">
-                  Encontramos {results.length} resultado{results.length > 1 ? "s" : ""} · toque no correto
+                  Encontramos {results.length} resultado{results.length > 1 ? "s" : ""} · toque no
+                  correto
                 </p>
               )}
               <div className="mt-3 space-y-3">
@@ -745,7 +916,16 @@ function Comprar() {
                         </p>
                       </div>
                       <span className="shrink-0 rounded-xl bg-foreground/5 p-2.5 text-foreground/60 transition-all group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-110">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M5 12h14" />
                           <path d="m12 5 7 7-7 7" />
                         </svg>
@@ -755,7 +935,12 @@ function Comprar() {
                       <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-surface px-3 py-1.5">
                         <span className="inline-flex gap-0.5">
                           {[0, 1, 2, 3, 4].map((i) => (
-                            <svg key={i} viewBox="0 0 24 24" className="size-3.5 fill-primary" aria-hidden>
+                            <svg
+                              key={i}
+                              viewBox="0 0 24 24"
+                              className="size-3.5 fill-primary"
+                              aria-hidden
+                            >
                               <path d="M12 2l3 6.5 7 .9-5 4.8 1.2 7-6.2-3.4L5.8 21 7 14.2 2 9.4l7-.9L12 2z" />
                             </svg>
                           ))}
@@ -776,20 +961,38 @@ function Comprar() {
                 <summary className="flex cursor-pointer items-center justify-between gap-3 font-bold text-foreground sm:text-base">
                   <span className="inline-flex items-center gap-2">
                     <span className="inline-flex size-6 items-center justify-center rounded-lg bg-foreground/5 text-foreground">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                       </svg>
                     </span>
                     Não encontrou? Colar link direto de avaliação
                   </span>
-                  <svg className="size-4 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg
+                    className="size-4 transition-transform group-open:rotate-180"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </summary>
                 <p className="mt-3 text-xs text-muted-foreground sm:text-sm">
-                  Abra o Google Maps → encontre sua empresa → botão "Avaliações" → "Escrever uma avaliação"
-                  → copie a URL da barra de endereço e cole aqui.
+                  Abra o Google Maps → encontre sua empresa → botão "Avaliações" → "Escrever uma
+                  avaliação" → copie a URL da barra de endereço e cole aqui.
                 </p>
                 <Input
                   value={manualLink}
@@ -813,7 +1016,16 @@ function Comprar() {
                   </p>
                 </div>
                 <span className="shrink-0 rounded-2xl bg-g-green/12 px-3 py-2 text-g-green">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                     <polyline points="22 4 12 14.01 9 11.01" />
                   </svg>
@@ -823,7 +1035,17 @@ function Comprar() {
               <div className="mt-7 overflow-hidden rounded-[1.5rem] border border-foreground/10 bg-gradient-to-br from-primary/15 via-background to-primary/5 p-6 sm:p-7">
                 <div className="flex items-start gap-4">
                   <div className="shrink-0 inline-flex size-14 items-center justify-center rounded-2xl bg-card shadow-sm">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground bg-primary rounded-xl size-11">
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-primary-foreground bg-primary rounded-xl size-11"
+                    >
                       <path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
                       <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                     </svg>
@@ -841,14 +1063,17 @@ function Comprar() {
                       <div className="mt-3 inline-flex items-center gap-2">
                         <span className="inline-flex gap-0.5">
                           {[0, 1, 2, 3, 4].map((i) => (
-                            <svg key={i} viewBox="0 0 24 24" className="size-4.5 fill-primary" aria-hidden>
+                            <svg
+                              key={i}
+                              viewBox="0 0 24 24"
+                              className="size-4.5 fill-primary"
+                              aria-hidden
+                            >
                               <path d="M12 2l3 6.5 7 .9-5 4.8 1.2 7-6.2-3.4L5.8 21 7 14.2 2 9.4l7-.9L12 2z" />
                             </svg>
                           ))}
                         </span>
-                        <span className="text-sm font-black">
-                          {business.rating.toFixed(1)}
-                        </span>
+                        <span className="text-sm font-black">{business.rating.toFixed(1)}</span>
                         <span className="text-sm text-muted-foreground">
                           · {business.reviews ?? 0} avaliações no Google
                         </span>
@@ -859,15 +1084,24 @@ function Comprar() {
 
                 <div className="mt-6 flex items-start gap-3 rounded-2xl bg-card/70 p-4">
                   <span className="mt-0.5 shrink-0 inline-flex size-5 items-center justify-center rounded-full bg-primary/30 text-primary-foreground">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   </span>
                   <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
                     {product?.has_qr
                       ? "Vamos gravar o link de avaliação no chip NFC e no QR dinâmico."
-                      : "Vamos gravar o link de avaliação no chip NFC do cartão de bolso (sem QR)."}
-                    {" "}Se precisar trocar depois, é só mandar mensagem.
+                      : "Vamos gravar o link de avaliação no chip NFC do cartão de bolso (sem QR)."}{" "}
+                    Se precisar trocar depois, é só mandar mensagem.
                   </p>
                 </div>
               </div>
@@ -896,7 +1130,16 @@ function Comprar() {
                   </p>
                 </div>
                 <span className="shrink-0 rounded-2xl bg-g-green/12 px-3 py-2 text-g-green">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
                     <path d="M3 6h18" />
                     <path d="M16 10a4 4 0 0 1-8 0" />
@@ -923,7 +1166,16 @@ function Comprar() {
                     >
                       {selected && (
                         <div className="absolute right-3 top-3 inline-flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md animate-pop">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         </div>
@@ -1000,7 +1252,10 @@ function Comprar() {
               </div>
 
               <div className="mt-8 relative overflow-hidden rounded-[1.5rem] border border-foreground/10 bg-gradient-to-br from-primary/20 via-primary/5 to-primary/10 p-6 sm:p-7">
-                <div aria-hidden className="pointer-events-none absolute -top-12 -right-10 size-44 rounded-full bg-primary/30 blur-3xl" />
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -top-12 -right-10 size-44 rounded-full bg-primary/30 blur-3xl"
+                />
                 <div className="relative flex flex-wrap items-end justify-between gap-4">
                   <div>
                     <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">
@@ -1035,7 +1290,16 @@ function Comprar() {
                   </p>
                 </div>
                 <span className="shrink-0 rounded-2xl bg-foreground/5 px-3 py-2 text-foreground">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
@@ -1043,17 +1307,53 @@ function Comprar() {
               </div>
 
               <div className="mt-7 grid gap-4 sm:grid-cols-2">
-                <Field label="Nome" value={customer.firstName} onChange={(v) => setCustomer({ ...customer, firstName: v })} placeholder="João" />
-                <Field label="Sobrenome" value={customer.lastName} onChange={(v) => setCustomer({ ...customer, lastName: v })} placeholder="Silva" />
-                <Field label="CPF (só números)" value={customer.document} onChange={(v) => setCustomer({ ...customer, document: v })} placeholder="000.000.000-00" />
-                <Field label="WhatsApp" value={customer.phone} onChange={(v) => setCustomer({ ...customer, phone: v })} placeholder="(41) 90000-0000" />
+                <Field
+                  label="Nome"
+                  value={customer.firstName}
+                  onChange={(v) => setCustomer({ ...customer, firstName: v })}
+                  placeholder="João"
+                />
+                <Field
+                  label="Sobrenome"
+                  value={customer.lastName}
+                  onChange={(v) => setCustomer({ ...customer, lastName: v })}
+                  placeholder="Silva"
+                />
+                <Field
+                  label="CPF (só números)"
+                  value={customer.document}
+                  onChange={(v) => setCustomer({ ...customer, document: v })}
+                  placeholder="000.000.000-00"
+                />
+                <Field
+                  label="WhatsApp"
+                  value={customer.phone}
+                  onChange={(v) => setCustomer({ ...customer, phone: v })}
+                  placeholder="(41) 90000-0000"
+                />
                 <div className="sm:col-span-2">
-                  <Field label="E-mail" type="email" value={customer.email} onChange={(v) => setCustomer({ ...customer, email: v })} placeholder="joao@email.com" />
+                  <Field
+                    label="E-mail"
+                    type="email"
+                    value={customer.email}
+                    onChange={(v) => setCustomer({ ...customer, email: v })}
+                    placeholder="joao@email.com"
+                  />
                 </div>
               </div>
               <div className="mt-6 inline-flex items-start gap-3 rounded-2xl bg-surface/70 p-4">
                 <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/25 text-primary-foreground">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
@@ -1063,6 +1363,18 @@ function Comprar() {
                   necessidade do pedido.
                 </p>
               </div>
+              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background p-4 text-sm">
+                <input
+                  type="checkbox"
+                  checked={marketingConsent}
+                  onChange={(event) => setMarketingConsent(event.target.checked)}
+                  className="mt-1 size-4 accent-primary"
+                />
+                <span className="leading-relaxed text-muted-foreground">
+                  Quero receber atualizações estratégicas e novidades da GCard-PRÓ por e-mail. Posso
+                  me descadastrar a qualquer momento.
+                </span>
+              </label>
             </div>
           )}
 
@@ -1078,7 +1390,17 @@ function Comprar() {
                   </p>
                 </div>
                 <span className="shrink-0 rounded-2xl bg-g-green/12 px-3 py-2 text-g-green">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
                     <path d="M3 7h13v10H3z" />
                     <path d="M16 10h4l2 3v4h-6z" />
                     <circle cx="7" cy="19" r="2" />
@@ -1108,21 +1430,63 @@ function Comprar() {
                     placeholder="00000-000"
                   />
                   <p className="mt-1.5 text-xs text-muted-foreground">
-                    {lookingUpZip ? "Localizando seu endereço..." : "Rua, bairro e cidade são preenchidos automaticamente."}
+                    {lookingUpZip
+                      ? "Localizando seu endereço..."
+                      : "Rua, bairro e cidade são preenchidos automaticamente."}
                   </p>
                 </div>
-                <Field label="Número" value={address.number} onChange={(v) => setAddress({ ...address, number: v })} placeholder="123 ou s/n" />
+                <Field
+                  label="Número"
+                  value={address.number}
+                  onChange={(v) => setAddress({ ...address, number: v })}
+                  placeholder="123 ou s/n"
+                />
                 <div className="sm:col-span-2">
-                  <Field label="Rua / Avenida" value={address.street} onChange={(v) => setAddress({ ...address, street: v })} placeholder="Rua das Flores" />
+                  <Field
+                    label="Rua / Avenida"
+                    value={address.street}
+                    onChange={(v) => setAddress({ ...address, street: v })}
+                    placeholder="Rua das Flores"
+                  />
                 </div>
-                <Field label="Bairro" value={address.district} onChange={(v) => setAddress({ ...address, district: v })} placeholder="Centro" />
-                <Field label="Complemento" value={address.complement} onChange={(v) => setAddress({ ...address, complement: v })} placeholder="Ap 402, casa de fundo, etc." />
-                <Field label="Cidade" value={address.city} onChange={(v) => setAddress({ ...address, city: v })} placeholder="Curitiba" />
-                <Field label="Estado (UF)" value={address.state} onChange={(v) => setAddress({ ...address, state: v })} placeholder="PR" />
+                <Field
+                  label="Bairro"
+                  value={address.district}
+                  onChange={(v) => setAddress({ ...address, district: v })}
+                  placeholder="Centro"
+                />
+                <Field
+                  label="Complemento"
+                  value={address.complement}
+                  onChange={(v) => setAddress({ ...address, complement: v })}
+                  placeholder="Ap 402, casa de fundo, etc."
+                />
+                <Field
+                  label="Cidade"
+                  value={address.city}
+                  onChange={(v) => setAddress({ ...address, city: v })}
+                  placeholder="Curitiba"
+                />
+                <Field
+                  label="Estado (UF)"
+                  value={address.state}
+                  onChange={(v) => setAddress({ ...address, state: v })}
+                  placeholder="PR"
+                />
               </div>
               <div className="mt-6 inline-flex items-start gap-3 rounded-2xl bg-primary/10 p-4">
                 <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/40 text-primary-foreground">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
                     <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
@@ -1142,11 +1506,22 @@ function Comprar() {
                     Dá uma <span className="highlight-yellow">checada</span> final
                   </h1>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    Tudo certo? Clica em finalizar que a gente te chama no WhatsApp pra concluir o pagamento.
+                    Tudo certo? Clica em finalizar que a gente te chama no WhatsApp pra concluir o
+                    pagamento.
                   </p>
                 </div>
                 <span className="shrink-0 rounded-2xl bg-primary/15 px-3 py-2 text-primary-foreground">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
                     <path d="M9 11l3 3L22 4" />
                     <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                   </svg>
@@ -1161,7 +1536,26 @@ function Comprar() {
                 )}
                 <Row label="Quantidade" value={`${quantity} unidade(s)`} />
                 <Row label="Preço por unidade" value={money(unitPrice)} />
-                <Row label="Frete" value={<span className="inline-flex items-center gap-1 text-g-green font-black"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>Grátis</span>} />
+                <Row
+                  label="Frete"
+                  value={
+                    <span className="inline-flex items-center gap-1 text-g-green font-black">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Grátis
+                    </span>
+                  }
+                />
                 <Row
                   label="Cliente"
                   value={`${customer.firstName} ${customer.lastName} · ${customer.email}`}
@@ -1173,15 +1567,16 @@ function Comprar() {
               </dl>
 
               <div className="mt-6 relative overflow-hidden rounded-[1.5rem] border border-foreground/10 bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-6 sm:p-7 shadow-xl shadow-primary/20">
-                <div aria-hidden className="pointer-events-none absolute -top-16 -right-16 size-56 rounded-full bg-white/20 blur-3xl" />
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -top-16 -right-16 size-56 rounded-full bg-white/20 blur-3xl"
+                />
                 <div className="relative flex flex-wrap items-end justify-between gap-4">
                   <div className="text-primary-foreground/90">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-primary-foreground/80">
                       Total a pagar
                     </p>
-                    <p className="mt-2 text-sm font-semibold">
-                      {quantity} un. · frete incluso
-                    </p>
+                    <p className="mt-2 text-sm font-semibold">{quantity} un. · frete incluso</p>
                   </div>
                   <p className="font-display text-4xl font-black leading-none text-primary-foreground sm:text-6xl">
                     {money(total)}
@@ -1199,7 +1594,16 @@ function Comprar() {
               disabled={stepIndex === 0 || isTransitioning}
               className="btn-press h-12 rounded-2xl px-5 font-bold text-muted-foreground hover:bg-surface hover:text-foreground"
             >
-              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <svg
+                className="size-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
                 <path d="m15 18-6-6 6-6" />
               </svg>
               Voltar
@@ -1218,7 +1622,14 @@ function Comprar() {
               >
                 {saving ? (
                   <span className="inline-flex items-center gap-2">
-                    <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <svg
+                      className="size-4 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    >
                       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                     </svg>
                     Registrando seu pedido...
@@ -1226,7 +1637,16 @@ function Comprar() {
                 ) : (
                   <>
                     Finalizar pedido
-                    <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <svg
+                      className="size-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
                       <path d="M5 12h14" />
                       <path d="m12 5 7 7-7 7" />
                     </svg>
@@ -1241,7 +1661,16 @@ function Comprar() {
                 className="btn-press btn-primary-shadow shine-border h-14 rounded-2xl px-7 text-base font-black disabled:opacity-60 disabled:shadow-none"
               >
                 Continuar
-                <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg
+                  className="size-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
                   <path d="M5 12h14" />
                   <path d="m12 5 7 7-7 7" />
                 </svg>
@@ -1250,14 +1679,27 @@ function Comprar() {
           </div>
 
           <div className="mt-4 flex items-center gap-3 rounded-2xl border border-g-green/20 bg-g-green/5 px-4 py-3 text-sm">
-            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-g-green/15 text-g-green" aria-hidden>
-              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <span
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-g-green/15 text-g-green"
+              aria-hidden
+            >
+              <svg
+                className="size-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <rect x="3" y="11" width="18" height="11" rx="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </span>
             <p className="leading-relaxed text-muted-foreground">
-              Pagamento processado com segurança pelo <strong className="text-foreground">Mercado Pago</strong>. Seus dados de cartão não ficam armazenados na GCard-PRÓ.
+              Pagamento processado com segurança pelo{" "}
+              <strong className="text-foreground">Mercado Pago</strong>. Seus dados de cartão não
+              ficam armazenados na GCard-PRÓ.
             </p>
           </div>
         </div>
@@ -1267,7 +1709,15 @@ function Comprar() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/75 px-5 backdrop-blur-md">
           <div className="animate-pop rounded-[1.5rem] border border-border bg-card px-7 py-6 text-center shadow-2xl shadow-foreground/10">
             <div className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-primary/15 text-primary-foreground">
-              <svg className="size-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+              <svg
+                className="size-5 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                aria-hidden
+              >
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
             </div>
