@@ -14,14 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import produtoCartao from "@/assets/produto-cartao.jpg";
-import produto10x10 from "@/assets/produto-plaquinha-10x10.jpg";
-import produto10x15 from "@/assets/produto-plaquinha-10x15.jpg";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.png";
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
 
 const searchSchema = z.object({
-  caminho: z.enum(["lojista"]).optional().catch(undefined),
+  caminho: z.enum(["lojista", "revenda"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/comprar")({
@@ -49,14 +47,10 @@ export const Route = createFileRoute("/comprar")({
 
 const IMAGES: Record<string, string> = {
   "cartao-bolso": produtoCartao,
-  "plaquinha-10x10": produto10x10,
-  "plaquinha-10x15-l": produto10x15,
 };
 
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
   { id: "fallback-cartao", slug: "cartao-bolso", name: "Cartão de bolso GCard-PRÓ", tagline: "NFC pronto para avaliações no Google", description: "Cartão de bolso com chip NFC.", format: "Cartão NFC 8,5 x 5,4 cm", status: "ativo", price_delta_cents: 0, has_qr: false, has_nfc: true },
-  { id: "fallback-10x10", slug: "plaquinha-10x10", name: "Plaquinha 10 x 10 cm", tagline: "Em breve", description: "Formato para balcão ou parede.", format: "Plaquinha quadrada 10 x 10 cm", status: "em_breve", price_delta_cents: 0, has_qr: true, has_nfc: true },
-  { id: "fallback-10x15", slug: "plaquinha-10x15-l", name: "Plaquinha L 10 x 15 cm", tagline: "Em breve", description: "Formato L para balcão.", format: "Plaquinha em L 10 x 15 cm", status: "em_breve", price_delta_cents: 0, has_qr: true, has_nfc: true },
 ];
 
 type Customer = {
@@ -78,16 +72,14 @@ type Address = {
 };
 
 function Comprar() {
-  const { caminho: selectedPath } = Route.useSearch();
-  // The NFC card is configured at checkout; legacy resale URLs use this flow.
-  const caminho = selectedPath ?? "lojista";
+  const { caminho } = Route.useSearch();
   const navigate = useNavigate();
   const { data } = useSuspenseQuery(catalogQuery);
   const runSearch = useServerFn(searchBusinesses);
   const submitOrder = useServerFn(createPendingOrder);
   const createPref = useServerFn(createCheckoutPreference);
 
-  const isResale = false;
+  const isResale = caminho === "revenda";
   const plan = data.plans.find((p) => (isResale ? p.slug === "renda-extra" : p.slug === "lojista")) ?? {
     id: isResale ? "fallback-renda-extra" : "fallback-lojista",
     slug: isResale ? "renda-extra" : "lojista",
@@ -118,7 +110,7 @@ function Comprar() {
   const [searching, setSearching] = useState(false);
   const [manualLink, setManualLink] = useState("");
   const [business, setBusiness] = useState<BusinessResult | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(isResale ? 5 : 1);
   const [customer, setCustomer] = useState<Customer>({
     firstName: "",
     lastName: "",
@@ -149,7 +141,7 @@ function Comprar() {
     setResults([]);
     setManualLink("");
     setBusiness(null);
-    setQuantity(1);
+    setQuantity(caminho === "revenda" ? 10 : 1);
   }, [caminho]);
 
   const unitPrice = useMemo(() => {

@@ -429,7 +429,7 @@ html { font-size: var(--accessible-font-size); }
 }
 
 /* Ensure images scale nicely on small screens */
-img { max-width: 100%; height: auto; display: block; }
+img { max-width: 100%; display: block; }
 
 /* Utility to make small components stack on narrow viewports */
 .responsive-stack > * { width: 100%; }
@@ -437,7 +437,6 @@ img { max-width: 100%; height: auto; display: block; }
 /* ===== Header / logo constraints ===== */
 header img, .site-header img, .page-header img {
   max-height: 48px;
-  height: auto;
   width: auto;
   object-fit: contain;
 }
@@ -448,4 +447,3 @@ header img, .site-header img, .page-header img {
 
 /* Ensure sticky header doesn't push content on small screens */
 header.sticky, .sticky { position: sticky; top: 0; z-index: 40; }
-

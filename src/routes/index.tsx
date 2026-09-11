@@ -178,7 +178,7 @@ function ImpactCalculator() {
 function Home() {
   const { data } = useSuspenseQuery(catalogQuery);
   const lojista = data.plans.find((p) => p.slug === "lojista") ?? { name: "Plano Lojista", audience: "Para usar no seu próprio balcão", unit_price_cents: 5990, tiers: [{ min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" }, { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" }] };
-  const revenda = data.plans.find((p) => p.slug === "renda-extra");
+  const revenda = data.plans.find((p) => p.slug === "renda-extra") ?? { name: "Pack Renda Extra", audience: "Comprar em quantidade e revender", unit_price_cents: 3790, tiers: [{ min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" }, { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" }, { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" }] };
   const products = (data.products.length > 0 ? data.products : FALLBACK_PRODUCTS).filter(
     (product) => product.slug === "cartao-bolso" && product.status === "ativo",
   );
@@ -233,6 +233,10 @@ function Home() {
                   <path d="m12 5 7 7-7 7" />
                 </svg>
               </Link>
+            </Button>
+
+            <Button asChild size="lg" variant="outline" className="btn-press h-14 rounded-2xl border-2 px-6 text-base font-bold hover:bg-card">
+              <Link to="/comprar" search={{ caminho: "revenda" }}>Comprar em quantidade</Link>
             </Button>
 
           </div>
@@ -341,14 +345,14 @@ function Home() {
               Escolha seu objetivo
             </p>
             <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-              Seu cartão, pronto para o seu negócio.
+              Um cartão para o seu negócio. Um plano para quem revende.
             </h2>
             <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Informe o seu negócio na compra e receba o cartão NFC já configurado.
+              Compre para sua loja ou em quantidade para revender cartões de bolso NFC.
             </p>
           </div>
 
-          <div className="mt-10 max-w-xl">
+          <div className="mt-10 grid gap-5 md:grid-cols-2 md:gap-7">
             {/* CAMINHO 1 — LOJISTA */}
             {lojista && (
               <div className="group relative animate-rise delay-2 rounded-[1.75rem] border-2 border-transparent bg-card p-7 sm:p-8 card-soft card-soft-hover shine-border">
@@ -431,7 +435,7 @@ function Home() {
             )}
 
             {/* CAMINHO 2 — REVENDA */}
-            {false && revenda && (
+            {revenda && (
               <div className="group relative animate-rise delay-3 rounded-[1.75rem] border-2 border-foreground/5 bg-card p-7 sm:p-8 card-soft card-soft-hover shine-border">
                 <div className="absolute inset-x-0 top-0 h-1 rounded-t-[1.75rem] bg-foreground/0 transition-all duration-500 group-hover:bg-foreground" />
                 <div className="flex items-start justify-between gap-4">
@@ -488,10 +492,10 @@ function Home() {
 
                 <ul className="mt-6 space-y-3 text-sm sm:text-base">
                   {[
-                    "Lote em branco — você configura quando vender",
-                    "QR dinâmico: cliente ativa pelo e-mail da compra",
+                    "Cartões de bolso NFC em quantidade",
+                    "Condição especial para compras maiores",
                     "Margem acima de 100% vendendo pelo preço sugerido",
-                    "Enviamos um CSV com todos os códigos do lote",
+                    "Atendimento para alinhar seu pedido",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-3 text-foreground/80">
                       <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/30 text-primary-foreground">
@@ -641,12 +645,12 @@ function Home() {
       <section id="precos" className="mx-auto max-w-6xl px-5 py-16 md:py-20">
         <div className="max-w-2xl">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Preços transparentes</p>
-          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">Preço simples e transparente.</h2>
+          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">Compre para você ou revenda.</h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
             Sem mensalidade, sem letras miúdas. Pague uma vez e use o cartão no dia a dia.
           </p>
         </div>
-        <div className="mt-10 max-w-xl">
+        <div className="mt-10 grid gap-5 md:grid-cols-2">
           <div className="rounded-[1.75rem] border-2 border-primary bg-card p-7 shadow-xl shadow-primary/10 sm:p-8">
             <div className="flex items-center justify-between gap-3">
               <span className="badge-pill bg-primary/15 text-foreground">Lojista</span>
@@ -660,15 +664,15 @@ function Home() {
             </div>
             <Button asChild size="lg" className="mt-6 h-12 w-full rounded-xl"><Link to="/comprar" search={{ caminho: "lojista" }}>Comprar agora</Link></Button>
           </div>
-          {false && <div className="rounded-[1.75rem] border border-border bg-card p-7 card-soft sm:p-8">
+          <div className="rounded-[1.75rem] border border-border bg-card p-7 card-soft sm:p-8">
             <div className="flex items-center justify-between gap-3"><span className="badge-pill bg-secondary text-secondary-foreground">Revendedor</span><span className="text-xs font-bold text-muted-foreground">Melhor margem</span></div>
             <h3 className="mt-5 text-2xl sm:text-3xl">Cartões em branco em lote</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Receba cartões e manual com códigos únicos. Ative pelo painel quando vender.</p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Cartões de bolso NFC para compras em quantidade e revenda.</p>
             <div className="mt-7 grid gap-2 sm:grid-cols-3">
               {[['10 a 24', 'R$ 37,90'], ['25 a 99', 'R$ 27,90'], ['100+', 'R$ 19,90']].map(([label, price]) => <div key={label} className="rounded-xl bg-surface p-3"><p className="text-xs text-muted-foreground">{label} unidades</p><p className="mt-1 font-display text-xl">{price}</p><p className="text-xs text-muted-foreground">por unidade</p></div>)}
             </div>
             <Button asChild size="lg" variant="outline" className="mt-6 h-12 w-full rounded-xl border-2"><Link to="/comprar" search={{ caminho: "revenda" }}>Começar a revender</Link></Button>
-          </div>}
+          </div>
         </div>
       </section>
 
@@ -947,6 +951,15 @@ function Home() {
                     </Link>
                   </li>
                   <li>
+                    <Link
+                      to="/comprar"
+                      search={{ caminho: "revenda" }}
+                      className="transition-colors hover:text-foreground hover:underline underline-offset-4"
+                    >
+                      Revender lotes
+                    </Link>
+                  </li>
+                  <li>
                     <a
                       href="#modelos"
                       className="transition-colors hover:text-foreground hover:underline underline-offset-4"
@@ -962,8 +975,6 @@ function Home() {
                   Suporte
                 </h4>
                 <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
-                  <li>
-                  </li>
                   <li>
                     <a
                       href="https://instagram.com/gcardpro.oficial"
