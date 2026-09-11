@@ -241,10 +241,10 @@ function Lote({ email, userId }: { email: string; userId: string }) {
             <div className="rounded-2xl bg-card p-5 text-sm card-soft">
               <p className="font-semibold">Como ativar</p>
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
-                <li>Cada placa do seu lote tem um código único (o mesmo impresso nela / no QR).</li>
-                <li>Abra o negócio no Google, copie o link de avaliação (search.google.com/local/writereview?placeid=...).</li>
-                <li>Cole aqui no código correspondente, informe o nome do negócio e ative.</li>
-                <li>A placa passa a abrir a avaliação daquele negócio na hora. Dá para trocar depois.</li>
+                <li>Cada unidade do lote tem um código único (no QR da plaquinha ou no verso do cartão de bolso).</li>
+                <li>Cartão de bolso: só NFC — digite o código aqui. Plaquinhas: pode escanear o QR ou digitar o código.</li>
+                <li>Abra o negócio no Google e copie o link de avaliação (search.google.com/local/writereview?placeid=...).</li>
+                <li>Cole no código correspondente, informe o nome do negócio e ative. Dá para trocar depois.</li>
               </ol>
             </div>
 

@@ -1,8 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
+import { confirmOrderPayment } from "@/lib/panel.functions";
 import { usePanel } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,9 +51,14 @@ type OrderRow = {
   businesses: { name: string; review_url: string } | null;
 };
 
+type BatchByOrder = { orderId: string; code: string; codes_sent_at: string | null };
+
 function Orders() {
   const { userId, email } = usePanel();
+  const runConfirmPayment = useServerFn(confirmOrderPayment);
   const [rows, setRows] = useState<OrderRow[] | null>(null);
+  const [batchesByOrder, setBatchesByOrder] = useState<Record<string, BatchByOrder>>({});
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<"all" | "individual" | "revenda">("all");
 
   const load = useCallback(async () => {
@@ -66,6 +73,22 @@ function Orders() {
       return;
     }
     setRows((data ?? []) as unknown as OrderRow[]);
+
+    const { data: batches } = await supabase
+      .from("batches")
+      .select("owner_order_id, code, codes_sent_at")
+      .not("owner_order_id", "is", null);
+    const map: Record<string, BatchByOrder> = {};
+    for (const b of batches ?? []) {
+      if (b.owner_order_id) {
+        map[b.owner_order_id] = {
+          orderId: b.owner_order_id,
+          code: b.code,
+          codes_sent_at: b.codes_sent_at,
+        };
+      }
+    }
+    setBatchesByOrder(map);
   }, []);
 
   useEffect(() => {
@@ -88,6 +111,31 @@ function Orders() {
     });
     setRows((prev) => prev?.map((r) => (r.id === row.id ? { ...r, ...changes } : r)) ?? null);
     toast.success(`Pedido #${row.order_number} atualizado.`);
+  }
+
+  async function markPaidAndEmit(row: OrderRow) {
+    setConfirmingId(row.id);
+    try {
+      const res = await runConfirmPayment({ data: { orderId: row.id } });
+      await supabase.from("audit_log").insert({
+        actor_id: userId,
+        actor_email: email,
+        action: "confirm_payment",
+        entity: "orders",
+        entity_id: row.id,
+        details: { created: res.created, total: res.total },
+      });
+      toast.success(
+        res.created > 0
+          ? `Pagamento confirmado. ${res.created} código(s)/placa(s) gerados (total ${res.total}).`
+          : `Pagamento confirmado. ${res.total} item(ns) já estavam no sistema.`,
+      );
+      void load();
+    } catch {
+      toast.error("Não foi possível confirmar pagamento ou gerar códigos.");
+    } finally {
+      setConfirmingId(null);
+    }
   }
 
   const counts = {
@@ -175,6 +223,22 @@ function Orders() {
                       </a>
                     </p>
                   )}
+                  {r.kind === "revenda" && batchesByOrder[r.id] && (
+                    <p className="mt-2 text-sm">
+                      Lote:{" "}
+                      <Link to="/painel/lotes" className="font-mono font-semibold underline">
+                        {batchesByOrder[r.id].code}
+                      </Link>
+                      {batchesByOrder[r.id].codes_sent_at
+                        ? " · códigos marcados como enviados"
+                        : " · exporte o CSV na aba Lotes e marque como enviado"}
+                    </p>
+                  )}
+                  {r.kind === "revenda" && r.payment_status === "pago" && !batchesByOrder[r.id] && (
+                    <p className="mt-2 text-sm text-amber-800">
+                      Pago, mas ainda sem lote — use &quot;Confirmar pagamento e gerar códigos&quot;.
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-muted-foreground">
                     {[
                       r.ship_street,
@@ -204,6 +268,37 @@ function Orders() {
               </div>
 
               <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-border pt-4">
+                {r.payment_status !== "pago" && (
+                  <Button
+                    size="sm"
+                    className="btn-press btn-primary-shadow"
+                    disabled={confirmingId === r.id}
+                    onClick={() => void markPaidAndEmit(r)}
+                  >
+                    {confirmingId === r.id ? "Gerando…" : "Confirmar pagamento e gerar códigos"}
+                  </Button>
+                )}
+                <div>
+                  <Label className="text-xs">Pagamento</Label>
+                  <select
+                    value={r.payment_status}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      if (next === "pago" && r.payment_status !== "pago") {
+                        void markPaidAndEmit(r);
+                        return;
+                      }
+                      void patch(r, { payment_status: next });
+                    }}
+                    className="mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    {Object.entries(PAYMENT_LABEL).map(([s, label]) => (
+                      <option key={s} value={s}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <Label className="text-xs">Produção</Label>
                   <select
