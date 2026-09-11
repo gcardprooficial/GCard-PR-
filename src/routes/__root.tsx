@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
@@ -100,8 +100,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content:
-          "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5",
       },
       { name: "theme-color", content: "#F7F5F1" },
       { name: "color-scheme", content: "light" },
@@ -113,14 +112,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "author", content: "GCard-PRÓ" },
       { name: "robots", content: "index,follow,max-image-preview:large" },
+      ...(import.meta.env.VITE_GOOGLE_SITE_VERIFICATION
+        ? [
+            {
+              name: "google-site-verification",
+              content: import.meta.env.VITE_GOOGLE_SITE_VERIFICATION,
+            },
+          ]
+        : []),
       {
         property: "og:title",
         content: "GCard-PRÓ | Mais avaliações no Google em 3 segundos",
       },
       {
         property: "og:description",
-        content:
-          "Cartão de bolso NFC já configurado com o link de avaliação do seu negócio.",
+        content: "Cartão de bolso NFC já configurado com o link de avaliação do seu negócio.",
       },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "pt_BR" },
@@ -133,8 +139,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "GCard-PRÓ | Mais avaliações no Google" },
       {
         name: "twitter:description",
-        content:
-          "Cartão de bolso NFC já configurado para avaliações no Google.",
+        content: "Cartão de bolso NFC já configurado para avaliações no Google.",
       },
       { name: "twitter:image", content: "/og-image.png" },
     ],
@@ -182,6 +187,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <Analytics />
       <Toaster
         theme="light"
         position="top-right"
@@ -191,12 +197,9 @@ function RootComponent() {
               "group bg-card border-border text-foreground shadow-lg shadow-foreground/5 ring-0 border rounded-2xl",
             title: "font-semibold text-sm",
             description: "text-muted-foreground text-sm",
-            actionButton:
-              "!bg-primary !text-primary-foreground !rounded-xl hover:!bg-accent",
-            cancelButton:
-              "!bg-muted !text-muted-foreground !rounded-xl",
-            closeButton:
-              "!bg-transparent hover:!bg-muted text-muted-foreground !rounded-xl",
+            actionButton: "!bg-primary !text-primary-foreground !rounded-xl hover:!bg-accent",
+            cancelButton: "!bg-muted !text-muted-foreground !rounded-xl",
+            closeButton: "!bg-transparent hover:!bg-muted text-muted-foreground !rounded-xl",
             icon: "text-foreground",
           },
         }}
@@ -205,4 +208,46 @@ function RootComponent() {
       />
     </QueryClientProvider>
   );
+}
+
+function Analytics() {
+  useEffect(() => {
+    const gaId = import.meta.env.VITE_GA4_MEASUREMENT_ID as string | undefined;
+    const gtmId = import.meta.env.VITE_GTM_ID as string | undefined;
+    window.dataLayer = window.dataLayer ?? [];
+    if (gtmId && !document.querySelector(`script[data-gtm="${gtmId}"]`)) {
+      window.dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+      const script = document.createElement("script");
+      script.async = true;
+      script.dataset.gtm = gtmId;
+      script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(gtmId)}`;
+      document.head.appendChild(script);
+    }
+    if (gaId && !document.querySelector(`script[data-ga4="${gaId}"]`)) {
+      const script = document.createElement("script");
+      script.async = true;
+      script.dataset.ga4 = gaId;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
+      document.head.appendChild(script);
+      window.dataLayer.push({ event: "config", measurement_id: gaId });
+    }
+    const handleClick = (event: MouseEvent) => {
+      const target = (event.target as HTMLElement).closest<HTMLElement>("[data-analytics-event]");
+      if (!target) return;
+      window.dataLayer?.push({
+        event: target.dataset.analyticsEvent,
+        label: target.dataset.analyticsLabel,
+        href: target.getAttribute("href") ?? undefined,
+      });
+    };
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
+  return null;
+}
+
+declare global {
+  interface Window {
+    dataLayer?: Array<Record<string, unknown>>;
+  }
 }

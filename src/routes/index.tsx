@@ -955,7 +955,12 @@ function Home() {
                   size="lg"
                   className="btn-press btn-primary-shadow shine-border h-14 rounded-2xl text-base font-bold"
                 >
-                  <Link to="/comprar" search={{}}>
+                  <Link
+                    to="/comprar"
+                    search={{}}
+                    data-analytics-event="begin_checkout"
+                    data-analytics-label="cta final"
+                  >
                     Comprar agora →
                   </Link>
                 </Button>
@@ -967,6 +972,8 @@ function Home() {
                 >
                   <a
                     href="https://chat.whatsapp.com/EBYX68zzqOICn9mIlqHwQ5"
+                    data-analytics-event="generate_lead"
+                    data-analytics-label="whatsapp comunidade"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -1039,6 +1046,14 @@ function Home() {
                     >
                       Modelos
                     </a>
+                  </li>
+                  <li>
+                    <Link
+                      to="/guia"
+                      className="transition-colors hover:text-foreground hover:underline underline-offset-4"
+                    >
+                      Guia NFC e cartão digital
+                    </Link>
                   </li>
                 </ul>
               </div>

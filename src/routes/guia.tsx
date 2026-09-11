@@ -26,6 +26,19 @@ export const Route = createFileRoute("/guia")({
 function Guide() {
   return (
     <main className="min-h-screen bg-background noise-bg">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "GCard-PRÓ",
+            url: "https://www.gcardpro.com.br",
+            logo: "https://www.gcardpro.com.br/favicon-512.png",
+            sameAs: ["https://instagram.com/gcardpro.oficial"],
+          }),
+        }}
+      />
       <div className="mx-auto max-w-5xl px-5 py-10 sm:py-16">
         <header className="flex items-center justify-between">
           <Link to="/">
