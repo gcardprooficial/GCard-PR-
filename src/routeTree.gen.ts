@@ -12,10 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtivarRouteImport } from './routes/ativar'
 import { Route as ComprarRouteImport } from './routes/comprar'
+import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as ApiUnsubscribeRouteImport } from './routes/api/unsubscribe'
+import { Route as GuiaCartaoDeVisitaPorAproximacaoRouteImport } from './routes/guia.cartao-de-visita-por-aproximacao'
+import { Route as GuiaCartaoNfcVsCartaoDigitalRouteImport } from './routes/guia.cartao-nfc-vs-cartao-digital'
+import { Route as GuiaMelhorCartaoDigitalParaEmpresaRouteImport } from './routes/guia.melhor-cartao-digital-para-empresa'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculadora'
 import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
@@ -40,6 +44,11 @@ const ComprarRoute = ComprarRouteImport.update({
   path: '/comprar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuiaRoute = GuiaRouteImport.update({
+  id: '/guia',
+  path: '/guia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PainelRoute = PainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -60,6 +69,24 @@ const ApiUnsubscribeRoute = ApiUnsubscribeRouteImport.update({
   path: '/api/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuiaCartaoDeVisitaPorAproximacaoRoute =
+  GuiaCartaoDeVisitaPorAproximacaoRouteImport.update({
+    id: '/cartao-de-visita-por-aproximacao',
+    path: '/cartao-de-visita-por-aproximacao',
+    getParentRoute: () => GuiaRoute,
+  } as any)
+const GuiaCartaoNfcVsCartaoDigitalRoute =
+  GuiaCartaoNfcVsCartaoDigitalRouteImport.update({
+    id: '/cartao-nfc-vs-cartao-digital',
+    path: '/cartao-nfc-vs-cartao-digital',
+    getParentRoute: () => GuiaRoute,
+  } as any)
+const GuiaMelhorCartaoDigitalParaEmpresaRoute =
+  GuiaMelhorCartaoDigitalParaEmpresaRouteImport.update({
+    id: '/melhor-cartao-digital-para-empresa',
+    path: '/melhor-cartao-digital-para-empresa',
+    getParentRoute: () => GuiaRoute,
+  } as any)
 const PainelIndexRoute = PainelIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -105,10 +132,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/guia': typeof GuiaRouteWithChildren
   '/painel': typeof PainelRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
+  '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
+  '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
+  '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
@@ -122,9 +153,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/guia': typeof GuiaRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
+  '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
+  '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
+  '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
@@ -139,10 +174,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/guia': typeof GuiaRouteWithChildren
   '/painel': typeof PainelRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
+  '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
+  '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
+  '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
@@ -158,10 +197,14 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
+    | '/guia'
     | '/painel'
     | '/privacidade'
     | '/termos'
     | '/api/unsubscribe'
+    | '/guia/cartao-de-visita-por-aproximacao'
+    | '/guia/cartao-nfc-vs-cartao-digital'
+    | '/guia/melhor-cartao-digital-para-empresa'
     | '/painel/calculadora'
     | '/painel/financeiro'
     | '/painel/lotes'
@@ -175,9 +218,13 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
+    | '/guia'
     | '/privacidade'
     | '/termos'
     | '/api/unsubscribe'
+    | '/guia/cartao-de-visita-por-aproximacao'
+    | '/guia/cartao-nfc-vs-cartao-digital'
+    | '/guia/melhor-cartao-digital-para-empresa'
     | '/painel/calculadora'
     | '/painel/financeiro'
     | '/painel/lotes'
@@ -191,10 +238,14 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
+    | '/guia'
     | '/painel'
     | '/privacidade'
     | '/termos'
     | '/api/unsubscribe'
+    | '/guia/cartao-de-visita-por-aproximacao'
+    | '/guia/cartao-nfc-vs-cartao-digital'
+    | '/guia/melhor-cartao-digital-para-empresa'
     | '/painel/calculadora'
     | '/painel/financeiro'
     | '/painel/lotes'
@@ -209,6 +260,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AtivarRoute: typeof AtivarRoute
   ComprarRoute: typeof ComprarRoute
+  GuiaRoute: typeof GuiaRouteWithChildren
   PainelRoute: typeof PainelRouteWithChildren
   PrivacidadeRoute: typeof PrivacidadeRoute
   TermosRoute: typeof TermosRoute
@@ -240,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComprarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guia': {
+      id: '/guia'
+      path: '/guia'
+      fullPath: '/guia'
+      preLoaderRoute: typeof GuiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/painel': {
       id: '/painel'
       path: '/painel'
@@ -267,6 +326,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/unsubscribe'
       preLoaderRoute: typeof ApiUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/guia/cartao-de-visita-por-aproximacao': {
+      id: '/guia/cartao-de-visita-por-aproximacao'
+      path: '/cartao-de-visita-por-aproximacao'
+      fullPath: '/guia/cartao-de-visita-por-aproximacao'
+      preLoaderRoute: typeof GuiaCartaoDeVisitaPorAproximacaoRouteImport
+      parentRoute: typeof GuiaRoute
+    }
+    '/guia/cartao-nfc-vs-cartao-digital': {
+      id: '/guia/cartao-nfc-vs-cartao-digital'
+      path: '/cartao-nfc-vs-cartao-digital'
+      fullPath: '/guia/cartao-nfc-vs-cartao-digital'
+      preLoaderRoute: typeof GuiaCartaoNfcVsCartaoDigitalRouteImport
+      parentRoute: typeof GuiaRoute
+    }
+    '/guia/melhor-cartao-digital-para-empresa': {
+      id: '/guia/melhor-cartao-digital-para-empresa'
+      path: '/melhor-cartao-digital-para-empresa'
+      fullPath: '/guia/melhor-cartao-digital-para-empresa'
+      preLoaderRoute: typeof GuiaMelhorCartaoDigitalParaEmpresaRouteImport
+      parentRoute: typeof GuiaRoute
     }
     '/painel/': {
       id: '/painel/'
@@ -327,6 +407,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface GuiaRouteChildren {
+  GuiaCartaoDeVisitaPorAproximacaoRoute: typeof GuiaCartaoDeVisitaPorAproximacaoRoute
+  GuiaCartaoNfcVsCartaoDigitalRoute: typeof GuiaCartaoNfcVsCartaoDigitalRoute
+  GuiaMelhorCartaoDigitalParaEmpresaRoute: typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
+}
+
+const GuiaRouteChildren: GuiaRouteChildren = {
+  GuiaCartaoDeVisitaPorAproximacaoRoute: GuiaCartaoDeVisitaPorAproximacaoRoute,
+  GuiaCartaoNfcVsCartaoDigitalRoute: GuiaCartaoNfcVsCartaoDigitalRoute,
+  GuiaMelhorCartaoDigitalParaEmpresaRoute:
+    GuiaMelhorCartaoDigitalParaEmpresaRoute,
+}
+
+const GuiaRouteWithChildren = GuiaRoute._addFileChildren(GuiaRouteChildren)
+
 interface PainelRouteChildren {
   PainelCalculadoraRoute: typeof PainelCalculadoraRoute
   PainelFinanceiroRoute: typeof PainelFinanceiroRoute
@@ -352,6 +447,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtivarRoute: AtivarRoute,
   ComprarRoute: ComprarRoute,
+  GuiaRoute: GuiaRouteWithChildren,
   PainelRoute: PainelRouteWithChildren,
   PrivacidadeRoute: PrivacidadeRoute,
   TermosRoute: TermosRoute,

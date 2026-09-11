@@ -115,9 +115,12 @@ function Comprar() {
         ],
     packages: [],
   };
-  const products = (data.products.length > 0 ? data.products : FALLBACK_PRODUCTS).filter(
+  const catalogProducts = data.products.filter(
     (item) => item.slug === "cartao-bolso" && item.status === "ativo",
   );
+  // O checkout não pode ficar sem opções quando uma linha antiga do catálogo
+  // estiver com status diferente ou quando o catálogo ainda não foi publicado.
+  const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
   const steps = isResale
     ? (["estilo", "quantidade", "dados", "entrega", "revisao"] as const)

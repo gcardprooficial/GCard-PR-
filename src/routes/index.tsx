@@ -212,9 +212,10 @@ function Home() {
       { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
     ],
   };
-  const products = (data.products.length > 0 ? data.products : FALLBACK_PRODUCTS).filter(
+  const catalogProducts = data.products.filter(
     (product) => product.slug === "cartao-bolso" && product.status === "ativo",
   );
+  const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
