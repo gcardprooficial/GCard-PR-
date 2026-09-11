@@ -174,6 +174,17 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="bg-background antialiased">
+        {import.meta.env.VITE_GTM_ID ? (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${encodeURIComponent(import.meta.env.VITE_GTM_ID)}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        ) : null}
         {children}
         <Scripts />
       </body>
@@ -229,16 +240,20 @@ function Analytics() {
       script.dataset.ga4 = gaId;
       script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
       document.head.appendChild(script);
-      window.dataLayer.push({ event: "config", measurement_id: gaId });
+      window.gtag = (...args: unknown[]) => window.dataLayer?.push(args);
+      window.gtag("js", new Date());
+      window.gtag("config", gaId);
     }
     const handleClick = (event: MouseEvent) => {
       const target = (event.target as HTMLElement).closest<HTMLElement>("[data-analytics-event]");
       if (!target) return;
-      window.dataLayer?.push({
-        event: target.dataset.analyticsEvent,
+      const eventName = target.dataset.analyticsEvent;
+      const params = {
         label: target.dataset.analyticsLabel,
         href: target.getAttribute("href") ?? undefined,
-      });
+      };
+      window.dataLayer?.push({ event: eventName, ...params });
+      if (eventName) window.gtag?.("event", eventName, params);
     };
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
@@ -248,6 +263,7 @@ function Analytics() {
 
 declare global {
   interface Window {
-    dataLayer?: Array<Record<string, unknown>>;
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
   }
 }
