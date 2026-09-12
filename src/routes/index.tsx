@@ -196,25 +196,31 @@ function ImpactCalculator() {
 
 function Home() {
   const { data } = useSuspenseQuery(catalogQuery);
-  const lojista = data.plans.find((p) => p.slug === "lojista") ?? {
-    name: "Cartão Individual",
-    audience: "Para usar no seu próprio balcão",
-    unit_price_cents: 5990,
-    tiers: [
-      { min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" },
-      { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" },
-    ],
-  };
-  const revenda = data.plans.find((p) => p.slug === "renda-extra") ?? {
-    name: "Pack Renda Extra",
-    audience: "Comprar em quantidade e revender",
-    unit_price_cents: 3790,
-    tiers: [
-      { min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" },
-      { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" },
-      { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
-    ],
-  };
+  const lojistaCatalog = data.plans.find((p) => p.slug === "lojista");
+  const lojista = lojistaCatalog
+    ? { ...lojistaCatalog, name: "Cartão Individual" }
+    : {
+        name: "Cartão Individual",
+        audience: "Para usar no seu próprio balcão",
+        unit_price_cents: 5990,
+        tiers: [
+          { min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" },
+          { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" },
+        ],
+      };
+  const revendaCatalog = data.plans.find((p) => p.slug === "renda-extra");
+  const revenda = revendaCatalog
+    ? { ...revendaCatalog, name: "Kit para Revenda" }
+    : {
+        name: "Pack Renda Extra",
+        audience: "Comprar em quantidade e revender",
+        unit_price_cents: 3790,
+        tiers: [
+          { min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" },
+          { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" },
+          { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
+        ],
+      };
   const catalogProducts = data.products.filter(
     (product) => product.slug === "cartao-bolso" && product.status === "ativo",
   );

@@ -115,6 +115,7 @@ function Comprar() {
         ],
     packages: [],
   };
+  const publicPlanName = isResale ? "Kit para Revenda" : "Cartão Individual";
   const catalogProducts = data.products.filter(
     (item) => item.slug === "cartao-bolso" && item.status === "ativo",
   );
@@ -641,7 +642,7 @@ function Comprar() {
                 </p>
                 <p className="truncate text-sm font-bold text-foreground">
                   {stepLabels[step] ?? step}
-                  <span className="ml-2 font-medium text-muted-foreground">· {plan.name}</span>
+                  <span className="ml-2 font-medium text-muted-foreground">· {publicPlanName}</span>
                 </p>
               </div>
               <span className="shrink-0 text-xs font-bold text-muted-foreground">
@@ -1533,7 +1534,7 @@ function Comprar() {
 
               <dl className="mt-7 overflow-hidden rounded-2xl border border-border divide-y divide-border bg-card">
                 <Row label="Modelo" value={product?.name ?? "—"} />
-                <Row label="Produto" value={plan.name} />
+                <Row label="Produto" value={publicPlanName} />
                 {!isResale && (
                   <Row label="Negócio" value={business?.name ?? term ?? "Link colado"} />
                 )}
