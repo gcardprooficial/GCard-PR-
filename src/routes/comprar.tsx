@@ -96,7 +96,7 @@ function Comprar() {
   ) ?? {
     id: isResale ? "fallback-renda-extra" : "fallback-lojista",
     slug: isResale ? "renda-extra" : "lojista",
-    name: isResale ? "Pack Renda Extra" : "Plano Lojista",
+    name: isResale ? "Kit para Revenda" : "Cartão Individual",
     audience: isResale ? "Comprar em quantidade e revender" : "Para usar no seu próprio balcão",
     description: null,
     unit_price_cents: isResale ? 3790 : 5990,
@@ -1533,7 +1533,7 @@ function Comprar() {
 
               <dl className="mt-7 overflow-hidden rounded-2xl border border-border divide-y divide-border bg-card">
                 <Row label="Modelo" value={product?.name ?? "—"} />
-                <Row label="Plano" value={plan.name} />
+                <Row label="Produto" value={plan.name} />
                 {!isResale && (
                   <Row label="Negócio" value={business?.name ?? term ?? "Link colado"} />
                 )}

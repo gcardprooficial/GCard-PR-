@@ -197,7 +197,7 @@ function ImpactCalculator() {
 function Home() {
   const { data } = useSuspenseQuery(catalogQuery);
   const lojista = data.plans.find((p) => p.slug === "lojista") ?? {
-    name: "Plano Lojista",
+    name: "Cartão Individual",
     audience: "Para usar no seu próprio balcão",
     unit_price_cents: 5990,
     tiers: [
@@ -391,7 +391,7 @@ function Home() {
               Escolha seu objetivo
             </p>
             <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-              Um cartão para o seu negócio. Um plano para quem revende.
+              Um cartão para o seu negócio. Um kit para quem revende.
             </h2>
             <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground sm:text-lg">
               Compre para sua loja ou em quantidade para revender cartões de bolso NFC.

@@ -22,10 +22,17 @@ function Termos() {
       <div className="relative mx-auto max-w-3xl px-5 py-12 sm:py-20">
         <header className="flex items-center justify-between animate-rise-sm">
           <Link to="/" className="inline-flex items-center">
-            <img src={logoTransparente} alt="GCard-PRÓ" className="h-8 sm:h-9 w-auto object-contain" />
+            <img
+              src={logoTransparente}
+              alt="GCard-PRÓ"
+              className="h-8 sm:h-9 w-auto object-contain"
+            />
           </Link>
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <Link to="/privacidade" className="rounded-full border border-border px-3 py-1.5 bg-card hover:border-primary/40 transition-colors">
+            <Link
+              to="/privacidade"
+              className="rounded-full border border-border px-3 py-1.5 bg-card hover:border-primary/40 transition-colors"
+            >
               Privacidade
             </Link>
           </div>
@@ -55,7 +62,7 @@ function Termos() {
 
           <Section n="2" title="Pedido e pagamento">
             <p>
-              O preço de cada pedido é calculado no momento da compra a partir do plano e da
+              O preço de cada pedido é calculado no momento da compra a partir do produto e da
               quantidade escolhidos. O frete é gratuito para todo o Brasil. O pedido é confirmado
               após a aprovação do pagamento pelo provedor de pagamento.
             </p>
@@ -64,7 +71,6 @@ function Termos() {
           <Section n="3" title="Configuração da placa">
             <p>
               A placa é vinculada ao negócio informado pelo comprador durante a compra (busca no
-              O cartão é vinculado ao negócio informado pelo comprador durante a compra (busca no
               Google ou link de avaliação colado). É responsabilidade do comprador conferir se o
               negócio selecionado está correto antes de finalizar o pedido.
             </p>
@@ -117,10 +123,16 @@ function Termos() {
               </span>
             </div>
             <div className="flex gap-2">
-              <Link to="/" className="rounded-full border border-border px-4 py-1.5 text-xs font-medium hover:border-primary/40 hover:bg-card transition-all">
+              <Link
+                to="/"
+                className="rounded-full border border-border px-4 py-1.5 text-xs font-medium hover:border-primary/40 hover:bg-card transition-all"
+              >
                 ← Início
               </Link>
-              <Link to="/privacidade" className="rounded-full border border-border px-4 py-1.5 text-xs font-medium hover:border-primary/40 hover:bg-card transition-all">
+              <Link
+                to="/privacidade"
+                className="rounded-full border border-border px-4 py-1.5 text-xs font-medium hover:border-primary/40 hover:bg-card transition-all"
+              >
                 Privacidade
               </Link>
             </div>
@@ -140,9 +152,7 @@ function Section({ n, title, children }: { n: string; title: string; children: R
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-base font-semibold text-foreground">{title}</h2>
-          <div className="mt-3 text-[14.5px] leading-[1.85] text-muted-foreground">
-            {children}
-          </div>
+          <div className="mt-3 text-[14.5px] leading-[1.85] text-muted-foreground">{children}</div>
         </div>
       </div>
     </section>
