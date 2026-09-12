@@ -23,10 +23,12 @@ import { Route as GuiaCartaoNfcVsCartaoDigitalRouteImport } from './routes/guia.
 import { Route as GuiaMelhorCartaoDigitalParaEmpresaRouteImport } from './routes/guia.melhor-cartao-digital-para-empresa'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculadora'
+import { Route as PainelClientesRouteImport } from './routes/painel.clientes'
 import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
 import { Route as PainelLotesRouteImport } from './routes/painel.lotes'
 import { Route as PainelPlacasRouteImport } from './routes/painel.placas'
 import { Route as PainelScansRouteImport } from './routes/painel.scans'
+import { Route as PainelVisaoGeralRouteImport } from './routes/painel.visao-geral'
 import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 
@@ -103,6 +105,11 @@ const PainelCalculadoraRoute = PainelCalculadoraRouteImport.update({
   path: '/calculadora',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelClientesRoute = PainelClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelFinanceiroRoute = PainelFinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
@@ -121,6 +128,11 @@ const PainelPlacasRoute = PainelPlacasRouteImport.update({
 const PainelScansRoute = PainelScansRouteImport.update({
   id: '/scans',
   path: '/scans',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelVisaoGeralRoute = PainelVisaoGeralRouteImport.update({
+  id: '/visao-geral',
+  path: '/visao-geral',
   getParentRoute: () => PainelRoute,
 } as any)
 const RTokenRoute = RTokenRouteImport.update({
@@ -147,10 +159,12 @@ export interface FileRoutesByFullPath {
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
+  '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/scans': typeof PainelScansRoute
+  '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/r/$token': typeof RTokenRoute
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
@@ -167,10 +181,12 @@ export interface FileRoutesByTo {
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
+  '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/scans': typeof PainelScansRoute
+  '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/r/$token': typeof RTokenRoute
   '/guia': typeof GuiaIndexRoute
   '/painel': typeof PainelIndexRoute
@@ -190,10 +206,12 @@ export interface FileRoutesById {
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
+  '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/scans': typeof PainelScansRoute
+  '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/r/$token': typeof RTokenRoute
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
@@ -214,10 +232,12 @@ export interface FileRouteTypes {
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/painel/calculadora'
+    | '/painel/clientes'
     | '/painel/financeiro'
     | '/painel/lotes'
     | '/painel/placas'
     | '/painel/scans'
+    | '/painel/visao-geral'
     | '/r/$token'
     | '/guia/'
     | '/painel/'
@@ -234,10 +254,12 @@ export interface FileRouteTypes {
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/painel/calculadora'
+    | '/painel/clientes'
     | '/painel/financeiro'
     | '/painel/lotes'
     | '/painel/placas'
     | '/painel/scans'
+    | '/painel/visao-geral'
     | '/r/$token'
     | '/guia'
     | '/painel'
@@ -256,10 +278,12 @@ export interface FileRouteTypes {
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/painel/calculadora'
+    | '/painel/clientes'
     | '/painel/financeiro'
     | '/painel/lotes'
     | '/painel/placas'
     | '/painel/scans'
+    | '/painel/visao-geral'
     | '/r/$token'
     | '/guia/'
     | '/painel/'
@@ -379,6 +403,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelCalculadoraRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/clientes': {
+      id: '/painel/clientes'
+      path: '/clientes'
+      fullPath: '/painel/clientes'
+      preLoaderRoute: typeof PainelClientesRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/financeiro': {
       id: '/painel/financeiro'
       path: '/financeiro'
@@ -405,6 +436,13 @@ declare module '@tanstack/react-router' {
       path: '/scans'
       fullPath: '/painel/scans'
       preLoaderRoute: typeof PainelScansRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/visao-geral': {
+      id: '/painel/visao-geral'
+      path: '/visao-geral'
+      fullPath: '/painel/visao-geral'
+      preLoaderRoute: typeof PainelVisaoGeralRouteImport
       parentRoute: typeof PainelRoute
     }
     '/r/$token': {
@@ -443,19 +481,23 @@ const GuiaRouteWithChildren = GuiaRoute._addFileChildren(GuiaRouteChildren)
 
 interface PainelRouteChildren {
   PainelCalculadoraRoute: typeof PainelCalculadoraRoute
+  PainelClientesRoute: typeof PainelClientesRoute
   PainelFinanceiroRoute: typeof PainelFinanceiroRoute
   PainelLotesRoute: typeof PainelLotesRoute
   PainelPlacasRoute: typeof PainelPlacasRoute
   PainelScansRoute: typeof PainelScansRoute
+  PainelVisaoGeralRoute: typeof PainelVisaoGeralRoute
   PainelIndexRoute: typeof PainelIndexRoute
 }
 
 const PainelRouteChildren: PainelRouteChildren = {
   PainelCalculadoraRoute: PainelCalculadoraRoute,
+  PainelClientesRoute: PainelClientesRoute,
   PainelFinanceiroRoute: PainelFinanceiroRoute,
   PainelLotesRoute: PainelLotesRoute,
   PainelPlacasRoute: PainelPlacasRoute,
   PainelScansRoute: PainelScansRoute,
+  PainelVisaoGeralRoute: PainelVisaoGeralRoute,
   PainelIndexRoute: PainelIndexRoute,
 }
 
