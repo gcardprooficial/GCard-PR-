@@ -391,7 +391,7 @@ function Home() {
         </div>
       </section>
 
-      {/* ===== DOIS CAMINHOS ===== */}
+      {/* ===== DOIS CAMINHOS (sem preço aqui — só a decisão) ===== */}
       <section id="caminhos" className="relative border-y border-border bg-surface/60">
         <div className="mx-auto max-w-6xl px-5 py-16 md:py-20">
           <div className="max-w-2xl">
@@ -399,188 +399,154 @@ function Home() {
               Escolha seu objetivo
             </p>
             <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-              Um cartão para o seu negócio. Um kit para quem revende.
+              É pra usar no seu negócio ou pra revender?
             </h2>
             <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Compre para sua loja ou em quantidade para revender cartões de bolso NFC.
+              Os modelos e os preços aparecem no próximo passo, depois que você escolhe um caminho.
             </p>
           </div>
 
           <div className="mt-10 grid gap-5 md:grid-cols-2 md:gap-7">
             {/* CAMINHO 1 — LOJISTA */}
-            {lojista && (
-              <div className="group relative animate-rise delay-2 rounded-[1.75rem] border-2 border-transparent bg-card p-7 sm:p-8 card-soft card-soft-hover shine-border">
-                <div className="absolute inset-x-0 top-0 h-1 rounded-t-[1.75rem] bg-primary/0 transition-all duration-500 group-hover:bg-primary" />
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-primary-foreground">
-                      <span className="size-1.5 rounded-full bg-primary" />
-                      Loja própria
-                    </div>
-                    <h3 className="mt-4 text-2xl sm:text-3xl">{lojista.name}</h3>
-                    <p className="mt-1 text-muted-foreground text-sm sm:text-base">
-                      {lojista.audience}
-                    </p>
+            <div className="group relative animate-rise delay-2 rounded-[1.75rem] border-2 border-transparent bg-card p-7 sm:p-8 card-soft card-soft-hover shine-border">
+              <div className="absolute inset-x-0 top-0 h-1 rounded-t-[1.75rem] bg-primary/0 transition-all duration-500 group-hover:bg-primary" />
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-primary-foreground">
+                    <span className="size-1.5 rounded-full bg-primary" />
+                    Loja própria
                   </div>
-                  <div className="rounded-2xl bg-primary/15 p-3 text-primary-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:shadow-lg">
-                    <svg
-                      width="26"
-                      height="26"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M3 7h18v12H3z" />
-                      <path d="M3 11h18" />
-                      <path d="M7 15h4" />
-                    </svg>
-                  </div>
+                  <h3 className="mt-4 text-2xl sm:text-3xl">Pra usar no meu negócio</h3>
+                  <p className="mt-1 text-muted-foreground text-sm sm:text-base">
+                    Cartão ou plaquinha, já configurados com a avaliação do seu Google
+                  </p>
                 </div>
-
-                <div className="mt-6 flex items-end gap-2">
-                  <span className="font-display text-4xl font-black leading-none sm:text-5xl">
-                    {money(lojista.unit_price_cents)}
-                  </span>
-                  <span className="pb-1 text-base font-semibold text-muted-foreground sm:text-lg">
-                    / unidade
-                  </span>
+                <div className="rounded-2xl bg-primary/15 p-3 text-primary-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:shadow-lg">
+                  <svg
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 7h18v12H3z" />
+                    <path d="M3 11h18" />
+                    <path d="M7 15h4" />
+                  </svg>
                 </div>
-
-                <ul className="mt-6 space-y-3 text-sm sm:text-base">
-                  {[
-                    "De 1 a 5 cartões por pedido",
-                    "Cartão de bolso NFC, pronto para usar",
-                    "Entrega apontando para a avaliação do seu Google",
-                    "Pronto pra usar: sem configuração nenhuma",
-                  ].map((f, i) => (
-                    <li key={i} className="flex items-start gap-3 text-foreground/80">
-                      <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-g-green/15 text-g-green">
-                        <svg
-                          width="13"
-                          height="13"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </span>
-                      <span className="font-medium">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  asChild
-                  size="lg"
-                  className="btn-press btn-primary-shadow mt-8 h-14 w-full rounded-2xl text-base font-bold"
-                >
-                  <Link to="/comprar" search={{ caminho: "lojista" }}>
-                    Comprar meu cartão →
-                  </Link>
-                </Button>
               </div>
-            )}
+
+              <ul className="mt-6 space-y-3 text-sm sm:text-base">
+                {[
+                  "Você escolhe o modelo no próximo passo",
+                  "Chega pronto, apontando pra avaliação do seu Google",
+                  "Sem configuração nenhuma da sua parte",
+                ].map((f, i) => (
+                  <li key={i} className="flex items-start gap-3 text-foreground/80">
+                    <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-g-green/15 text-g-green">
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </span>
+                    <span className="font-medium">{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                asChild
+                size="lg"
+                className="btn-press btn-primary-shadow mt-8 h-14 w-full rounded-2xl text-base font-bold"
+              >
+                <Link to="/comprar" search={{ caminho: "lojista" }}>
+                  Ver modelos e preços →
+                </Link>
+              </Button>
+            </div>
 
             {/* CAMINHO 2 — REVENDA */}
-            {revenda && (
-              <div className="group relative animate-rise delay-3 rounded-[1.75rem] border-2 border-foreground/5 bg-card p-7 sm:p-8 card-soft card-soft-hover shine-border">
-                <div className="absolute inset-x-0 top-0 h-1 rounded-t-[1.75rem] bg-foreground/0 transition-all duration-500 group-hover:bg-foreground" />
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="inline-flex items-center gap-2 rounded-full bg-foreground/90 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white">
-                      <span className="size-1.5 rounded-full bg-primary" />
-                      Revenda
-                    </div>
-                    <h3 className="mt-4 text-2xl sm:text-3xl">{revenda.name}</h3>
-                    <p className="mt-1 text-muted-foreground text-sm sm:text-base">
-                      {revenda.audience}
-                    </p>
+            <div className="group relative animate-rise delay-3 rounded-[1.75rem] border-2 border-foreground/5 bg-card p-7 sm:p-8 card-soft card-soft-hover shine-border">
+              <div className="absolute inset-x-0 top-0 h-1 rounded-t-[1.75rem] bg-foreground/0 transition-all duration-500 group-hover:bg-foreground" />
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-foreground/90 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white">
+                    <span className="size-1.5 rounded-full bg-primary" />
+                    Revenda
                   </div>
-                  <div className="rounded-2xl bg-foreground/5 p-3 text-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-foreground group-hover:text-white group-hover:shadow-lg">
-                    <svg
-                      width="26"
-                      height="26"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="17" cy="17" r="3" />
-                      <circle cx="6" cy="6" r="3" />
-                      <path d="M8.59 8.59 14.41 14.41" />
-                      <path d="m15 11 6-6" />
-                      <path d="m3 21 6-6" />
-                    </svg>
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <p className="text-xs font-semibold text-muted-foreground">
-                    Preço por unidade (quanto mais, mais barato)
+                  <h3 className="mt-4 text-2xl sm:text-3xl">Pra revender</h3>
+                  <p className="mt-1 text-muted-foreground text-sm sm:text-base">
+                    Cartões e plaquinhas em lote, com QR e NFC já impressos de fábrica
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {revenda.tiers.slice(0, 3).map((tier) => (
-                      <span
-                        key={tier.min_quantity}
-                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold sm:text-sm"
-                      >
-                        <span className="text-muted-foreground">
-                          {tier.label ?? `${tier.min_quantity}+`}
-                        </span>
-                        <span className="text-foreground">{money(tier.unit_price_cents)}</span>
-                      </span>
-                    ))}
-                  </div>
                 </div>
-
-                <ul className="mt-6 space-y-3 text-sm sm:text-base">
-                  {[
-                    "Cartões de bolso NFC em quantidade",
-                    "Condição especial para compras maiores",
-                    "Margem acima de 100% vendendo pelo preço sugerido",
-                    "Atendimento para alinhar seu pedido",
-                  ].map((f, i) => (
-                    <li key={i} className="flex items-start gap-3 text-foreground/80">
-                      <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/30 text-primary-foreground">
-                        <svg
-                          width="13"
-                          height="13"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </span>
-                      <span className="font-medium">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="btn-press mt-8 h-14 w-full rounded-2xl border-2 text-base font-bold hover:bg-card"
-                >
-                  <Link to="/comprar" search={{ caminho: "revenda" }}>
-                    Comprar lote →
-                  </Link>
-                </Button>
+                <div className="rounded-2xl bg-foreground/5 p-3 text-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-foreground group-hover:text-white group-hover:shadow-lg">
+                  <svg
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="17" cy="17" r="3" />
+                    <circle cx="6" cy="6" r="3" />
+                    <path d="M8.59 8.59 14.41 14.41" />
+                    <path d="m15 11 6-6" />
+                    <path d="m3 21 6-6" />
+                  </svg>
+                </div>
               </div>
-            )}
+
+              <ul className="mt-6 space-y-3 text-sm sm:text-base">
+                {[
+                  "Mínimo de 10 unidades por pedido",
+                  "Quanto mais unidades, menor o preço por peça",
+                  "Você ativa cada código no seu painel de revendedor",
+                ].map((f, i) => (
+                  <li key={i} className="flex items-start gap-3 text-foreground/80">
+                    <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/30 text-primary-foreground">
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </span>
+                    <span className="font-medium">{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="btn-press mt-8 h-14 w-full rounded-2xl border-2 text-base font-bold hover:bg-card"
+              >
+                <Link to="/comprar" search={{ caminho: "revenda" }}>
+                  Ver preços de revenda →
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -690,84 +656,6 @@ function Home() {
       </section>
 
       <ImpactCalculator />
-
-      <section id="precos" className="mx-auto max-w-6xl px-5 py-16 md:py-20">
-        <div className="max-w-2xl">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
-            Preços transparentes
-          </p>
-          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">
-            Compre para você ou revenda.
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Sem mensalidade, sem letras miúdas. Pague uma vez e use o cartão no dia a dia.
-          </p>
-        </div>
-        <div className="mt-10 grid gap-5 md:grid-cols-2">
-          <div className="rounded-[1.75rem] border-2 border-primary bg-card p-7 shadow-xl shadow-primary/10 sm:p-8">
-            <div className="flex items-center justify-between gap-3">
-              <span className="badge-pill bg-primary/15 text-foreground">Loja própria</span>
-              <span className="text-xs font-bold text-primary">Pronto para uso</span>
-            </div>
-            <h3 className="mt-5 text-2xl sm:text-3xl">Cartão ou plaquinha, já configurados</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Você manda o link do seu Google, escolhe o modelo e recebe pronto pra usar. Limite de
-              5 unidades por pedido.
-            </p>
-            <div className="mt-7 grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-surface p-4">
-                <p className="text-xs text-muted-foreground">Cartão de bolso</p>
-                <p className="mt-1 font-display text-2xl">R$ 59,90</p>
-                <p className="text-xs text-muted-foreground">a partir de, por unidade</p>
-              </div>
-              <div className="rounded-xl bg-primary p-4 text-primary-foreground">
-                <p className="text-xs opacity-80">Plaquinha 10x10</p>
-                <p className="mt-1 font-display text-2xl">R$ 79,90</p>
-                <p className="text-xs opacity-80">por unidade</p>
-              </div>
-            </div>
-            <Button asChild size="lg" className="mt-6 h-12 w-full rounded-xl">
-              <Link to="/comprar" search={{ caminho: "lojista" }}>
-                Montar meu pedido
-              </Link>
-            </Button>
-          </div>
-          <div className="rounded-[1.75rem] border border-border bg-card p-7 card-soft sm:p-8">
-            <div className="flex items-center justify-between gap-3">
-              <span className="badge-pill bg-secondary text-secondary-foreground">Revendedor</span>
-              <span className="text-xs font-bold text-muted-foreground">Melhor margem</span>
-            </div>
-            <h3 className="mt-5 text-2xl sm:text-3xl">Cartões e plaquinhas em lote</h3>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              NFC e QR já impressos de fábrica. Cada peça chega com um código próprio pra você
-              ativar no negócio de cada cliente, direto no seu painel de revendedor.
-            </p>
-            <div className="mt-7 grid gap-2 sm:grid-cols-3">
-              {[
-                ["10 a 24", "R$ 32,90"],
-                ["25 a 99", "R$ 24,90"],
-                ["100+", "R$ 14,90"],
-              ].map(([label, price]) => (
-                <div key={label} className="rounded-xl bg-surface p-3">
-                  <p className="text-xs text-muted-foreground">{label} unidades</p>
-                  <p className="mt-1 font-display text-xl">{price}</p>
-                  <p className="text-xs text-muted-foreground">por unidade</p>
-                </div>
-              ))}
-            </div>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="mt-6 h-12 w-full rounded-xl border-2"
-            >
-              <Link to="/comprar" search={{ caminho: "revenda" }}>
-                Começar a revender
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </section>
 
       {/* ===== MODELOS ===== */}
       <section id="modelos" className="relative border-y border-border bg-surface/60">

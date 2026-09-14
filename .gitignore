@@ -46,3 +46,4 @@ APPLY_ALL_MIGRATIONS.sql
 supabase/.temp/
 supabase/.branches/
 qrcodes-teste/
+APPLY_PENDING_MIGRATIONS.sql
