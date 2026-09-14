@@ -44,6 +44,7 @@ function Lotes() {
   const [label, setLabel] = useState("");
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState(100);
+  const [ownerEmail, setOwnerEmail] = useState("");
   const [unitCost, setUnitCost] = useState("0,00");
   const [busy, setBusy] = useState(false);
   const [lastCreated, setLastCreated] = useState<{ code: string; quantity: number } | null>(null);
@@ -112,7 +113,7 @@ function Lotes() {
       _label: label.trim() || null,
       _product_id: productId || null,
       _quantity: quantity,
-      _owner_email: null,
+      _owner_email: ownerEmail.trim() || null,
       _unit_cost_cents: toCents(unitCost),
     });
     setBusy(false);
@@ -126,11 +127,12 @@ function Lotes() {
       action: "allocate_batch_from_stock",
       entity: "batches",
       entity_id: String(data),
-      details: { quantity, label },
+      details: { quantity, label, owner_email: ownerEmail },
     });
     const created = await supabase.from("batches").select("code").eq("id", data as string).single();
     setLastCreated(created.data ? { code: created.data.code, quantity } : null);
     setLabel("");
+    setOwnerEmail("");
     toast.success(`Lote montado com ${quantity} códigos.`);
     void load();
   }
@@ -278,7 +280,9 @@ function Lotes() {
       <form onSubmit={create} className="mt-4 rounded-2xl bg-card p-5 card-soft">
         <p className="text-sm font-semibold">Montar lote pro pedido (puxa do estoque)</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Cliente comprou N unidades? Monta um lote de N aqui e manda o código pra ele ativar em /ativar.
+          Cliente comprou N unidades? Monta um lote de N aqui. Se souber o e-mail dele, o lote já
+          vai vinculado — ele entra em /ativar com o e-mail e puxa automático. Sem e-mail, manda o
+          código do lote pra ele resgatar manualmente.
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div>
@@ -307,6 +311,16 @@ function Lotes() {
               max={5000}
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value) || 1)}
+              className="mt-1 h-10"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">E-mail do cliente (opcional)</Label>
+            <Input
+              type="email"
+              value={ownerEmail}
+              onChange={(e) => setOwnerEmail(e.target.value)}
+              placeholder="cliente@exemplo.com"
               className="mt-1 h-10"
             />
           </div>
