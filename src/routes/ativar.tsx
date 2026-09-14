@@ -143,6 +143,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       const b = await supabase
         .from("batches")
         .select("id, code, label, quantity, codes_sent_at, created_at, products(name, has_qr, has_nfc)")
+        .eq("owner_user_id", userId)
         .order("created_at", { ascending: false });
       if (b.error) {
         setLoadError(b.error.message ?? "Não foi possível carregar seus lotes.");
@@ -151,6 +152,20 @@ function Lote({ email, userId }: { email: string; userId: string }) {
         return;
       }
       setBatches((b.data ?? []) as unknown as Batch[]);
+
+      const batchIds = (b.data ?? []).map((x: any) => x.id as string);
+      if (batchIds.length === 0) {
+        setPlates([]);
+        return;
+      }
+      const p = await supabase
+        .from("plates")
+        .select(
+          "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count",
+        )
+        .in("batch_id", batchIds)
+        .order("short_code", { ascending: true });
+      setPlates((p.data ?? []) as unknown as Plate[]);
     } catch (err: any) {
       const msg = err?.message ?? "Erro ao carregar lotes.";
       setLoadError(msg);
@@ -158,13 +173,6 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       toast.error(msg);
       return;
     }
-    const p = await supabase
-      .from("plates")
-      .select(
-        "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count",
-      )
-      .order("short_code", { ascending: true });
-    setPlates((p.data ?? []) as unknown as Plate[]);
   }, []);
 
   useEffect(() => {
@@ -416,16 +424,6 @@ function Lote({ email, userId }: { email: string; userId: string }) {
                   />
                 );
               })}
-              {(platesByBatch.get("sem-lote") ?? []).length > 0 && (
-                <BatchSection
-                  batch={null}
-                  number={0}
-                  plates={platesByBatch.get("sem-lote") ?? []}
-                  forceOpen={isFiltering}
-                  onActivate={activate}
-                  onDeactivate={deactivate}
-                />
-              )}
             </div>
           </>
         )}
