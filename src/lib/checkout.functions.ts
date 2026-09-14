@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { unitPriceForQuantity } from "@/lib/pricing";
-import { rateLimit } from "@/lib/rateLimit";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 const GOOGLE_HOSTS = [
   "search.google.com",
@@ -97,6 +98,10 @@ export const createPendingOrder = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!rateLimit(`order:${data.customer.email.toLowerCase()}`, 5, 300_000)) {
       throw new Error("Muitos pedidos seguidos com este e-mail. Aguarde alguns minutos.");
+    }
+    const ip = clientKey(getRequest());
+    if (!rateLimit(`order-ip:${ip}`, 10, 300_000)) {
+      throw new Error("Muitos pedidos seguidos. Aguarde alguns minutos.");
     }
 
     const parsedLink = data.business ? resolveReviewUrl(data.business) : null;
