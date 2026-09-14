@@ -116,11 +116,10 @@ function Comprar() {
     packages: [],
   };
   const publicPlanName = isResale ? "Kit para Revenda" : "Cartão Individual";
-  const catalogProducts = data.products.filter(
-    (item) => item.slug === "cartao-bolso" && item.status === "ativo",
-  );
-  // O checkout não pode ficar sem opções quando uma linha antiga do catálogo
-  // estiver com status diferente ou quando o catálogo ainda não foi publicado.
+  // Mostra todo produto não oculto (ativo ou em_breve); a etapa "estilo" já
+  // desabilita quem não é ativo. Antes travava em só cartão-bolso.
+  const catalogProducts = data.products.filter((item) => item.status !== "oculto");
+  // O checkout não pode ficar sem opções quando o catálogo ainda não foi publicado.
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
   const steps = isResale

@@ -660,19 +660,13 @@ function Home() {
       {/* ===== MODELOS ===== */}
       <section id="modelos" className="relative border-y border-border bg-surface/60">
         <div className="mx-auto max-w-6xl px-5 py-16 md:py-20">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-xl">
-              <p className="animate-rise text-xs font-black uppercase tracking-[0.2em] text-primary">
-                Modelos disponíveis
-              </p>
-              <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-                Cartão de bolso ou plaquinha de balcão.
-              </h2>
-            </div>
-            <p className="animate-rise delay-2 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Os dois já saem configurados com a avaliação do seu Google. A plaquinha em L pra mesa
-              chega em breve.
+          <div className="max-w-xl">
+            <p className="animate-rise text-xs font-black uppercase tracking-[0.2em] text-primary">
+              Modelos disponíveis
             </p>
+            <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
+              Cartão de bolso ou plaquinha de balcão.
+            </h2>
           </div>
 
           <div className="mt-10 grid gap-5 sm:grid-cols-3 md:gap-7">
@@ -685,11 +679,11 @@ function Home() {
                     i + 1
                   } overflow-hidden rounded-3xl border border-border bg-card card-soft card-soft-hover shine-border`}
                 >
-                  <div className="relative aspect-4/3 overflow-hidden bg-surface">
+                  <div className="relative aspect-4/3 overflow-hidden bg-white p-4">
                     <img
                       src={IMAGES[product.slug] ?? produtoCartao}
                       alt={product.name}
-                      className="h-full w-full object-cover transition-all duration-700 group-hover:scale-105"
+                      className="h-full w-full object-contain transition-all duration-700 group-hover:scale-105"
                       loading="lazy"
                       draggable={false}
                     />
