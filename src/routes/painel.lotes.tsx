@@ -27,6 +27,7 @@ type Batch = {
   products: { name: string } | null;
 };
 type Product = { id: string; slug: string; name: string };
+type StockPlate = { id: string; short_code: string; token: string };
 
 const reais = (c: number) => (c / 100).toFixed(2).replace(".", ",");
 const toCents = (s: string) => Math.round((Number.parseFloat(s.replace(",", ".")) || 0) * 100);
@@ -52,6 +53,28 @@ function Lotes() {
   const [stockProductId, setStockProductId] = useState("");
   const [stockQuantity, setStockQuantity] = useState(100);
   const [stockBusy, setStockBusy] = useState(false);
+
+  const [expandedStock, setExpandedStock] = useState<string | null>(null);
+  const [stockPlates, setStockPlates] = useState<StockPlate[]>([]);
+  const [stockPlatesLoading, setStockPlatesLoading] = useState(false);
+
+  async function toggleStock(productId: string) {
+    if (expandedStock === productId) {
+      setExpandedStock(null);
+      return;
+    }
+    setExpandedStock(productId);
+    setStockPlatesLoading(true);
+    const { data } = await supabase
+      .from("plates")
+      .select("id, short_code, token")
+      .is("batch_id", null)
+      .eq("product_id", productId)
+      .order("short_code", { ascending: true })
+      .limit(500);
+    setStockPlates((data ?? []) as unknown as StockPlate[]);
+    setStockPlatesLoading(false);
+  }
 
   const load = useCallback(async () => {
     const b = await supabase
@@ -256,9 +279,17 @@ function Lotes() {
 
       <div className="mt-6 rounded-2xl bg-card p-5 card-soft">
         <p className="text-sm font-semibold">Estoque disponível (plaquinhas soltas, sem dono)</p>
+        <p className="mt-1 text-xs text-muted-foreground">Clique num produto pra ver os códigos parados no estoque</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((p) => (
-            <div key={p.id} className="rounded-xl border border-border p-3 flex items-center justify-between">
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => void toggleStock(p.id)}
+              className={`rounded-xl border p-3 flex items-center justify-between text-left transition-colors ${
+                expandedStock === p.id ? "border-primary bg-surface" : "border-border hover:bg-surface"
+              }`}
+            >
               <span className="text-sm">{p.name}</span>
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
@@ -269,12 +300,35 @@ function Lotes() {
               >
                 {stock[p.id] ?? 0} un.
               </span>
-            </div>
+            </button>
           ))}
           {products.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum produto cadastrado.</p>
           )}
         </div>
+
+        {expandedStock && (
+          <div className="mt-4 rounded-xl border border-border bg-surface p-3">
+            {stockPlatesLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando…</p>
+            ) : stockPlates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma plaquinha solta desse produto.</p>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  {stockPlates.length} código(s) {stockPlates.length >= 500 ? "(mostrando os 500 primeiros)" : ""}
+                </p>
+                <div className="mt-2 max-h-64 overflow-y-auto grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
+                  {stockPlates.map((sp) => (
+                    <span key={sp.id} className="rounded-lg bg-card border border-border px-2 py-1 font-mono text-xs">
+                      {sp.short_code}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <form onSubmit={create} className="mt-4 rounded-2xl bg-card p-5 card-soft">
