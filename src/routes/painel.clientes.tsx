@@ -196,6 +196,7 @@ function Customers() {
                   <td className="px-3 py-4">
                     <Link
                       to="/painel"
+                      search={{ q: contact.email }}
                       className="text-xs font-semibold text-primary hover:underline"
                     >
                       Ver pedidos

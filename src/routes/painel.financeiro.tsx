@@ -114,6 +114,7 @@ function Financeiro() {
   }
 
   async function remove(id: string) {
+    if (!confirm("Excluir este lançamento? Essa ação não pode ser desfeita.")) return;
     const { error } = await supabase.from("finance_entries").delete().eq("id", id);
     if (error) {
       toast.error("Não foi possível excluir.");

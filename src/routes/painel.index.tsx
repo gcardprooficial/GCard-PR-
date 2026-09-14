@@ -10,7 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export const Route = createFileRoute("/painel/")({ component: Orders });
+export const Route = createFileRoute("/painel/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: typeof search["q"] === "string" ? (search["q"] as string) : undefined,
+  }),
+  component: Orders,
+});
 
 const FULFILLMENT = ["recebido", "em_producao", "enviado", "entregue", "cancelado"] as const;
 const FULFILLMENT_LABEL: Record<string, string> = {
@@ -55,10 +60,12 @@ type BatchByOrder = { orderId: string; code: string; codes_sent_at: string | nul
 
 function Orders() {
   const { userId, email } = usePanel();
+  const search = Route.useSearch();
   const runSaveTracking = useServerFn(saveOrderTracking);
   const [rows, setRows] = useState<OrderRow[] | null>(null);
   const [batchesByOrder, setBatchesByOrder] = useState<Record<string, BatchByOrder>>({});
   const [kindFilter, setKindFilter] = useState<"all" | "individual" | "revenda">("all");
+  const [q, setQ] = useState(search.q ?? "");
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -66,7 +73,8 @@ function Orders() {
       .select(
         "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, fulfillment_status, tracking_code, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, businesses(name, review_url)",
       )
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(500);
     if (error) {
       toast.error("Não foi possível carregar os pedidos.");
       return;
@@ -157,15 +165,32 @@ function Orders() {
     individual: rows?.filter((r) => r.kind === "individual").length ?? 0,
     revenda: rows?.filter((r) => r.kind === "revenda").length ?? 0,
   };
-  const visible = (rows ?? []).filter((r) => kindFilter === "all" || r.kind === kindFilter);
+  const visible = (rows ?? []).filter((r) => {
+    if (kindFilter !== "all" && r.kind !== kindFilter) return false;
+    if (!q.trim()) return true;
+    const t = q.toLowerCase();
+    return (
+      r.customer_name.toLowerCase().includes(t) ||
+      r.customer_email.toLowerCase().includes(t) ||
+      String(r.order_number).includes(t)
+    );
+  });
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl">Pedidos</h1>
-        <Button size="sm" variant="outline" onClick={() => void load()}>
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar nome / e-mail / número"
+            className="h-9 w-64"
+          />
+          <Button size="sm" variant="outline" onClick={() => void load()}>
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2 rounded-full bg-secondary p-1 text-xs font-semibold">
