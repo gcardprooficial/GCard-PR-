@@ -27,6 +27,7 @@ type Batch = {
   label: string | null;
   quantity: number;
   codes_sent_at: string | null;
+  created_at: string;
   products: { name: string; has_qr: boolean; has_nfc: boolean } | null;
 };
 type Plate = {
@@ -132,6 +133,8 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "ativada" | "nao_ativada">("all");
+  const [redeemCode, setRedeemCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -139,7 +142,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       await supabase.rpc("claim_my_batches");
       const b = await supabase
         .from("batches")
-        .select("id, code, label, quantity, codes_sent_at, products(name, has_qr, has_nfc)")
+        .select("id, code, label, quantity, codes_sent_at, created_at, products(name, has_qr, has_nfc)")
         .order("created_at", { ascending: false });
       if (b.error) {
         setLoadError(b.error.message ?? "Não foi possível carregar seus lotes.");
@@ -197,6 +200,22 @@ function Lote({ email, userId }: { email: string; userId: string }) {
     void load();
   }
 
+  async function redeem(e: FormEvent) {
+    e.preventDefault();
+    const code = redeemCode.trim();
+    if (!code) return;
+    setRedeeming(true);
+    const { error } = await supabase.rpc("claim_batch_by_code", { _code: code });
+    setRedeeming(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`Lote ${code} resgatado!`);
+    setRedeemCode("");
+    void load();
+  }
+
   async function deactivate(plate: Plate) {
     const { error } = await supabase
       .from("plates")
@@ -227,6 +246,27 @@ function Lote({ email, userId }: { email: string; userId: string }) {
     );
   });
 
+  const isFiltering = q.trim() !== "" || statusFilter !== "all";
+
+  const batchNumberById = useMemo(() => {
+    const sorted = [...(batches ?? [])].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+    const map = new Map<string, number>();
+    sorted.forEach((b, i) => map.set(b.id, i + 1));
+    return map;
+  }, [batches]);
+
+  const platesByBatch = useMemo(() => {
+    const map = new Map<string, Plate[]>();
+    for (const p of filtered) {
+      const key = p.batch_id ?? "sem-lote";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(p);
+    }
+    return map;
+  }, [filtered]);
+
   if (batches === null) return <Center>Carregando…</Center>;
 
   return (
@@ -247,6 +287,21 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       </header>
 
       <div className="mx-auto max-w-4xl px-5 py-8">
+        <form onSubmit={redeem} className="rounded-2xl bg-card p-5 card-soft border border-dashed border-primary/40 mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1">
+            <Label className="text-xs font-semibold">Recebeu um lote novo? Resgate pelo código</Label>
+            <Input
+              value={redeemCode}
+              onChange={(e) => setRedeemCode(e.target.value)}
+              placeholder="Ex: L-260915-AB12CD"
+              className="mt-1 h-10 input-soft rounded-xl font-mono"
+            />
+          </div>
+          <Button type="submit" disabled={redeeming || !redeemCode.trim()} className="rounded-xl font-bold">
+            {redeeming ? "Resgatando…" : "Resgatar lote"}
+          </Button>
+        </form>
+
         {loadError && (
           <div className="rounded-2xl bg-card p-6 card-soft mb-4">
             <h2 className="text-lg text-foreground">Não foi possível carregar lotes</h2>
@@ -316,18 +371,10 @@ function Lote({ email, userId }: { email: string; userId: string }) {
               <Stat label="Em branco" value={counts.blank} />
             </div>
 
-            {batches.map((b) => (
-              <p key={b.id} className="mt-4 text-sm text-muted-foreground">
-                Lote <strong className="text-foreground">{b.code}</strong>
-                {b.label ? ` · ${b.label}` : ""} · {b.products?.name ?? "Cartão de bolso"} · {b.quantity} un.
-                {b.products ? ` · ${[b.products.has_qr && "QR", b.products.has_nfc && "NFC"].filter(Boolean).join(" + ")}` : " · NFC"}
-              </p>
-            ))}
-
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-bold">Cartões do seu lote</h2>
-                <p className="text-xs text-muted-foreground">Clique em copiar link ou edite a loja de destino</p>
+                <h2 className="text-lg font-bold">Cartões por lote</h2>
+                <p className="text-xs text-muted-foreground">Clique num lote pra abrir e ativar os cartões dele</p>
               </div>
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código / negócio" className="h-10 w-full sm:w-64 input-soft rounded-xl" />
             </div>
@@ -354,13 +401,113 @@ function Lote({ email, userId }: { email: string; userId: string }) {
             </div>
 
             <div className="mt-3 space-y-3">
-              {filtered.map((p) => (
-                <PlateCard key={p.id} plate={p} onActivate={activate} onDeactivate={deactivate} />
-              ))}
+              {batches.map((b) => {
+                const batchPlates = platesByBatch.get(b.id) ?? [];
+                if (batchPlates.length === 0 && isFiltering) return null;
+                return (
+                  <BatchSection
+                    key={b.id}
+                    batch={b}
+                    number={batchNumberById.get(b.id) ?? 0}
+                    plates={batchPlates}
+                    forceOpen={isFiltering}
+                    onActivate={activate}
+                    onDeactivate={deactivate}
+                  />
+                );
+              })}
+              {(platesByBatch.get("sem-lote") ?? []).length > 0 && (
+                <BatchSection
+                  batch={null}
+                  number={0}
+                  plates={platesByBatch.get("sem-lote") ?? []}
+                  forceOpen={isFiltering}
+                  onActivate={activate}
+                  onDeactivate={deactivate}
+                />
+              )}
             </div>
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+const PAGE_SIZE = 15;
+
+function BatchSection({
+  batch,
+  number,
+  plates,
+  forceOpen,
+  onActivate,
+  onDeactivate,
+}: {
+  batch: Batch | null;
+  number: number;
+  plates: Plate[];
+  forceOpen: boolean;
+  onActivate: (p: Plate, name: string, url: string, soldTo: string) => void;
+  onDeactivate: (p: Plate) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [plates]);
+
+  const isOpen = open || forceOpen;
+  const activeCount = plates.filter((p) => p.status === "ativada").length;
+  const totalPages = Math.max(1, Math.ceil(plates.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const pagePlates = plates.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+  const title = batch
+    ? `Lote ${String(number).padStart(2, "0")}`
+    : "Sem lote";
+  const subtitle = batch
+    ? `${batch.products?.name ?? "Cartão de bolso"} · ${batch.quantity} un.${batch.label ? ` · ${batch.label}` : ""}`
+    : "Cartões avulsos";
+
+  return (
+    <div className="rounded-2xl bg-card card-soft border border-border overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-3 p-4 text-left"
+      >
+        <div>
+          <p className="font-display text-base font-bold">{title}</p>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold text-muted-foreground">
+            {activeCount}/{plates.length} ativados
+          </span>
+          <span className={`transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="border-t border-border p-4 pt-3 space-y-3">
+          {pagePlates.map((p) => (
+            <PlateCard key={p.id} plate={p} onActivate={onActivate} onDeactivate={onDeactivate} />
+          ))}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-1 text-xs font-semibold">
+              <Button size="sm" variant="outline" disabled={pageSafe <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-lg h-7 px-3">
+                ← Anterior
+              </Button>
+              <span className="text-muted-foreground">Página {pageSafe} de {totalPages}</span>
+              <Button size="sm" variant="outline" disabled={pageSafe >= totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-lg h-7 px-3">
+                Próxima →
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

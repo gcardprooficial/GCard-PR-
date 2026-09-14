@@ -36,13 +36,22 @@ function Lotes() {
   const [batches, setBatches] = useState<Batch[] | null>(null);
   const [counts, setCounts] = useState<Record<string, { active: number; total: number }>>({});
   const [products, setProducts] = useState<Product[]>([]);
+  const [stock, setStock] = useState<Record<string, number>>({});
+
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | (typeof BATCH_STATUS)[number]>("all");
 
   const [label, setLabel] = useState("");
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState(100);
   const [ownerEmail, setOwnerEmail] = useState("");
   const [unitCost, setUnitCost] = useState("0,00");
+  const [fromStock, setFromStock] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const [stockProductId, setStockProductId] = useState("");
+  const [stockQuantity, setStockQuantity] = useState(100);
+  const [stockBusy, setStockBusy] = useState(false);
 
   const load = useCallback(async () => {
     const b = await supabase
@@ -74,7 +83,16 @@ function Lotes() {
     const pr = await supabase.from("products").select("id, slug, name").order("sort_order");
     setProducts((pr.data ?? []) as Product[]);
     if (!productId && pr.data?.[0]) setProductId(pr.data[0].id);
-  }, [productId]);
+    if (!stockProductId && pr.data?.[0]) setStockProductId(pr.data[0].id);
+
+    const s = await supabase.from("plates").select("product_id").is("batch_id", null).limit(50000);
+    const stockMap: Record<string, number> = {};
+    for (const row of s.data ?? []) {
+      const k = row.product_id as string;
+      stockMap[k] = (stockMap[k] ?? 0) + 1;
+    }
+    setStock(stockMap);
+  }, [productId, stockProductId]);
 
   useEffect(() => {
     void load();
@@ -86,14 +104,26 @@ function Lotes() {
       toast.error("Quantidade de 1 a 5000.");
       return;
     }
+    if (fromStock && quantity > (stock[productId] ?? 0)) {
+      toast.error(`Só há ${stock[productId] ?? 0} un. em estoque desse produto.`);
+      return;
+    }
     setBusy(true);
-    const { data, error } = await supabase.rpc("create_batch", {
-      _label: label.trim() || null,
-      _product_id: productId || null,
-      _quantity: quantity,
-      _owner_email: ownerEmail.trim() || null,
-      _unit_cost_cents: toCents(unitCost),
-    });
+    const { data, error } = fromStock
+      ? await supabase.rpc("allocate_batch_from_stock", {
+          _label: label.trim() || null,
+          _product_id: productId || null,
+          _quantity: quantity,
+          _owner_email: ownerEmail.trim() || null,
+          _unit_cost_cents: toCents(unitCost),
+        })
+      : await supabase.rpc("create_batch", {
+          _label: label.trim() || null,
+          _product_id: productId || null,
+          _quantity: quantity,
+          _owner_email: ownerEmail.trim() || null,
+          _unit_cost_cents: toCents(unitCost),
+        });
     setBusy(false);
     if (error) {
       toast.error(error.message);
@@ -102,14 +132,34 @@ function Lotes() {
     await supabase.from("audit_log").insert({
       actor_id: userId,
       actor_email: email,
-      action: "create_batch",
+      action: fromStock ? "allocate_batch_from_stock" : "create_batch",
       entity: "batches",
       entity_id: String(data),
-      details: { quantity, owner_email: ownerEmail },
+      details: { quantity, owner_email: ownerEmail, from_stock: fromStock },
     });
     setLabel("");
     setOwnerEmail("");
     toast.success(`Lote criado com ${quantity} códigos.`);
+    void load();
+  }
+
+  async function createStock(e: FormEvent) {
+    e.preventDefault();
+    if (stockQuantity < 1 || stockQuantity > 5000) {
+      toast.error("Quantidade de 1 a 5000.");
+      return;
+    }
+    setStockBusy(true);
+    const { error } = await supabase.rpc("create_stock", {
+      _product_id: stockProductId || null,
+      _quantity: stockQuantity,
+    });
+    setStockBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${stockQuantity} plaquinhas geradas no estoque.`);
     void load();
   }
 
@@ -184,6 +234,24 @@ function Lotes() {
     [batches],
   );
 
+  const statusCounts = useMemo(() => {
+    const c: Record<string, number> = { rascunho: 0, produzido: 0, vendido: 0 };
+    for (const b of batches ?? []) c[b.status] = (c[b.status] ?? 0) + 1;
+    return c;
+  }, [batches]);
+
+  const filteredBatches = (batches ?? []).filter((b) => {
+    if (statusFilter !== "all" && b.status !== statusFilter) return false;
+    if (!q.trim()) return true;
+    const t = q.toLowerCase();
+    return (
+      b.code.toLowerCase().includes(t) ||
+      b.label?.toLowerCase().includes(t) ||
+      b.owner_email?.toLowerCase().includes(t) ||
+      b.sold_to?.toLowerCase().includes(t)
+    );
+  });
+
   return (
     <>
       <h1 className="text-2xl">Lotes (revenda)</h1>
@@ -239,9 +307,57 @@ function Lotes() {
             <Input value={unitCost} onChange={(e) => setUnitCost(e.target.value)} inputMode="decimal" className="mt-1 h-10" />
           </div>
         </div>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={fromStock} onChange={(e) => setFromStock(e.target.checked)} />
+          Puxar do estoque em vez de gerar plaquinhas novas
+          {fromStock && (
+            <span className="text-xs text-muted-foreground">
+              ({stock[productId] ?? 0} un. disponíveis desse produto)
+            </span>
+          )}
+        </label>
         <Button type="submit" className="mt-4" disabled={busy}>
-          {busy ? "Gerando códigos…" : "Criar lote"}
+          {busy ? "Gerando…" : fromStock ? "Montar lote do estoque" : "Criar lote"}
         </Button>
+      </form>
+
+      <form onSubmit={createStock} className="mt-4 rounded-2xl bg-card p-5 card-soft border border-dashed">
+        <p className="text-sm font-semibold">Gerar estoque (plaquinhas soltas, sem dono)</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Imprime em lote grande por economia, guarda solto, e monta o lote certinho na hora da venda (acima).
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div>
+            <Label className="text-xs">Produto</Label>
+            <select
+              value={stockProductId}
+              onChange={(e) => setStockProductId(e.target.value)}
+              className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} — {stock[p.id] ?? 0} em estoque
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label className="text-xs">Quantidade a gerar</Label>
+            <Input
+              type="number"
+              min={1}
+              max={5000}
+              value={stockQuantity}
+              onChange={(e) => setStockQuantity(Number(e.target.value) || 1)}
+              className="mt-1 h-10"
+            />
+          </div>
+          <div className="flex items-end">
+            <Button type="submit" variant="outline" disabled={stockBusy} className="h-10">
+              {stockBusy ? "Gerando…" : "Gerar estoque"}
+            </Button>
+          </div>
+        </div>
       </form>
 
       {batches === null ? (
@@ -253,8 +369,42 @@ function Lotes() {
           <p className="mt-6 text-sm text-muted-foreground">
             {batches.length} lotes · custo total em produção {money(totalCost)}
           </p>
+
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+              {(
+                [
+                  ["all", `Todos (${batches.length})`],
+                  ["rascunho", `Rascunho (${statusCounts["rascunho"]})`],
+                  ["produzido", `Produzido (${statusCounts["produzido"]})`],
+                  ["vendido", `Vendido (${statusCounts["vendido"]})`],
+                ] as const
+              ).map(([k, l]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setStatusFilter(k)}
+                  className={`rounded-full px-3 py-1.5 transition-colors ${
+                    statusFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar código / revendedor / nota"
+              className="h-10 w-full sm:w-72"
+            />
+          </div>
+
+          {filteredBatches.length === 0 ? (
+            <p className="mt-6 text-sm text-muted-foreground">Nenhum lote encontrado.</p>
+          ) : (
           <div className="mt-3 space-y-3">
-            {batches.map((b) => {
+            {filteredBatches.map((b) => {
               const c = counts[b.id] ?? { active: 0, total: b.quantity };
               return (
                 <div key={b.id} className="rounded-2xl bg-card p-5 card-soft">
@@ -335,6 +485,7 @@ function Lotes() {
               );
             })}
           </div>
+          )}
         </>
       )}
     </>
