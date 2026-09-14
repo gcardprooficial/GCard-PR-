@@ -148,6 +148,37 @@ function Lotes() {
     URL.revokeObjectURL(url);
   }
 
+  /** Gera um PNG de QR por placa do lote e baixa tudo num .zip — pronto pra mandar pra gráfica. */
+  async function exportQrZip(b: Batch) {
+    if (!confirm(`Gerar ${b.quantity} imagens de QR do lote ${b.code} (.zip)?`)) return;
+    const { data, error } = await supabase
+      .from("plates")
+      .select("token")
+      .eq("batch_id", b.id)
+      .order("created_at", { ascending: true });
+    if (error || !data || data.length === 0) {
+      toast.error("Não foi possível gerar os QR codes.");
+      return;
+    }
+    toast.info(`Gerando ${data.length} QR codes...`);
+    const [{ default: JSZip }, QRCode] = await Promise.all([import("jszip"), import("qrcode")]);
+    const zip = new JSZip();
+    for (const p of data) {
+      const url = `${location.origin}/r/${p.token}`;
+      const dataUrl = await QRCode.toDataURL(url, { width: 1000, margin: 2, errorCorrectionLevel: "H" });
+      const base64 = dataUrl.split(",")[1];
+      zip.file(`${p.token}.png`, base64, { base64: true });
+    }
+    const blob = await zip.generateAsync({ type: "blob" });
+    const zipUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = zipUrl;
+    link.download = `${b.code}-qrcodes.zip`;
+    link.click();
+    URL.revokeObjectURL(zipUrl);
+    toast.success("QR codes gerados.");
+  }
+
   const totalCost = useMemo(
     () => (batches ?? []).reduce((s, b) => s + b.unit_cost_cents * b.quantity, 0),
     [batches],
@@ -267,6 +298,9 @@ function Lotes() {
                   <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-border pt-3">
                     <Button size="sm" variant="outline" onClick={() => void exportCodes(b)}>
                       Exportar códigos (CSV)
+                    </Button>
+                    <Button size="sm" onClick={() => void exportQrZip(b)}>
+                      Baixar QR Codes (.zip)
                     </Button>
                     {!b.codes_sent_at && (
                       <Button
