@@ -116,13 +116,13 @@ export const createPendingOrder = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabaseAdmin
         .from("products")
-        .select("id, name, slug, price_delta_cents, status")
+        .select("id, name, slug, price_delta_cents, resale_delta_cents, status")
         .eq("slug", data.productSlug)
         .maybeSingle(),
     ]);
 
     if (!plan || !plan.is_active) throw new Error("Plano indisponível.");
-    if (!product || product.status !== "ativo" || product.slug !== "cartao-bolso") {
+    if (!product || product.status !== "ativo") {
       throw new Error("Produto indisponível no momento.");
     }
     if (data.quantity < plan.min_quantity) throw new Error("Quantidade abaixo do mínimo do plano.");
@@ -137,7 +137,8 @@ export const createPendingOrder = createServerFn({ method: "POST" })
 
     // Price is always recomputed here — never trusted from the browser.
     const tierPrice = unitPriceForQuantity(tiers ?? [], data.quantity, plan.unit_price_cents);
-    const unitPrice = tierPrice + product.price_delta_cents;
+    const delta = plan.is_resale ? product.resale_delta_cents : product.price_delta_cents;
+    const unitPrice = tierPrice + delta;
     const subtotal = unitPrice * data.quantity;
 
     let businessId: string | null = null;

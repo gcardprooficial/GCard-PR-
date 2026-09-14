@@ -63,6 +63,7 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     format: "Cartão NFC 8,5 x 5,4 cm",
     status: "ativo",
     price_delta_cents: 0,
+    resale_delta_cents: 0,
     has_qr: false,
     has_nfc: true,
   },
@@ -176,11 +177,9 @@ function Comprar() {
 
   const unitPrice = useMemo(() => {
     if (!plan) return 0;
-    return (
-      unitPriceForQuantity(plan.tiers, quantity, plan.unit_price_cents) +
-      (product?.price_delta_cents ?? 0)
-    );
-  }, [plan, product, quantity]);
+    const delta = isResale ? (product?.resale_delta_cents ?? 0) : (product?.price_delta_cents ?? 0);
+    return unitPriceForQuantity(plan.tiers, quantity, plan.unit_price_cents) + delta;
+  }, [plan, product, quantity, isResale]);
   const total = unitPrice * quantity;
   const maxQuantity = plan?.max_quantity ?? 500;
 
@@ -800,7 +799,7 @@ function Comprar() {
                             <p className="mt-1 font-display text-xl font-black leading-tight sm:text-2xl">
                               {money(
                                 unitPriceForQuantity(plan.tiers, quantity, plan.unit_price_cents) +
-                                  item.price_delta_cents,
+                                  (isResale ? item.resale_delta_cents : item.price_delta_cents),
                               )}
                             </p>
                           </div>
@@ -1175,7 +1174,7 @@ function Comprar() {
                 {plan.packages.map((pkg, i) => {
                   const price =
                     unitPriceForQuantity(plan.tiers, pkg.quantity, plan.unit_price_cents) +
-                    (product?.price_delta_cents ?? 0);
+                    (isResale ? (product?.resale_delta_cents ?? 0) : (product?.price_delta_cents ?? 0));
                   const selected = quantity === pkg.quantity;
                   return (
                     <button
