@@ -44,10 +44,9 @@ function Lotes() {
   const [label, setLabel] = useState("");
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState(100);
-  const [ownerEmail, setOwnerEmail] = useState("");
   const [unitCost, setUnitCost] = useState("0,00");
-  const [fromStock, setFromStock] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [lastCreated, setLastCreated] = useState<{ code: string; quantity: number } | null>(null);
 
   const [stockProductId, setStockProductId] = useState("");
   const [stockQuantity, setStockQuantity] = useState(100);
@@ -104,26 +103,18 @@ function Lotes() {
       toast.error("Quantidade de 1 a 5000.");
       return;
     }
-    if (fromStock && quantity > (stock[productId] ?? 0)) {
+    if (quantity > (stock[productId] ?? 0)) {
       toast.error(`Só há ${stock[productId] ?? 0} un. em estoque desse produto.`);
       return;
     }
     setBusy(true);
-    const { data, error } = fromStock
-      ? await supabase.rpc("allocate_batch_from_stock", {
-          _label: label.trim() || null,
-          _product_id: productId || null,
-          _quantity: quantity,
-          _owner_email: ownerEmail.trim() || null,
-          _unit_cost_cents: toCents(unitCost),
-        })
-      : await supabase.rpc("create_batch", {
-          _label: label.trim() || null,
-          _product_id: productId || null,
-          _quantity: quantity,
-          _owner_email: ownerEmail.trim() || null,
-          _unit_cost_cents: toCents(unitCost),
-        });
+    const { data, error } = await supabase.rpc("allocate_batch_from_stock", {
+      _label: label.trim() || null,
+      _product_id: productId || null,
+      _quantity: quantity,
+      _owner_email: null,
+      _unit_cost_cents: toCents(unitCost),
+    });
     setBusy(false);
     if (error) {
       toast.error(error.message);
@@ -132,14 +123,15 @@ function Lotes() {
     await supabase.from("audit_log").insert({
       actor_id: userId,
       actor_email: email,
-      action: fromStock ? "allocate_batch_from_stock" : "create_batch",
+      action: "allocate_batch_from_stock",
       entity: "batches",
       entity_id: String(data),
-      details: { quantity, owner_email: ownerEmail, from_stock: fromStock },
+      details: { quantity, label },
     });
+    const created = await supabase.from("batches").select("code").eq("id", data as string).single();
+    setLastCreated(created.data ? { code: created.data.code, quantity } : null);
     setLabel("");
-    setOwnerEmail("");
-    toast.success(`Lote criado com ${quantity} códigos.`);
+    toast.success(`Lote montado com ${quantity} códigos.`);
     void load();
   }
 
@@ -284,10 +276,13 @@ function Lotes() {
       </div>
 
       <form onSubmit={create} className="mt-4 rounded-2xl bg-card p-5 card-soft">
-        <p className="text-sm font-semibold">Novo lote</p>
+        <p className="text-sm font-semibold">Montar lote pro pedido (puxa do estoque)</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Cliente comprou N unidades? Monta um lote de N aqui e manda o código pra ele ativar em /ativar.
+        </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <Label className="text-xs">Identificação</Label>
+            <Label className="text-xs">Identificação (nota interna)</Label>
             <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex.: João - Curitiba" className="mt-1 h-10" />
           </div>
           <div>
@@ -299,13 +294,13 @@ function Lotes() {
             >
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name}
+                  {p.name} — {stock[p.id] ?? 0} em estoque
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <Label className="text-xs">Quantidade de códigos</Label>
+            <Label className="text-xs">Quantidade vendida</Label>
             <Input
               type="number"
               min={1}
@@ -316,32 +311,26 @@ function Lotes() {
             />
           </div>
           <div>
-            <Label className="text-xs">E-mail do revendedor</Label>
-            <Input
-              type="email"
-              value={ownerEmail}
-              onChange={(e) => setOwnerEmail(e.target.value)}
-              placeholder="dono@exemplo.com"
-              className="mt-1 h-10"
-            />
-          </div>
-          <div>
             <Label className="text-xs">Custo por unidade</Label>
             <Input value={unitCost} onChange={(e) => setUnitCost(e.target.value)} inputMode="decimal" className="mt-1 h-10" />
           </div>
         </div>
-        <label className="mt-3 flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={fromStock} onChange={(e) => setFromStock(e.target.checked)} />
-          Puxar do estoque em vez de gerar plaquinhas novas
-          {fromStock && (
-            <span className="text-xs text-muted-foreground">
-              ({stock[productId] ?? 0} un. disponíveis desse produto)
-            </span>
-          )}
-        </label>
-        <Button type="submit" className="mt-4" disabled={busy}>
-          {busy ? "Gerando…" : fromStock ? "Montar lote do estoque" : "Criar lote"}
+        <Button type="submit" className="mt-4" disabled={busy || quantity > (stock[productId] ?? 0)}>
+          {busy ? "Montando…" : "Montar lote"}
         </Button>
+        {quantity > (stock[productId] ?? 0) && (
+          <p className="mt-2 text-xs text-destructive">
+            Só há {stock[productId] ?? 0} un. em estoque desse produto — gere mais estoque abaixo.
+          </p>
+        )}
+        {lastCreated && (
+          <div className="mt-4 rounded-xl border-2 border-primary/40 bg-surface p-4">
+            <p className="text-xs font-semibold text-muted-foreground">
+              Lote de {lastCreated.quantity} un. pronto — manda esse código pro cliente:
+            </p>
+            <p className="mt-1 font-mono text-xl font-black tracking-wide">{lastCreated.code}</p>
+          </div>
+        )}
       </form>
 
       <form onSubmit={createStock} className="mt-4 rounded-2xl bg-card p-5 card-soft border border-dashed">
@@ -442,10 +431,10 @@ function Lotes() {
                         Revendedor: {b.owner_email ?? "—"}{" "}
                         {b.owner_user_id ? (
                           <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800">
-                            conta vinculada
+                            código resgatado
                           </span>
                         ) : (
-                          <span className="rounded-full bg-accent px-2 py-0.5 text-xs">aguardando login</span>
+                          <span className="rounded-full bg-accent px-2 py-0.5 text-xs">aguardando resgate</span>
                         )}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
