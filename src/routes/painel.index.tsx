@@ -94,6 +94,46 @@ function Orders() {
     void load();
   }, [load]);
 
+  const [generatingFor, setGeneratingFor] = useState<string | null>(null);
+
+  async function generateBatchForOrder(row: OrderRow) {
+    setGeneratingFor(row.id);
+    const { data: items, error: itemsError } = await supabase
+      .from("order_items")
+      .select("product_id, quantity")
+      .eq("order_id", row.id);
+    const productId = items?.[0]?.product_id;
+    if (itemsError || !productId) {
+      setGeneratingFor(null);
+      toast.error("Não encontrei o produto deste pedido.");
+      return;
+    }
+    const { data: batchId, error } = await supabase.rpc("allocate_batch_from_stock", {
+      _label: `Pedido #${row.order_number}`,
+      _product_id: productId,
+      _quantity: row.quantity,
+      _owner_email: row.customer_email,
+      _unit_cost_cents: 0,
+    });
+    if (error) {
+      setGeneratingFor(null);
+      toast.error(error.message);
+      return;
+    }
+    await supabase.from("batches").update({ owner_order_id: row.id }).eq("id", batchId as string);
+    await supabase.from("audit_log").insert({
+      actor_id: userId,
+      actor_email: email,
+      action: "allocate_batch_from_stock",
+      entity: "batches",
+      entity_id: String(batchId),
+      details: { order_id: row.id, quantity: row.quantity },
+    });
+    setGeneratingFor(null);
+    toast.success(`Lote gerado pro pedido #${row.order_number}.`);
+    void load();
+  }
+
   async function patch(row: OrderRow, changes: Partial<OrderRow>) {
     const { error } = await supabase.from("orders").update(changes).eq("id", row.id);
     if (error) {
@@ -211,10 +251,17 @@ function Orders() {
                     </p>
                   )}
                   {r.kind === "revenda" && r.payment_status === "pago" && !batchesByOrder[r.id] && (
-                    <p className="mt-2 text-sm text-amber-800">
-                      Pago, mas ainda sem lote — use &quot;Confirmar pagamento e gerar
-                      códigos&quot;.
-                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <p className="text-sm text-amber-800">Pago, mas ainda sem lote.</p>
+                      <Button
+                        size="sm"
+                        onClick={() => void generateBatchForOrder(r)}
+                        disabled={generatingFor === r.id}
+                        className="h-7 rounded-lg text-xs"
+                      >
+                        {generatingFor === r.id ? "Gerando…" : "Gerar lote do estoque"}
+                      </Button>
+                    </div>
                   )}
                   <p className="mt-1 text-sm text-muted-foreground">
                     {[
@@ -249,11 +296,7 @@ function Orders() {
                   <Label className="text-xs">Pagamento</Label>
                   <select
                     value={r.payment_status}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      if (next === "pago") return;
-                      void patch(r, { payment_status: next });
-                    }}
+                    onChange={(e) => void patch(r, { payment_status: e.target.value })}
                     className="mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
                   >
                     {Object.entries(PAYMENT_LABEL).map(([s, label]) => (
