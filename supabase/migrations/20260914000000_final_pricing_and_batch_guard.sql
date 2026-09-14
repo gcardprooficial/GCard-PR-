@@ -86,7 +86,7 @@ RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS 
+AS $$
 DECLARE
   bid UUID;
   new_code TEXT;
@@ -129,4 +129,4 @@ BEGIN
 
   RETURN bid;
 END;
-;
+$$;
