@@ -126,9 +126,9 @@ function Lotes() {
     if (!confirm(`Exportar ${b.quantity} códigos do lote ${b.code} para CSV?`)) return;
     const { data, error } = await supabase
       .from("plates")
-      .select("token, status, business_name")
+      .select("token, short_code, status, business_name")
       .eq("batch_id", b.id)
-      .order("created_at", { ascending: true });
+      .order("short_code", { ascending: true });
     if (error || !data) {
       toast.error("Não foi possível exportar.");
       return;
@@ -137,7 +137,7 @@ function Lotes() {
       "codigo,url,status,negocio",
       ...data.map(
         (p) =>
-          `${p.token},${location.origin}/r/${p.token},${p.status},"${(p.business_name ?? "").replace(/"/g, "'")}"`,
+          `${p.short_code},${location.origin}/r/${p.token},${p.status},"${(p.business_name ?? "").replace(/"/g, "'")}"`,
       ),
     ].join("\n");
     const url = URL.createObjectURL(new Blob([rows], { type: "text/csv;charset=utf-8" }));
@@ -153,9 +153,9 @@ function Lotes() {
     if (!confirm(`Gerar ${b.quantity} imagens de QR do lote ${b.code} (.zip)?`)) return;
     const { data, error } = await supabase
       .from("plates")
-      .select("token")
+      .select("token, short_code")
       .eq("batch_id", b.id)
-      .order("created_at", { ascending: true });
+      .order("short_code", { ascending: true });
     if (error || !data || data.length === 0) {
       toast.error("Não foi possível gerar os QR codes.");
       return;
@@ -167,7 +167,7 @@ function Lotes() {
       const url = `${location.origin}/r/${p.token}`;
       const dataUrl = await QRCode.toDataURL(url, { width: 1000, margin: 2, errorCorrectionLevel: "H" });
       const base64 = dataUrl.split(",")[1];
-      zip.file(`${p.token}.png`, base64, { base64: true });
+      zip.file(`${p.short_code}.png`, base64, { base64: true });
     }
     const blob = await zip.generateAsync({ type: "blob" });
     const zipUrl = URL.createObjectURL(blob);

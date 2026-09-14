@@ -32,6 +32,7 @@ type Batch = {
 type Plate = {
   id: string;
   token: string;
+  short_code: string;
   status: string;
   destination_url: string | null;
   business_name: string | null;
@@ -130,6 +131,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   const [plates, setPlates] = useState<Plate[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "ativada" | "nao_ativada">("all");
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -155,8 +157,10 @@ function Lote({ email, userId }: { email: string; userId: string }) {
     }
     const p = await supabase
       .from("plates")
-      .select("id, token, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count")
-      .order("created_at", { ascending: true });
+      .select(
+        "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count",
+      )
+      .order("short_code", { ascending: true });
     setPlates((p.data ?? []) as unknown as Plate[]);
   }, []);
 
@@ -189,7 +193,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       toast.error(error.message);
       return;
     }
-    toast.success(`Código ${plate.token.slice(0, 8)} ativado.`);
+    toast.success(`Código ${plate.short_code} ativado.`);
     void load();
   }
 
@@ -212,9 +216,15 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   }, [plates]);
 
   const filtered = plates.filter((p) => {
+    if (statusFilter !== "all" && p.status !== statusFilter) return false;
     if (!q.trim()) return true;
     const t = q.toLowerCase();
-    return p.token.toLowerCase().includes(t) || p.business_name?.toLowerCase().includes(t) || p.sold_to?.toLowerCase().includes(t);
+    return (
+      p.short_code.toLowerCase().includes(t) ||
+      p.token.toLowerCase().includes(t) ||
+      p.business_name?.toLowerCase().includes(t) ||
+      p.sold_to?.toLowerCase().includes(t)
+    );
   });
 
   if (batches === null) return <Center>Carregando…</Center>;
@@ -322,6 +332,27 @@ function Lote({ email, userId }: { email: string; userId: string }) {
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código / negócio" className="h-10 w-full sm:w-64 input-soft rounded-xl" />
             </div>
 
+            <div className="mt-3 flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+              {(
+                [
+                  ["all", `Todos (${counts.total})`],
+                  ["ativada", `Ativados (${counts.active})`],
+                  ["nao_ativada", `Em branco (${counts.blank})`],
+                ] as const
+              ).map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setStatusFilter(k)}
+                  className={`rounded-full px-3 py-1.5 transition-colors ${
+                    statusFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <div className="mt-3 space-y-3">
               {filtered.map((p) => (
                 <PlateCard key={p.id} plate={p} onActivate={activate} onDeactivate={deactivate} />
@@ -358,8 +389,8 @@ function PlateCard({
     <div className="rounded-2xl bg-card p-5 card-soft border border-border">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-sm font-bold bg-surface px-2.5 py-1 rounded-lg border border-border">
-            {plate.token}
+          <span className="font-mono text-base font-black tracking-wide bg-surface px-3 py-1.5 rounded-lg border-2 border-primary/30 text-foreground">
+            {plate.short_code}
           </span>
           <Button
             type="button"
