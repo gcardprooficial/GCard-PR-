@@ -223,9 +223,9 @@ function Home() {
           { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
         ],
       };
-  const catalogProducts = data.products.filter(
-    (product) => product.slug === "cartao-bolso" && product.status === "ativo",
-  );
+  // Mostra todo produto não oculto (ativo ou em_breve); o card já trata "em_breve"
+  // com o overlay "Em breve". Isso travava em só cartão-bolso antes.
+  const catalogProducts = data.products.filter((product) => product.status !== "oculto");
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
   return (
