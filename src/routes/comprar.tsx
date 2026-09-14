@@ -59,6 +59,7 @@ export const Route = createFileRoute("/comprar")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://www.gcardpro.com.br/comprar" }],
   }),
   component: Comprar,
 });

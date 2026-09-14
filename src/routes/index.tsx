@@ -48,6 +48,69 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://www.gcardpro.com.br/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "Tem mensalidade?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Não. Você paga uma vez pelo cartão e usa para sempre. Nenhum custo recorrente, nenhuma assinatura escondida.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Funciona em qualquer celular?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "O cartão de bolso funciona por NFC em iPhone XS+ e na maioria dos Androids compatíveis.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Preciso configurar algo?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Não. Você informa o seu negócio durante a compra e nós entregamos o cartão já configurado.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Quanto custa o frete?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Frete grátis para todo o território nacional. Enviamos pelos Correios (PAC ou Sedex, conforme o prazo disponível).",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Posso trocar o link da placa depois?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Claro. É só mandar uma mensagem pro nosso Instagram @gcardpro.oficial que a gente atualiza. Não precisa reimprimir nada, é só o link dinâmico do painel.",
+              },
+            },
+          ],
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "GCard-PRÓ",
+          url: "https://www.gcardpro.com.br/",
+          logo: "https://www.gcardpro.com.br/favicon-512.png",
+          sameAs: ["https://instagram.com/gcardpro.oficial"],
+        }),
+      },
+    ],
   }),
   component: Home,
 });
