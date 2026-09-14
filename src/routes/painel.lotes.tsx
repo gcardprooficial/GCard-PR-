@@ -76,6 +76,37 @@ function Lotes() {
     setStockPlatesLoading(false);
   }
 
+  async function deleteAllStock(productId: string, productName: string) {
+    const total = stock[productId] ?? 0;
+    if (total === 0) return;
+    if (
+      !confirm(
+        `Excluir TODAS as ${total} plaquinhas soltas de "${productName}"? Ação irreversível.`,
+      )
+    )
+      return;
+    const { error } = await supabase
+      .from("plates")
+      .delete()
+      .is("batch_id", null)
+      .eq("product_id", productId);
+    if (error) {
+      toast.error("Não foi possível excluir o estoque.");
+      return;
+    }
+    await supabase.from("audit_log").insert({
+      actor_id: userId,
+      actor_email: email,
+      action: "delete_stock",
+      entity: "plates",
+      entity_id: productId,
+      details: { product_id: productId, quantity: total },
+    });
+    toast.success(`${total} plaquinhas excluídas do estoque.`);
+    setExpandedStock(null);
+    void load();
+  }
+
   const load = useCallback(async () => {
     const b = await supabase
       .from("batches")
@@ -347,9 +378,25 @@ function Lotes() {
               <p className="text-sm text-muted-foreground">Nenhuma plaquinha solta desse produto.</p>
             ) : (
               <>
-                <p className="text-xs text-muted-foreground">
-                  {stockPlates.length} código(s) {stockPlates.length >= 500 ? "(mostrando os 500 primeiros)" : ""}
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {stock[expandedStock] ?? stockPlates.length} código(s) no total
+                    {stockPlates.length >= 500 ? " (mostrando os 500 primeiros abaixo)" : ""}
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      void deleteAllStock(
+                        expandedStock,
+                        products.find((p) => p.id === expandedStock)?.name ?? "produto",
+                      )
+                    }
+                    className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    Excluir todo esse estoque
+                  </Button>
+                </div>
                 <div className="mt-2 max-h-64 overflow-y-auto grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
                   {stockPlates.map((sp) => (
                     <span key={sp.id} className="rounded-lg bg-card border border-border px-2 py-1 font-mono text-xs">
