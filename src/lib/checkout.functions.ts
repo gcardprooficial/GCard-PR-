@@ -130,15 +130,29 @@ export const createPendingOrder = createServerFn({ method: "POST" })
       throw new Error("Quantidade acima do máximo do plano.");
     }
 
-    const { data: tiers } = await supabaseAdmin
-      .from("plan_price_tiers")
-      .select("min_quantity, unit_price_cents, label")
-      .eq("plan_id", plan.id);
+    const [{ data: tiers }, { data: productTiers }] = await Promise.all([
+      supabaseAdmin
+        .from("plan_price_tiers")
+        .select("min_quantity, unit_price_cents, label")
+        .eq("plan_id", plan.id),
+      plan.is_resale
+        ? supabaseAdmin
+            .from("product_price_tiers")
+            .select("min_quantity, unit_price_cents, label")
+            .eq("product_id", product.id)
+        : Promise.resolve({ data: null }),
+    ]);
 
     // Price is always recomputed here — never trusted from the browser.
-    const tierPrice = unitPriceForQuantity(tiers ?? [], data.quantity, plan.unit_price_cents);
-    const delta = plan.is_resale ? product.resale_delta_cents : product.price_delta_cents;
-    const unitPrice = tierPrice + delta;
+    // Produto com faixa de revenda própria usa ela; senão, plano + adicional.
+    let unitPrice: number;
+    if (plan.is_resale && productTiers && productTiers.length > 0) {
+      unitPrice = unitPriceForQuantity(productTiers, data.quantity, productTiers[0].unit_price_cents);
+    } else {
+      const tierPrice = unitPriceForQuantity(tiers ?? [], data.quantity, plan.unit_price_cents);
+      const delta = plan.is_resale ? product.resale_delta_cents : product.price_delta_cents;
+      unitPrice = tierPrice + delta;
+    }
     const subtotal = unitPrice * data.quantity;
 
     let businessId: string | null = null;

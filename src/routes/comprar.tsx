@@ -20,6 +20,20 @@ import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
 
+/** Produto com faixa de revenda própria usa ela; senão, plano + adicional fixo. */
+function resolveUnitPrice(
+  plan: { tiers: { min_quantity: number; unit_price_cents: number; label: string | null }[]; unit_price_cents: number },
+  product: CatalogProduct | null,
+  quantity: number,
+  isResale: boolean,
+): number {
+  if (isResale && product?.resale_tiers?.length) {
+    return unitPriceForQuantity(product.resale_tiers, quantity, product.resale_tiers[0].unit_price_cents);
+  }
+  const delta = isResale ? (product?.resale_delta_cents ?? 0) : (product?.price_delta_cents ?? 0);
+  return unitPriceForQuantity(plan.tiers, quantity, plan.unit_price_cents) + delta;
+}
+
 const searchSchema = z.object({
   caminho: z.enum(["lojista", "revenda"]).optional().catch(undefined),
 });
@@ -64,6 +78,7 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     status: "ativo",
     price_delta_cents: 0,
     resale_delta_cents: 0,
+    resale_tiers: [],
     has_qr: false,
     has_nfc: true,
   },
@@ -177,8 +192,7 @@ function Comprar() {
 
   const unitPrice = useMemo(() => {
     if (!plan) return 0;
-    const delta = isResale ? (product?.resale_delta_cents ?? 0) : (product?.price_delta_cents ?? 0);
-    return unitPriceForQuantity(plan.tiers, quantity, plan.unit_price_cents) + delta;
+    return resolveUnitPrice(plan, product, quantity, isResale);
   }, [plan, product, quantity, isResale]);
   const total = unitPrice * quantity;
   const maxQuantity = plan?.max_quantity ?? 500;
@@ -797,10 +811,7 @@ function Comprar() {
                               Por unidade
                             </p>
                             <p className="mt-1 font-display text-xl font-black leading-tight sm:text-2xl">
-                              {money(
-                                unitPriceForQuantity(plan.tiers, quantity, plan.unit_price_cents) +
-                                  (isResale ? item.resale_delta_cents : item.price_delta_cents),
-                              )}
+                              {money(resolveUnitPrice(plan, item, quantity, isResale))}
                             </p>
                           </div>
                         )}
@@ -1172,9 +1183,7 @@ function Comprar() {
 
               <div className="mt-7 grid gap-4 sm:grid-cols-2 md:gap-5">
                 {plan.packages.map((pkg, i) => {
-                  const price =
-                    unitPriceForQuantity(plan.tiers, pkg.quantity, plan.unit_price_cents) +
-                    (isResale ? (product?.resale_delta_cents ?? 0) : (product?.price_delta_cents ?? 0));
+                  const price = resolveUnitPrice(plan, product, pkg.quantity, isResale);
                   const selected = quantity === pkg.quantity;
                   return (
                     <button

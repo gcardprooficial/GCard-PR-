@@ -30,6 +30,8 @@ export type CatalogProduct = {
   status: string;
   price_delta_cents: number;
   resale_delta_cents: number;
+  /** Faixas de preço de revenda próprias do produto — sobrepõem plano+delta quando existem. */
+  resale_tiers: PriceTier[];
   has_qr: boolean;
   has_nfc: boolean;
 };
@@ -57,7 +59,7 @@ export type CatalogPlan = {
 export const getCatalog = createServerFn({ method: "GET" }).handler(async () => {
   const supabase = publicClient();
 
-  const [products, plans, packages, tiers] = await Promise.all([
+  const [products, plans, packages, tiers, productTiers] = await Promise.all([
     supabase
       .from("products")
       .select(
@@ -80,6 +82,10 @@ export const getCatalog = createServerFn({ method: "GET" }).handler(async () => 
       .from("plan_price_tiers")
       .select("plan_id, min_quantity, unit_price_cents, label")
       .order("min_quantity"),
+    supabase
+      .from("product_price_tiers")
+      .select("product_id, min_quantity, unit_price_cents, label")
+      .order("min_quantity"),
   ]);
 
   const planList: CatalogPlan[] = (plans.data ?? []).map((plan) => ({
@@ -92,8 +98,17 @@ export const getCatalog = createServerFn({ method: "GET" }).handler(async () => 
       .map(({ plan_id: _planId, ...pkg }) => pkg),
   }));
 
+  const productList: CatalogProduct[] = ((products.data ?? []) as CatalogProduct[]).map(
+    (product) => ({
+      ...product,
+      resale_tiers: (productTiers.data ?? [])
+        .filter((t) => t.product_id === product.id)
+        .map(({ product_id: _pid, ...t }) => t),
+    }),
+  );
+
   return {
-    products: (products.data ?? []) as CatalogProduct[],
+    products: productList,
     plans: planList,
   };
 });
