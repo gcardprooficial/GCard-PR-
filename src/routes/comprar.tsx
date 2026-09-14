@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { z } from "zod";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { getCatalog, type CatalogProduct } from "@/lib/catalog.functions";
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createPendingOrder } from "@/lib/checkout.functions";
@@ -143,8 +145,25 @@ function Comprar() {
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
   const steps = isResale
-    ? (["estilo", "quantidade", "dados", "entrega", "revisao"] as const)
+    ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
     : (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "revisao"] as const);
+
+  // Revenda precisa de conta (o mesmo e-mail vai ativar os códigos depois em
+  // /ativar). Loja própria segue como convidado — o time configura pelo painel.
+  const [session, setSession] = useState<Session | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
+  useEffect(() => {
+    if (!isResale) {
+      setSessionReady(true);
+      return;
+    }
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setSessionReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, [isResale]);
 
   const [stepIndex, setStepIndex] = useState(0);
   const step = steps[stepIndex];
@@ -559,10 +578,19 @@ function Comprar() {
     );
   }
 
+  // E-mail do pedido = e-mail da conta em revenda, senão /ativar não acha o lote depois.
+  useEffect(() => {
+    if (isResale && session?.user.email && customer.email !== session.user.email) {
+      setCustomer((prev) => ({ ...prev, email: session.user.email! }));
+    }
+  }, [isResale, session]);
+
   const canAdvance = (() => {
     switch (step) {
       case "estilo":
         return !!product;
+      case "conta":
+        return !!session;
       case "negocio":
         return !!business || manualLink.trim().length > 10;
       case "confirmar":
@@ -822,6 +850,8 @@ function Comprar() {
               </div>
             </div>
           )}
+
+          {step === "conta" && <ContaStep session={session} sessionReady={sessionReady} />}
 
           {step === "negocio" && (
             <div>
@@ -1798,6 +1828,72 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <dd className="max-w-[60%] break-words text-right font-bold text-foreground sm:max-w-md">
         {value}
       </dd>
+    </div>
+  );
+}
+
+/** Passo "conta" — só revenda. O mesmo e-mail/senha entra depois em /ativar. */
+function ContaStep({ session, sessionReady }: { session: Session | null; sessionReady: boolean }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const { error } =
+      mode === "login"
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password });
+    setBusy(false);
+    if (error) toast.error(mode === "login" ? "E-mail ou senha inválidos." : error.message);
+  }
+
+  if (!sessionReady) return <p className="text-sm text-muted-foreground">Carregando…</p>;
+
+  if (session) {
+    return (
+      <div>
+        <h1 className="text-2xl leading-tight sm:text-3xl">
+          Conta <span className="highlight-yellow">confirmada</span>
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Logado como <strong className="text-foreground">{session.user.email}</strong>. Depois da
+          compra, ative seus códigos em <code className="rounded bg-muted px-1">/ativar</code> com o
+          mesmo e-mail e senha.
+        </p>
+        <Button variant="outline" size="sm" className="mt-4" onClick={() => supabase.auth.signOut()}>
+          Trocar de conta
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h1 className="text-2xl leading-tight sm:text-3xl">
+        Entre ou crie sua <span className="highlight-yellow">conta</span>
+      </h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+        Revenda precisa de conta — é com esse e-mail e senha que você ativa cada código depois, em{" "}
+        <code className="rounded bg-muted px-1">/ativar</code>.
+      </p>
+
+      <form onSubmit={submit} className="mt-6 max-w-sm space-y-4">
+        <Field label="E-mail" type="email" value={email} onChange={setEmail} />
+        <Field label="Senha" type="password" value={password} onChange={setPassword} />
+        <Button type="submit" className="h-12 w-full rounded-2xl" disabled={busy}>
+          {busy ? "Aguarde…" : mode === "login" ? "Entrar" : "Criar conta"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => setMode((m) => (m === "login" ? "signup" : "login"))}
+          className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          {mode === "login" ? "Primeira vez? Criar conta" : "Já tenho conta"}
+        </button>
+      </form>
     </div>
   );
 }
