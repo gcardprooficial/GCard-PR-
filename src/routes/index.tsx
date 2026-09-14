@@ -1118,6 +1118,14 @@ function Home() {
                       Política de privacidade
                     </Link>
                   </li>
+                  <li>
+                    <Link
+                      to="/ativar"
+                      className="transition-colors hover:text-foreground hover:underline underline-offset-4"
+                    >
+                      Ativar meus códigos (revendedor)
+                    </Link>
+                  </li>
                 </ul>
               </div>
             </div>
