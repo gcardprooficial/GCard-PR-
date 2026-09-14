@@ -10,8 +10,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import heroCartao from "@/assets/gcard-pro-cartao-nfc-mockup-avaliacao-google.webp";
+import heroCartao from "@/assets/gcard-pro-hero-barbearia.jpeg";
 import produtoCartao from "@/assets/gcard-pro-cartao-nfc-arte-frontal.webp";
+import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-arte.png";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 const catalogQuery = queryOptions({
@@ -52,6 +53,7 @@ export const Route = createFileRoute("/")({
 
 const IMAGES: Record<string, string> = {
   "cartao-bolso": produtoCartao,
+  "plaquinha-10x10": produtoPlaquinha10x10,
 };
 
 const FALLBACK_PRODUCTS = [
@@ -704,28 +706,29 @@ function Home() {
         <div className="mt-10 grid gap-5 md:grid-cols-2">
           <div className="rounded-[1.75rem] border-2 border-primary bg-card p-7 shadow-xl shadow-primary/10 sm:p-8">
             <div className="flex items-center justify-between gap-3">
-              <span className="badge-pill bg-primary/15 text-foreground">Lojista</span>
+              <span className="badge-pill bg-primary/15 text-foreground">Loja própria</span>
               <span className="text-xs font-bold text-primary">Pronto para uso</span>
             </div>
-            <h3 className="mt-5 text-2xl sm:text-3xl">Cartão de bolso já configurado</h3>
+            <h3 className="mt-5 text-2xl sm:text-3xl">Cartão ou plaquinha, já configurados</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Você envia o link do Google e recebe o cartão pronto. Limite de 5 unidades por pedido.
+              Você manda o link do seu Google, escolhe o modelo e recebe pronto pra usar. Limite de
+              5 unidades por pedido.
             </p>
             <div className="mt-7 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-surface p-4">
-                <p className="text-xs text-muted-foreground">1 a 4 unidades</p>
+                <p className="text-xs text-muted-foreground">Cartão de bolso</p>
                 <p className="mt-1 font-display text-2xl">R$ 59,90</p>
-                <p className="text-xs text-muted-foreground">por unidade</p>
+                <p className="text-xs text-muted-foreground">a partir de, por unidade</p>
               </div>
               <div className="rounded-xl bg-primary p-4 text-primary-foreground">
-                <p className="text-xs opacity-80">5 unidades</p>
-                <p className="mt-1 font-display text-2xl">R$ 49,90</p>
+                <p className="text-xs opacity-80">Plaquinha 10x10</p>
+                <p className="mt-1 font-display text-2xl">R$ 79,90</p>
                 <p className="text-xs opacity-80">por unidade</p>
               </div>
             </div>
             <Button asChild size="lg" className="mt-6 h-12 w-full rounded-xl">
               <Link to="/comprar" search={{ caminho: "lojista" }}>
-                Comprar agora
+                Montar meu pedido
               </Link>
             </Button>
           </div>
@@ -734,15 +737,16 @@ function Home() {
               <span className="badge-pill bg-secondary text-secondary-foreground">Revendedor</span>
               <span className="text-xs font-bold text-muted-foreground">Melhor margem</span>
             </div>
-            <h3 className="mt-5 text-2xl sm:text-3xl">Cartões em branco em lote</h3>
+            <h3 className="mt-5 text-2xl sm:text-3xl">Cartões e plaquinhas em lote</h3>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Cartões de bolso NFC para compras em quantidade e revenda.
+              NFC e QR já impressos de fábrica. Cada peça chega com um código próprio pra você
+              ativar no negócio de cada cliente, direto no seu painel de revendedor.
             </p>
             <div className="mt-7 grid gap-2 sm:grid-cols-3">
               {[
-                ["10 a 24", "R$ 37,90"],
-                ["25 a 99", "R$ 27,90"],
-                ["100+", "R$ 19,90"],
+                ["10 a 24", "R$ 32,90"],
+                ["25 a 99", "R$ 24,90"],
+                ["100+", "R$ 14,90"],
               ].map(([label, price]) => (
                 <div key={label} className="rounded-xl bg-surface p-3">
                   <p className="text-xs text-muted-foreground">{label} unidades</p>
@@ -771,14 +775,15 @@ function Home() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-xl">
               <p className="animate-rise text-xs font-black uppercase tracking-[0.2em] text-primary">
-                Produto disponível agora
+                Modelos disponíveis
               </p>
               <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-                Comece pelo cartão de bolso.
+                Cartão de bolso ou plaquinha de balcão.
               </h2>
             </div>
             <p className="animate-rise delay-2 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-              O cartão de bolso com NFC está disponível agora.
+              Os dois já saem configurados com a avaliação do seu Google. A plaquinha em L pra mesa
+              chega em breve.
             </p>
           </div>
 
@@ -847,6 +852,18 @@ function Home() {
                       {product.slug === "plaquinha-10x10" && "10 x 10 cm · Quadrada"}
                       {product.slug === "plaquinha-10x15-l" && "10 x 15 cm · Formato L"}
                     </p>
+
+                    {isSoon ? (
+                      <Button disabled size="sm" className="mt-4 w-full rounded-xl" variant="outline">
+                        Em breve
+                      </Button>
+                    ) : (
+                      <Button asChild size="sm" className="mt-4 w-full rounded-xl">
+                        <Link to="/comprar" search={{ caminho: "lojista" }}>
+                          Escolher {product.name.toLowerCase()}
+                        </Link>
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
