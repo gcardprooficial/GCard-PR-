@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import produtoCartao from "@/assets/gcard-pro-cartao-nfc-arte-frontal.webp";
+import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
+import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-mockup.jpg";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
@@ -47,6 +48,7 @@ export const Route = createFileRoute("/comprar")({
 
 const IMAGES: Record<string, string> = {
   "cartao-bolso": produtoCartao,
+  "plaquinha-10x10": produtoPlaquinha10x10,
 };
 
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
