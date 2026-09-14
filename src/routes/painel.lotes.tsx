@@ -260,7 +260,30 @@ function Lotes() {
         <code className="rounded bg-muted px-1">/ativar</code> usando o mesmo e-mail.
       </p>
 
-      <form onSubmit={create} className="mt-6 rounded-2xl bg-card p-5 card-soft">
+      <div className="mt-6 rounded-2xl bg-card p-5 card-soft">
+        <p className="text-sm font-semibold">Estoque disponível (plaquinhas soltas, sem dono)</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((p) => (
+            <div key={p.id} className="rounded-xl border border-border p-3 flex items-center justify-between">
+              <span className="text-sm">{p.name}</span>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                  (stock[p.id] ?? 0) > 0
+                    ? "bg-green-100 text-green-800 border border-green-200"
+                    : "bg-amber-100 text-amber-900 border border-amber-200"
+                }`}
+              >
+                {stock[p.id] ?? 0} un.
+              </span>
+            </div>
+          ))}
+          {products.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhum produto cadastrado.</p>
+          )}
+        </div>
+      </div>
+
+      <form onSubmit={create} className="mt-4 rounded-2xl bg-card p-5 card-soft">
         <p className="text-sm font-semibold">Novo lote</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div>
