@@ -48,6 +48,7 @@ function Financeiro() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [recurring, setRecurring] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { start, end } = monthRange(month);
@@ -90,7 +91,7 @@ function Financeiro() {
       return;
     }
     setBusy(true);
-    const { error } = await supabase.from("finance_entries").insert({
+    const payload = {
       kind,
       category: category.trim(),
       description: description.trim() || null,
@@ -98,19 +99,40 @@ function Financeiro() {
       entry_date: date,
       is_recurring: recurring,
       recurrence: recurring ? "mensal" : null,
-      created_by: userId,
-    });
+    };
+    const { error } = editingId
+      ? await supabase.from("finance_entries").update(payload).eq("id", editingId)
+      : await supabase.from("finance_entries").insert({ ...payload, created_by: userId });
     setBusy(false);
     if (error) {
-      toast.error("Não foi possível lançar.");
+      toast.error(editingId ? "Não foi possível salvar a edição." : "Não foi possível lançar.");
       return;
     }
     setCategory("");
     setDescription("");
     setAmount("");
     setRecurring(false);
-    toast.success("Lançamento registrado.");
+    setEditingId(null);
+    toast.success(editingId ? "Lançamento atualizado." : "Lançamento registrado.");
     void load();
+  }
+
+  function startEdit(x: Entry) {
+    setEditingId(x.id);
+    setKind(x.kind);
+    setCategory(x.category);
+    setDescription(x.description ?? "");
+    setAmount((x.amount_cents / 100).toFixed(2).replace(".", ","));
+    setDate(x.entry_date);
+    setRecurring(x.is_recurring);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setCategory("");
+    setDescription("");
+    setAmount("");
+    setRecurring(false);
   }
 
   async function remove(id: string) {
@@ -120,6 +142,7 @@ function Financeiro() {
       toast.error("Não foi possível excluir.");
       return;
     }
+    if (editingId === id) cancelEdit();
     setEntries((prev) => prev?.filter((x) => x.id !== id) ?? null);
   }
 
@@ -160,7 +183,7 @@ function Financeiro() {
       )}
 
       <form onSubmit={add} className="mt-6 rounded-2xl bg-card p-5 card-soft">
-        <p className="text-sm font-semibold">Novo lançamento</p>
+        <p className="text-sm font-semibold">{editingId ? "Editar lançamento" : "Novo lançamento"}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <Label className="text-xs">Tipo</Label>
@@ -217,9 +240,16 @@ function Financeiro() {
             />
             Recorrente (mensal)
           </label>
-          <Button type="submit" className="self-end" disabled={busy}>
-            {busy ? "Salvando…" : "Lançar"}
-          </Button>
+          <div className="flex items-end gap-2">
+            <Button type="submit" disabled={busy}>
+              {busy ? "Salvando…" : editingId ? "Salvar edição" : "Lançar"}
+            </Button>
+            {editingId && (
+              <Button type="button" variant="outline" onClick={cancelEdit}>
+                Cancelar
+              </Button>
+            )}
+          </div>
         </div>
       </form>
 
@@ -256,6 +286,12 @@ function Financeiro() {
                   {x.kind === "entrada" ? "+" : "−"}
                   {money(x.amount_cents)}
                 </span>
+                <button
+                  onClick={() => startEdit(x)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  editar
+                </button>
                 <button
                   onClick={() => void remove(x.id)}
                   className="text-xs text-muted-foreground hover:text-red-600"

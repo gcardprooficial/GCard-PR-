@@ -105,6 +105,11 @@ function Placas() {
           className="h-10 w-64"
         />
       </div>
+      {rows && rows.length >= 500 && (
+        <p className="mt-2 text-xs text-amber-800">
+          Mostrando as 500 placas mais recentes — use a busca pra achar placas mais antigas.
+        </p>
+      )}
 
       {rows === null ? (
         <p className="mt-8 text-sm text-muted-foreground">Carregando…</p>

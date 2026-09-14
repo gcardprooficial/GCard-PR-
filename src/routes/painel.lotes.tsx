@@ -197,6 +197,30 @@ function Lotes() {
     setBatches((prev) => prev?.map((x) => (x.id === b.id ? { ...x, ...changes } : x)) ?? null);
   }
 
+  async function deleteBatch(b: Batch) {
+    if (
+      !confirm(
+        `Excluir o lote ${b.code}? As ${b.quantity} plaquinhas voltam pro estoque solto (sem dono). Ação irreversível.`,
+      )
+    )
+      return;
+    const { error } = await supabase.from("batches").delete().eq("id", b.id);
+    if (error) {
+      toast.error("Não foi possível excluir.");
+      return;
+    }
+    await supabase.from("audit_log").insert({
+      actor_id: userId,
+      actor_email: email,
+      action: "delete_batch",
+      entity: "batches",
+      entity_id: b.id,
+      details: { code: b.code, quantity: b.quantity },
+    });
+    toast.success(`Lote ${b.code} excluído, plaquinhas voltaram pro estoque.`);
+    void load();
+  }
+
   async function exportCodes(b: Batch) {
     if (!confirm(`Exportar ${b.quantity} códigos do lote ${b.code} para CSV?`)) return;
     const { data, error } = await supabase
@@ -552,6 +576,14 @@ function Lotes() {
                         Marcar códigos como enviados
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void deleteBatch(b)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      Excluir lote
+                    </Button>
                     <div className="flex-1">
                       <Label className="text-xs">Vendido para (nota)</Label>
                       <div className="mt-1 flex gap-2">

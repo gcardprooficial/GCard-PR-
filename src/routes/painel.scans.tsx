@@ -73,6 +73,11 @@ function Scans() {
   return (
     <>
       <h1 className="text-2xl">Scans</h1>
+      {plates && plates.length >= 500 && (
+        <p className="mt-1 text-xs text-amber-800">
+          Tabela mostra as 500 placas com mais scans — não é a lista completa.
+        </p>
+      )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-4">
         <Stat label="Total (sempre)" value={allTime} />

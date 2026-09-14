@@ -102,6 +102,27 @@ function Customers() {
   const consented = (contacts ?? []).filter((x) => x.consent && !x.unsubscribed).length;
   const revenue = (contacts ?? []).reduce((sum, x) => sum + x.paid, 0);
 
+  function exportConsented() {
+    const list = (contacts ?? []).filter((x) => x.consent && !x.unsubscribed);
+    if (list.length === 0) {
+      toast.error("Nenhum contato consentido pra exportar.");
+      return;
+    }
+    const rows = [
+      "nome,email,telefone,pedidos,total_pago",
+      ...list.map(
+        (c) =>
+          `"${c.name.replace(/"/g, "'")}",${c.email},${c.phone ?? ""},${c.orders},${(c.paid / 100).toFixed(2)}`,
+      ),
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([rows], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "contatos-consentidos.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -114,9 +135,14 @@ function Customers() {
             Uma visão simples do histórico e do consentimento de cada contato.
           </p>
         </div>
-        <Button size="sm" variant="outline" onClick={() => void load()}>
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={exportConsented}>
+            Exportar consentidos (CSV)
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => void load()}>
+            Atualizar
+          </Button>
+        </div>
       </div>
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Summary label="Contatos" value={String(contacts?.length ?? 0)} />
