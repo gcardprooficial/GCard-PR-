@@ -176,6 +176,14 @@ function Lotes() {
       toast.error(error.message);
       return;
     }
+    await supabase.from("audit_log").insert({
+      actor_id: userId,
+      actor_email: email,
+      action: "create_stock",
+      entity: "plates",
+      entity_id: stockProductId,
+      details: { quantity: stockQuantity, product_id: stockProductId },
+    });
     toast.success(`${stockQuantity} plaquinhas geradas no estoque.`);
     void load();
   }
