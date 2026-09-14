@@ -43,24 +43,51 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/comprar")({
   validateSearch: searchSchema,
   loader: ({ context }) => context.queryClient.ensureQueryData(catalogQuery),
-  head: () => ({
-    meta: [
-      { title: "Montar meu GCard-PRÓ | Cartão de avaliação do Google" },
-      {
-        name: "description",
-        content:
-          "Escolha o modelo, encontre o seu negócio no Google pelo nome e receba o cartão já configurado. Frete grátis.",
-      },
-      { property: "og:title", content: "Montar meu GCard-PRÓ" },
-      {
-        property: "og:description",
-        content: "Passo a passo rápido para receber seu cartão de avaliação já configurado.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [{ rel: "canonical", href: "https://www.gcardpro.com.br/comprar" }],
-  }),
+  head: async () => {
+    const catalog = await getCatalog().catch(() => null);
+    const lojista = catalog?.plans.find((p) => p.slug === "lojista");
+    const products = (catalog?.products ?? []).filter((p) => p.status !== "oculto");
+    return {
+      meta: [
+        { title: "Montar meu GCard-PRÓ | Cartão de avaliação do Google" },
+        {
+          name: "description",
+          content:
+            "Escolha o modelo, encontre o seu negócio no Google pelo nome e receba o cartão já configurado. Frete grátis.",
+        },
+        { property: "og:title", content: "Montar meu GCard-PRÓ" },
+        {
+          property: "og:description",
+          content: "Passo a passo rápido para receber seu cartão de avaliação já configurado.",
+        },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+      links: [{ rel: "canonical", href: "https://www.gcardpro.com.br/comprar" }],
+      scripts:
+        lojista && products.length > 0
+          ? products.map((product) => ({
+              type: "application/ld+json",
+              children: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Product",
+                name: product.name,
+                description: product.tagline ?? product.description ?? undefined,
+                brand: { "@type": "Brand", name: "GCard-PRÓ" },
+                offers: {
+                  "@type": "Offer",
+                  priceCurrency: "BRL",
+                  price: (
+                    resolveUnitPrice(lojista, product, 1, false) / 100
+                  ).toFixed(2),
+                  availability: "https://schema.org/InStock",
+                  url: "https://www.gcardpro.com.br/comprar",
+                },
+              }),
+            }))
+          : [],
+    };
+  },
   component: Comprar,
 });
 
