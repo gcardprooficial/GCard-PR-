@@ -746,7 +746,7 @@ function Home() {
                       </Button>
                     ) : (
                       <Button asChild size="sm" className="mt-4 w-full rounded-xl">
-                        <Link to="/comprar" search={{ caminho: "lojista" }}>
+                        <Link to="/comprar" search={{}}>
                           Escolher {product.name.toLowerCase()}
                         </Link>
                       </Button>
