@@ -19,6 +19,7 @@ type Order = {
   tracking_code: string | null;
   kind: string;
 };
+type LowStockProduct = { id: string; name: string; count: number; threshold: number };
 
 const statusLabels: Record<string, string> = {
   recebido: "Recebido",
@@ -32,6 +33,8 @@ function Overview() {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLive, setIsLive] = useState(false);
+  const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
+  const [stuckRevenda, setStuckRevenda] = useState(0);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -47,6 +50,29 @@ function Overview() {
     }
     setOrders((data ?? []) as Order[]);
     setLastUpdated(new Date());
+
+    const [products, stock, batches] = await Promise.all([
+      supabase.from("products").select("id, name, low_stock_threshold").eq("status", "ativo"),
+      supabase.from("plates").select("product_id").is("batch_id", null).limit(50000),
+      supabase.from("batches").select("owner_order_id").not("owner_order_id", "is", null),
+    ]);
+    const stockCount: Record<string, number> = {};
+    for (const row of stock.data ?? []) {
+      const k = row.product_id as string;
+      stockCount[k] = (stockCount[k] ?? 0) + 1;
+    }
+    setLowStock(
+      ((products.data ?? []) as { id: string; name: string; low_stock_threshold: number }[])
+        .map((p) => ({ id: p.id, name: p.name, count: stockCount[p.id] ?? 0, threshold: p.low_stock_threshold }))
+        .filter((p) => p.count < p.threshold),
+    );
+
+    const withBatch = new Set((batches.data ?? []).map((b) => b.owner_order_id as string));
+    setStuckRevenda(
+      (data ?? []).filter(
+        (o) => o.kind === "revenda" && o.payment_status === "pago" && !withBatch.has(o.id),
+      ).length,
+    );
   }, []);
 
   useEffect(() => {
@@ -186,6 +212,23 @@ function Overview() {
           <h2 className="text-lg font-semibold">Ações prioritárias</h2>
           <p className="mt-1 text-sm text-white/60">O que merece atenção agora.</p>
           <div className="mt-5 space-y-3">
+            {stuckRevenda > 0 && (
+              <Priority
+                title="Revenda travada"
+                value={`${stuckRevenda} pedido(s)`}
+                description="pagos sem lote gerado ainda"
+                href="/painel"
+              />
+            )}
+            {lowStock.map((p) => (
+              <Priority
+                key={p.id}
+                title="Estoque baixo"
+                value={`${p.count} un.`}
+                description={`${p.name} (mínimo ${p.threshold})`}
+                href="/painel/lotes"
+              />
+            ))}
             <Priority
               title="Expedição"
               value={`${metrics.pendingShipping.length} pedidos`}

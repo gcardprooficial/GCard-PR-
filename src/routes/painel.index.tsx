@@ -11,9 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/painel/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    q: typeof search["q"] === "string" ? (search["q"] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { q?: string } =>
+    typeof search["q"] === "string" ? { q: search["q"] } : {},
   component: Orders,
 });
 
@@ -53,10 +52,18 @@ type OrderRow = {
   ship_city: string | null;
   ship_state: string | null;
   ship_zip: string | null;
+  internal_notes: string | null;
   businesses: { name: string; review_url: string } | null;
 };
 
 type BatchByOrder = { orderId: string; code: string; codes_sent_at: string | null };
+type AuditRow = {
+  id: string;
+  action: string;
+  actor_email: string | null;
+  details: Record<string, unknown> | null;
+  created_at: string;
+};
 
 function Orders() {
   const { userId, email } = usePanel();
@@ -71,7 +78,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, fulfillment_status, tracking_code, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, businesses(name, review_url)",
+        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, fulfillment_status, tracking_code, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url)",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -103,6 +110,27 @@ function Orders() {
   }, [load]);
 
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
+  const [historyOpenId, setHistoryOpenId] = useState<string | null>(null);
+  const [historyByOrder, setHistoryByOrder] = useState<Record<string, AuditRow[]>>({});
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  async function toggleHistory(orderId: string) {
+    if (historyOpenId === orderId) {
+      setHistoryOpenId(null);
+      return;
+    }
+    setHistoryOpenId(orderId);
+    if (historyByOrder[orderId]) return;
+    setHistoryLoading(true);
+    const { data } = await supabase
+      .from("audit_log")
+      .select("id, action, actor_email, details, created_at")
+      .eq("entity", "orders")
+      .eq("entity_id", orderId)
+      .order("created_at", { ascending: false });
+    setHistoryLoading(false);
+    setHistoryByOrder((prev) => ({ ...prev, [orderId]: (data ?? []) as unknown as AuditRow[] }));
+  }
 
   async function generateBatchForOrder(row: OrderRow) {
     setGeneratingFor(row.id);
@@ -376,7 +404,65 @@ function Orders() {
                     </Button>
                   </div>
                 </div>
+
+                <div className="mt-3 w-full">
+                  <Label className="text-xs">Nota interna (só a equipe vê)</Label>
+                  <div className="mt-1 flex gap-2">
+                    <Input
+                      defaultValue={r.internal_notes ?? ""}
+                      placeholder="Ex: cliente ligou pedindo prioridade no envio"
+                      className="h-10"
+                      id={`n-${r.id}`}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const el = document.getElementById(`n-${r.id}`) as HTMLInputElement | null;
+                        void patch(r, { internal_notes: el?.value.trim() || null });
+                      }}
+                    >
+                      Salvar nota
+                    </Button>
+                  </div>
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => void toggleHistory(r.id)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  {historyOpenId === r.id ? "Ocultar histórico" : "Ver histórico"}
+                </Button>
               </div>
+
+              {historyOpenId === r.id && (
+                <div className="mt-3 rounded-xl border border-border bg-surface p-3 text-xs">
+                  {historyLoading && !historyByOrder[r.id] ? (
+                    <p className="text-muted-foreground">Carregando…</p>
+                  ) : (historyByOrder[r.id]?.length ?? 0) === 0 ? (
+                    <p className="text-muted-foreground">Nenhum evento registrado ainda.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {historyByOrder[r.id]!.map((h) => (
+                        <li key={h.id} className="flex flex-wrap items-baseline gap-x-2">
+                          <span className="text-muted-foreground">
+                            {new Date(h.created_at).toLocaleString("pt-BR")}
+                          </span>
+                          <span className="font-semibold">{h.action}</span>
+                          {h.actor_email && (
+                            <span className="text-muted-foreground">por {h.actor_email}</span>
+                          )}
+                          {h.details && (
+                            <span className="text-muted-foreground">{JSON.stringify(h.details)}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
