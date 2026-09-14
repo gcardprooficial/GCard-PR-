@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-mockup.jpg";
+import produtoPlaquinhaL from "@/assets/gcard-pro-plaquinha-l-provisorio.jpg";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
@@ -49,6 +50,7 @@ export const Route = createFileRoute("/comprar")({
 const IMAGES: Record<string, string> = {
   "cartao-bolso": produtoCartao,
   "plaquinha-10x10": produtoPlaquinha10x10,
+  "plaquinha-10x15-l": produtoPlaquinhaL,
 };
 
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
@@ -747,7 +749,9 @@ function Comprar() {
                         <img
                           src={IMAGES[item.slug] ?? produtoCartao}
                           alt={item.name}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          className={`h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 ${
+                            item.slug === "plaquinha-10x15-l" ? "blur-sm scale-110" : ""
+                          }`}
                           loading="lazy"
                           draggable={false}
                         />
@@ -1132,6 +1136,21 @@ function Comprar() {
                     {isResale
                       ? "Quanto mais unidades, menor o preço por placa. Escolha um pacote ou digite outro número."
                       : "Preço único por unidade. Dá pra levar quantas quiser."}
+                  </p>
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-g-green sm:text-sm">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 12h2l2-7 10 14 2-7h2" />
+                    </svg>
+                    Frete grátis já incluso no preço, para todo o Brasil
                   </p>
                 </div>
                 <span className="shrink-0 rounded-2xl bg-g-green/12 px-3 py-2 text-g-green">

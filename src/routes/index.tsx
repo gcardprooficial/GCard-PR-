@@ -13,6 +13,7 @@ import {
 import heroCartao from "@/assets/gcard-pro-hero-barbearia.jpeg";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-mockup.jpg";
+import produtoPlaquinhaL from "@/assets/gcard-pro-plaquinha-l-provisorio.jpg";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 const catalogQuery = queryOptions({
@@ -54,6 +55,7 @@ export const Route = createFileRoute("/")({
 const IMAGES: Record<string, string> = {
   "cartao-bolso": produtoCartao,
   "plaquinha-10x10": produtoPlaquinha10x10,
+  "plaquinha-10x15-l": produtoPlaquinhaL,
 };
 
 const FALLBACK_PRODUCTS = [
@@ -403,6 +405,7 @@ function Home() {
             </h2>
             <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground sm:text-lg">
               Os modelos e os preços aparecem no próximo passo, depois que você escolhe um caminho.
+              Frete grátis para todo o Brasil nos dois casos.
             </p>
           </div>
 
@@ -683,7 +686,9 @@ function Home() {
                     <img
                       src={IMAGES[product.slug] ?? produtoCartao}
                       alt={product.name}
-                      className="h-full w-full object-cover transition-all duration-700 group-hover:scale-105"
+                      className={`h-full w-full object-cover transition-all duration-700 group-hover:scale-105 ${
+                        product.slug === "plaquinha-10x15-l" ? "blur-sm scale-110" : ""
+                      }`}
                       loading="lazy"
                       draggable={false}
                     />
@@ -732,7 +737,7 @@ function Home() {
                     <p className="mt-1 text-sm font-bold text-foreground">
                       {product.slug === "cartao-bolso" && "8,5 x 5,4 cm · Cartão"}
                       {product.slug === "plaquinha-10x10" && "10 x 10 cm · Quadrada"}
-                      {product.slug === "plaquinha-10x15-l" && "10 x 15 cm · Formato L"}
+                      {product.slug === "plaquinha-10x15-l" && "10 x 15 cm"}
                     </p>
 
                     {isSoon ? (
