@@ -199,7 +199,127 @@ function Calculadora() {
             : `Atenção: margem ${r.marginPct.toFixed(1)}% abaixo do mínimo de ${a.min_margin_pct}%.`}
         </div>
       </div>
+
+      <ContasReais />
     </>
+  );
+}
+
+type ProductCost = {
+  label: string;
+  unit_cost_cents: number;
+  sticker_cents: number;
+  packaging_cents: number;
+  shipping_in_cents: number;
+  labor_cents: number;
+  loss_pct: number;
+  note?: string;
+};
+type ProductRow = { slug: string; price_delta_cents: number; status: string };
+type PlanRow = {
+  slug: string;
+  name: string;
+  unit_price_cents: number;
+  tiers: { min_quantity: number; unit_price_cents: number; label: string | null }[];
+};
+
+/** Contas reais (custo real x preço real no site), sempre visível pros dois sócios. */
+function ContasReais() {
+  const [costs, setCosts] = useState<Record<string, ProductCost>>({});
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [plans, setPlans] = useState<PlanRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      const [s, p, pl, t] = await Promise.all([
+        supabase.from("app_settings").select("value").eq("key", "pricing_products").maybeSingle(),
+        supabase.from("products").select("slug, price_delta_cents, status"),
+        supabase.from("plans").select("id, slug, name, unit_price_cents").eq("is_active", true),
+        supabase.from("plan_price_tiers").select("plan_id, min_quantity, unit_price_cents, label"),
+      ]);
+      setCosts((s.data?.value as Record<string, ProductCost>) ?? {});
+      setProducts((p.data ?? []) as ProductRow[]);
+      const tiers = t.data ?? [];
+      setPlans(
+        ((pl.data ?? []) as { id: string; slug: string; name: string; unit_price_cents: number }[]).map((x) => ({
+          slug: x.slug,
+          name: x.name,
+          unit_price_cents: x.unit_price_cents,
+          tiers: tiers
+            .filter((tt) => tt.plan_id === x.id)
+            .sort((a2, b2) => a2.min_quantity - b2.min_quantity),
+        })),
+      );
+      setLoaded(true);
+    })();
+  }, []);
+
+  if (!loaded) return null;
+
+  const rows: { product: string; plan: string; price: number; cost: number }[] = [];
+  for (const prod of products) {
+    if (prod.status !== "ativo") continue;
+    const cost = costs[prod.slug];
+    if (!cost) continue;
+    const baseCost =
+      cost.unit_cost_cents + cost.sticker_cents + cost.packaging_cents + cost.shipping_in_cents + cost.labor_cents;
+    const withLoss = Math.round(baseCost * (1 + cost.loss_pct / 100));
+    for (const plan of plans) {
+      const tierList = plan.tiers.length ? plan.tiers : [{ min_quantity: 1, unit_price_cents: plan.unit_price_cents, label: null }];
+      for (const tier of tierList) {
+        rows.push({
+          product: cost.label,
+          plan: `${plan.name}${tier.label ? ` — ${tier.label}` : ""}`,
+          price: tier.unit_price_cents + prod.price_delta_cents,
+          cost: withLoss,
+        });
+      }
+    }
+  }
+
+  return (
+    <div className="mt-5 rounded-2xl bg-card p-5 card-soft">
+      <p className="text-sm font-semibold">Contas reais — custo x preço no site agora</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Custo de cada peça pronta (material + adesivo + embalagem + frete de produção + mão de obra + 3%
+        perdas) contra o preço ativo no catálogo. Atualiza sozinho quando o preço do site muda.
+      </p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="py-2 pr-3">Produto</th>
+              <th className="py-2 pr-3">Faixa</th>
+              <th className="py-2 pr-3 text-right">Custo</th>
+              <th className="py-2 pr-3 text-right">Preço</th>
+              <th className="py-2 pr-3 text-right">Margem</th>
+              <th className="py-2 text-right">Margem %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const margin = r.price - r.cost;
+              const pct = r.price > 0 ? (margin / r.price) * 100 : 0;
+              return (
+                <tr key={i} className="border-b border-border/60 last:border-0">
+                  <td className="py-2 pr-3">{r.product}</td>
+                  <td className="py-2 pr-3 text-muted-foreground">{r.plan}</td>
+                  <td className="py-2 pr-3 text-right">{money(r.cost)}</td>
+                  <td className="py-2 pr-3 text-right">{money(r.price)}</td>
+                  <td className={`py-2 pr-3 text-right ${margin >= 0 ? "text-green-700" : "text-red-700"}`}>
+                    {money(margin)}
+                  </td>
+                  <td className={`py-2 text-right font-semibold ${pct >= 30 ? "text-green-700" : "text-red-700"}`}>
+                    {pct.toFixed(1)}%
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
