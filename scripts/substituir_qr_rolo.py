@@ -17,15 +17,22 @@ Uso:
     #    e rode de verdade:
     python substituir_qr_rolo.py arte_rolo.pdf pasta_com_qrcodes/ saida.pdf --xref 28
 
+O QR é reamostrado pro tamanho real de impressão em 300 DPI por padrão
+(ajustável com --dpi) -- os PNGs baixados do painel vêm em 1000px pra
+servir qualquer tamanho de arte, o que sem essa conversão vira um DPI bem
+acima do necessário (~1500) e deixa o PDF pesado à toa.
+
 Requisitos:
-    pip install pymupdf
+    pip install pymupdf pillow
 """
 
 import argparse
+import io
 from collections import defaultdict
 from pathlib import Path
 
 import fitz  # PyMuPDF
+from PIL import Image
 
 
 def is_square(bbox: fitz.Rect, tol: float = 0.03) -> bool:
@@ -35,6 +42,18 @@ def is_square(bbox: fitz.Rect, tol: float = 0.03) -> bool:
     return abs(w / h - 1) <= tol
 
 
+def downscale_for_print(png_path: Path, bbox_pt: fitz.Rect, dpi: int) -> bytes:
+    """Reamostra o QR pro tamanho real de impressão no dpi pedido -- o QR
+    original vem gerado a 1000px pra caber qualquer tamanho de arte, o que
+    aqui vira um DPI absurdo (~1500) e infla o peso do PDF à toa."""
+    target_px = max(1, round(bbox_pt.width / 72 * dpi))
+    with Image.open(png_path) as im:
+        im = im.convert("L").resize((target_px, target_px), Image.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, format="PNG", optimize=True)
+        return buf.getvalue()
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Substitui QR genérico por QR real num PDF de rolo.")
     ap.add_argument("pdf_original")
@@ -42,6 +61,7 @@ def main() -> None:
     ap.add_argument("pdf_saida", nargs="?", default=None)
     ap.add_argument("--xref", type=int, default=None, help="xref da imagem do QR (confirme com --listar antes).")
     ap.add_argument("--listar", action="store_true", help="Só lista candidatos quadrados, não gera nada.")
+    ap.add_argument("--dpi", type=int, default=300, help="Resolução de impressão do QR (padrão 300).")
     args = ap.parse_args()
 
     qr_files = sorted(Path(args.pasta_qrcodes).glob("*.png"))
@@ -93,7 +113,8 @@ def main() -> None:
             if total_placed >= len(qr_files):
                 break
             bbox = fitz.Rect(info["bbox"])
-            page.insert_image(bbox, filename=str(qr_files[total_placed]))
+            qr_bytes = downscale_for_print(qr_files[total_placed], bbox, args.dpi)
+            page.insert_image(bbox, stream=qr_bytes)
             total_placed += 1
 
     if args.listar:
@@ -107,7 +128,7 @@ def main() -> None:
     elif total_placed == 0:
         print("Nenhuma posição foi preenchida. Confere o --xref.")
 
-    doc.save(args.pdf_saida)
+    doc.save(args.pdf_saida, garbage=4, deflate=True)
     print(f"Pronto: {total_placed} QR codes colocados. Salvo em {args.pdf_saida}")
 
 
