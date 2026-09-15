@@ -278,7 +278,27 @@ function Lotes() {
     URL.revokeObjectURL(url);
   }
 
-  /** Gera um PNG de QR por placa do lote e baixa tudo num .zip — pronto pra mandar pra gráfica. */
+  /** Baixa um .zip com um PNG de QR por placa — pronto pra mandar pra gráfica. */
+  async function downloadQrZip(plates: { token: string; short_code: string }[], filename: string) {
+    toast.info(`Gerando ${plates.length} QR codes...`);
+    const [{ default: JSZip }, QRCode] = await Promise.all([import("jszip"), import("qrcode")]);
+    const zip = new JSZip();
+    for (const p of plates) {
+      const url = `${location.origin}/r/${p.token}`;
+      const dataUrl = await QRCode.toDataURL(url, { width: 1000, margin: 2, errorCorrectionLevel: "H" });
+      const base64 = dataUrl.split(",")[1];
+      zip.file(`${p.short_code}.png`, base64, { base64: true });
+    }
+    const blob = await zip.generateAsync({ type: "blob" });
+    const zipUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = zipUrl;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(zipUrl);
+    toast.success("QR codes gerados.");
+  }
+
   async function exportQrZip(b: Batch) {
     if (!confirm(`Gerar ${b.quantity} imagens de QR do lote ${b.code} (.zip)?`)) return;
     const { data, error } = await supabase
@@ -290,23 +310,25 @@ function Lotes() {
       toast.error("Não foi possível gerar os QR codes.");
       return;
     }
-    toast.info(`Gerando ${data.length} QR codes...`);
-    const [{ default: JSZip }, QRCode] = await Promise.all([import("jszip"), import("qrcode")]);
-    const zip = new JSZip();
-    for (const p of data) {
-      const url = `${location.origin}/r/${p.token}`;
-      const dataUrl = await QRCode.toDataURL(url, { width: 1000, margin: 2, errorCorrectionLevel: "H" });
-      const base64 = dataUrl.split(",")[1];
-      zip.file(`${p.short_code}.png`, base64, { base64: true });
+    void downloadQrZip(data, `${b.code}-qrcodes.zip`);
+  }
+
+  /** Mesma exportação, mas pro estoque solto (plaquinhas sem lote) de um produto. */
+  async function exportStockQrZip(productId: string, productName: string) {
+    const total = stock[productId] ?? 0;
+    if (total === 0) return;
+    if (!confirm(`Gerar ${total} imagens de QR do estoque de "${productName}" (.zip)?`)) return;
+    const { data, error } = await supabase
+      .from("plates")
+      .select("token, short_code")
+      .is("batch_id", null)
+      .eq("product_id", productId)
+      .order("short_code", { ascending: true });
+    if (error || !data || data.length === 0) {
+      toast.error("Não foi possível gerar os QR codes.");
+      return;
     }
-    const blob = await zip.generateAsync({ type: "blob" });
-    const zipUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = zipUrl;
-    link.download = `${b.code}-qrcodes.zip`;
-    link.click();
-    URL.revokeObjectURL(zipUrl);
-    toast.success("QR codes gerados.");
+    void downloadQrZip(data, `estoque-${productName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-qrcodes.zip`);
   }
 
   const totalCost = useMemo(
@@ -383,19 +405,34 @@ function Lotes() {
                     {stock[expandedStock] ?? stockPlates.length} código(s) no total
                     {stockPlates.length >= 500 ? " (mostrando os 500 primeiros abaixo)" : ""}
                   </p>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      void deleteAllStock(
-                        expandedStock,
-                        products.find((p) => p.id === expandedStock)?.name ?? "produto",
-                      )
-                    }
-                    className="h-7 text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    Excluir todo esse estoque
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        void exportStockQrZip(
+                          expandedStock,
+                          products.find((p) => p.id === expandedStock)?.name ?? "produto",
+                        )
+                      }
+                      className="h-7 text-xs"
+                    >
+                      Baixar QR Codes (.zip)
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        void deleteAllStock(
+                          expandedStock,
+                          products.find((p) => p.id === expandedStock)?.name ?? "produto",
+                        )
+                      }
+                      className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      Excluir todo esse estoque
+                    </Button>
+                  </div>
                 </div>
                 <div className="mt-2 max-h-64 overflow-y-auto grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
                   {stockPlates.map((sp) => (
