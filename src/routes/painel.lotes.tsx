@@ -27,7 +27,8 @@ type Batch = {
   products: { name: string } | null;
 };
 type Product = { id: string; slug: string; name: string };
-type StockPlate = { id: string; short_code: string; token: string };
+type StockPlate = { id: string; short_code: string; token: string; printed_at: string | null };
+type PrintFilter = "all" | "printed" | "unprinted";
 
 const reais = (c: number) => (c / 100).toFixed(2).replace(".", ",");
 const toCents = (s: string) => Math.round((Number.parseFloat(s.replace(",", ".")) || 0) * 100);
@@ -57,6 +58,22 @@ function Lotes() {
   const [expandedStock, setExpandedStock] = useState<string | null>(null);
   const [stockPlates, setStockPlates] = useState<StockPlate[]>([]);
   const [stockPlatesLoading, setStockPlatesLoading] = useState(false);
+  const [printFilter, setPrintFilter] = useState<PrintFilter>("all");
+  const [selectedStock, setSelectedStock] = useState<Set<string>>(new Set());
+  const [markBusy, setMarkBusy] = useState(false);
+
+  async function loadStockPlates(productId: string) {
+    setStockPlatesLoading(true);
+    const { data } = await supabase
+      .from("plates")
+      .select("id, short_code, token, printed_at")
+      .is("batch_id", null)
+      .eq("product_id", productId)
+      .order("short_code", { ascending: true })
+      .limit(500);
+    setStockPlates((data ?? []) as unknown as StockPlate[]);
+    setStockPlatesLoading(false);
+  }
 
   async function toggleStock(productId: string) {
     if (expandedStock === productId) {
@@ -64,16 +81,69 @@ function Lotes() {
       return;
     }
     setExpandedStock(productId);
-    setStockPlatesLoading(true);
-    const { data } = await supabase
+    setPrintFilter("all");
+    setSelectedStock(new Set());
+    void loadStockPlates(productId);
+  }
+
+  const filteredStockPlates = useMemo(
+    () =>
+      stockPlates.filter((p) => {
+        if (printFilter === "printed") return p.printed_at !== null;
+        if (printFilter === "unprinted") return p.printed_at === null;
+        return true;
+      }),
+    [stockPlates, printFilter],
+  );
+
+  const printedCount = useMemo(() => stockPlates.filter((p) => p.printed_at !== null).length, [stockPlates]);
+
+  function toggleSelected(id: string) {
+    setSelectedStock((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function markPrinted(printed: boolean) {
+    if (selectedStock.size === 0 || !expandedStock) return;
+    const ids = Array.from(selectedStock);
+    setMarkBusy(true);
+    const { error } = await supabase
       .from("plates")
-      .select("id, short_code, token")
-      .is("batch_id", null)
-      .eq("product_id", productId)
-      .order("short_code", { ascending: true })
-      .limit(500);
-    setStockPlates((data ?? []) as unknown as StockPlate[]);
-    setStockPlatesLoading(false);
+      .update({ printed_at: printed ? new Date().toISOString() : null })
+      .in("id", ids);
+    setMarkBusy(false);
+    if (error) {
+      toast.error("Não foi possível marcar os códigos.");
+      return;
+    }
+    await supabase.from("audit_log").insert({
+      actor_id: userId,
+      actor_email: email,
+      action: printed ? "mark_plates_printed" : "mark_plates_unprinted",
+      entity: "plates",
+      entity_id: expandedStock,
+      details: { plate_ids: ids, count: ids.length },
+    });
+    setStockPlates((prev) =>
+      prev.map((p) => (selectedStock.has(p.id) ? { ...p, printed_at: printed ? new Date().toISOString() : null } : p)),
+    );
+    setSelectedStock(new Set());
+    toast.success(`${ids.length} código(s) marcado(s) como ${printed ? "impresso" : "não impresso"}.`);
+  }
+
+  /** Baixa só os códigos selecionados (ex.: só os "não impressos" que vão pra próxima arte). */
+  async function exportSelectedQrZip(productName: string) {
+    const ids = Array.from(selectedStock);
+    const plates = stockPlates.filter((p) => ids.includes(p.id));
+    if (plates.length === 0) return;
+    void downloadQrZip(
+      plates,
+      `estoque-${productName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-selecionados-qrcodes.zip`,
+    );
   }
 
   async function deleteAllStock(productId: string, productName: string) {
@@ -402,7 +472,7 @@ function Lotes() {
               <>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-muted-foreground">
-                    {stock[expandedStock] ?? stockPlates.length} código(s) no total
+                    {stock[expandedStock] ?? stockPlates.length} código(s) no total · {printedCount} impresso(s)
                     {stockPlates.length >= 500 ? " (mostrando os 500 primeiros abaixo)" : ""}
                   </p>
                   <div className="flex gap-2">
@@ -434,12 +504,112 @@ function Lotes() {
                     </Button>
                   </div>
                 </div>
+
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+                    {(
+                      [
+                        ["all", `Todos (${stockPlates.length})`],
+                        ["unprinted", `Não impressos (${stockPlates.length - printedCount})`],
+                        ["printed", `Impressos (${printedCount})`],
+                      ] as const
+                    ).map(([k, l]) => (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => {
+                          setPrintFilter(k);
+                          setSelectedStock(new Set());
+                        }}
+                        className={`rounded-full px-2.5 py-1 transition-colors ${
+                          printFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedStock((prev) =>
+                        prev.size === filteredStockPlates.length
+                          ? new Set()
+                          : new Set(filteredStockPlates.map((p) => p.id)),
+                      )
+                    }
+                    className="text-xs text-muted-foreground underline underline-offset-2"
+                  >
+                    {selectedStock.size === filteredStockPlates.length && filteredStockPlates.length > 0
+                      ? "Limpar seleção"
+                      : `Selecionar todos os filtrados (${filteredStockPlates.length})`}
+                  </button>
+                </div>
+
+                {selectedStock.size > 0 && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-surface px-3 py-2">
+                    <p className="text-xs font-semibold">{selectedStock.size} selecionado(s)</p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={markBusy}
+                      onClick={() => void markPrinted(true)}
+                      className="h-7 text-xs"
+                    >
+                      Marcar como impresso
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={markBusy}
+                      onClick={() => void markPrinted(false)}
+                      className="h-7 text-xs"
+                    >
+                      Marcar como não impresso
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        void exportSelectedQrZip(products.find((p) => p.id === expandedStock)?.name ?? "produto")
+                      }
+                      className="h-7 text-xs"
+                    >
+                      Baixar QR só desses (.zip)
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStock(new Set())}
+                      className="text-xs text-muted-foreground underline underline-offset-2"
+                    >
+                      limpar
+                    </button>
+                  </div>
+                )}
+
                 <div className="mt-2 max-h-64 overflow-y-auto grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
-                  {stockPlates.map((sp) => (
-                    <span key={sp.id} className="rounded-lg bg-card border border-border px-2 py-1 font-mono text-xs">
-                      {sp.short_code}
-                    </span>
-                  ))}
+                  {filteredStockPlates.map((sp) => {
+                    const selected = selectedStock.has(sp.id);
+                    const printed = sp.printed_at !== null;
+                    return (
+                      <button
+                        key={sp.id}
+                        type="button"
+                        onClick={() => toggleSelected(sp.id)}
+                        aria-pressed={selected}
+                        className={`rounded-lg border px-2 py-1 font-mono text-xs text-left transition-colors ${
+                          selected
+                            ? "border-primary bg-primary/10"
+                            : printed
+                              ? "border-border bg-muted text-muted-foreground"
+                              : "border-border bg-card"
+                        }`}
+                      >
+                        {printed ? "✓ " : ""}
+                        {sp.short_code}
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}
