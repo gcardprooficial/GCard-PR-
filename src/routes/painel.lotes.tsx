@@ -27,8 +27,15 @@ type Batch = {
   products: { name: string } | null;
 };
 type Product = { id: string; slug: string; name: string };
-type StockPlate = { id: string; short_code: string; token: string; printed_at: string | null };
-type PrintFilter = "all" | "printed" | "unprinted";
+type StockPlate = {
+  id: string;
+  short_code: string;
+  token: string;
+  printed_at: string | null;
+  print_group: string | null;
+};
+/** "all" = todos, "none" = sem grupo, qualquer outra string = nome do grupo. */
+type GroupFilter = "all" | "none" | string;
 
 const reais = (c: number) => (c / 100).toFixed(2).replace(".", ",");
 const toCents = (s: string) => Math.round((Number.parseFloat(s.replace(",", ".")) || 0) * 100);
@@ -58,15 +65,17 @@ function Lotes() {
   const [expandedStock, setExpandedStock] = useState<string | null>(null);
   const [stockPlates, setStockPlates] = useState<StockPlate[]>([]);
   const [stockPlatesLoading, setStockPlatesLoading] = useState(false);
-  const [printFilter, setPrintFilter] = useState<PrintFilter>("all");
+  const [groupFilter, setGroupFilter] = useState<GroupFilter>("all");
   const [selectedStock, setSelectedStock] = useState<Set<string>>(new Set());
-  const [markBusy, setMarkBusy] = useState(false);
+  const [groupNameDraft, setGroupNameDraft] = useState("");
+  const [renameDraft, setRenameDraft] = useState("");
+  const [groupBusy, setGroupBusy] = useState(false);
 
   async function loadStockPlates(productId: string) {
     setStockPlatesLoading(true);
     const { data } = await supabase
       .from("plates")
-      .select("id, short_code, token, printed_at")
+      .select("id, short_code, token, printed_at, print_group")
       .is("batch_id", null)
       .eq("product_id", productId)
       .order("short_code", { ascending: true })
@@ -81,22 +90,42 @@ function Lotes() {
       return;
     }
     setExpandedStock(productId);
-    setPrintFilter("all");
+    setGroupFilter("all");
     setSelectedStock(new Set());
     void loadStockPlates(productId);
   }
 
+  /** Nomes de grupo já usados nesse produto, com contagem — pra montar as abas. */
+  const groups = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of stockPlates) {
+      if (p.print_group) map.set(p.print_group, (map.get(p.print_group) ?? 0) + 1);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [stockPlates]);
+
+  const ungroupedCount = useMemo(() => stockPlates.filter((p) => !p.print_group).length, [stockPlates]);
+
   const filteredStockPlates = useMemo(
     () =>
       stockPlates.filter((p) => {
-        if (printFilter === "printed") return p.printed_at !== null;
-        if (printFilter === "unprinted") return p.printed_at === null;
-        return true;
+        if (groupFilter === "all") return true;
+        if (groupFilter === "none") return !p.print_group;
+        return p.print_group === groupFilter;
       }),
-    [stockPlates, printFilter],
+    [stockPlates, groupFilter],
   );
 
-  const printedCount = useMemo(() => stockPlates.filter((p) => p.printed_at !== null).length, [stockPlates]);
+  useEffect(() => {
+    setRenameDraft(groupFilter !== "all" && groupFilter !== "none" ? groupFilter : "");
+  }, [groupFilter]);
+
+  useEffect(() => {
+    if (!groupNameDraft && selectedStock.size > 0) {
+      const n = groups.filter(([name]) => /^Estoque \d+$/.test(name)).length;
+      setGroupNameDraft(`Estoque ${n + 1}`);
+    }
+  }, [selectedStock.size, groups, groupNameDraft]);
 
   function toggleSelected(id: string) {
     setSelectedStock((prev) => {
@@ -107,35 +136,58 @@ function Lotes() {
     });
   }
 
-  async function markPrinted(printed: boolean) {
-    if (selectedStock.size === 0 || !expandedStock) return;
+  async function assignGroup(name: string | null) {
+    if (selectedStock.size === 0) return;
     const ids = Array.from(selectedStock);
-    setMarkBusy(true);
+    setGroupBusy(true);
     const { error } = await supabase
       .from("plates")
-      .update({ printed_at: printed ? new Date().toISOString() : null })
+      .update({ print_group: name, printed_at: name ? new Date().toISOString() : null })
       .in("id", ids);
-    setMarkBusy(false);
+    setGroupBusy(false);
     if (error) {
-      toast.error("Não foi possível marcar os códigos.");
+      toast.error("Não foi possível salvar o grupo.");
       return;
     }
     await supabase.from("audit_log").insert({
       actor_id: userId,
       actor_email: email,
-      action: printed ? "mark_plates_printed" : "mark_plates_unprinted",
+      action: name ? "group_plates" : "ungroup_plates",
       entity: "plates",
       entity_id: expandedStock,
-      details: { plate_ids: ids, count: ids.length },
+      details: { plate_ids: ids, count: ids.length, print_group: name },
     });
     setStockPlates((prev) =>
-      prev.map((p) => (selectedStock.has(p.id) ? { ...p, printed_at: printed ? new Date().toISOString() : null } : p)),
+      prev.map((p) =>
+        selectedStock.has(p.id) ? { ...p, print_group: name, printed_at: name ? new Date().toISOString() : null } : p,
+      ),
     );
     setSelectedStock(new Set());
-    toast.success(`${ids.length} código(s) marcado(s) como ${printed ? "impresso" : "não impresso"}.`);
+    setGroupNameDraft("");
+    toast.success(name ? `${ids.length} código(s) salvos em "${name}".` : `${ids.length} código(s) removidos do grupo.`);
   }
 
-  /** Baixa só os códigos selecionados (ex.: só os "não impressos" que vão pra próxima arte). */
+  async function renameGroup(oldName: string, newName: string) {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName || !expandedStock) return;
+    setGroupBusy(true);
+    const { error } = await supabase
+      .from("plates")
+      .update({ print_group: trimmed })
+      .eq("print_group", oldName)
+      .eq("product_id", expandedStock)
+      .is("batch_id", null);
+    setGroupBusy(false);
+    if (error) {
+      toast.error("Não foi possível renomear o grupo.");
+      return;
+    }
+    setStockPlates((prev) => prev.map((p) => (p.print_group === oldName ? { ...p, print_group: trimmed } : p)));
+    setGroupFilter(trimmed);
+    toast.success(`Grupo renomeado pra "${trimmed}".`);
+  }
+
+  /** Baixa só os códigos selecionados (ex.: só um grupo específico que vai pra próxima arte). */
   async function exportSelectedQrZip(productName: string) {
     const ids = Array.from(selectedStock);
     const plates = stockPlates.filter((p) => ids.includes(p.id));
@@ -472,7 +524,7 @@ function Lotes() {
               <>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-muted-foreground">
-                    {stock[expandedStock] ?? stockPlates.length} código(s) no total · {printedCount} impresso(s)
+                    {stock[expandedStock] ?? stockPlates.length} código(s) no total · {groups.length} grupo(s)
                     {stockPlates.length >= 500 ? " (mostrando os 500 primeiros abaixo)" : ""}
                   </p>
                   <div className="flex gap-2">
@@ -506,26 +558,44 @@ function Lotes() {
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
-                    {(
-                      [
-                        ["all", `Todos (${stockPlates.length})`],
-                        ["unprinted", `Não impressos (${stockPlates.length - printedCount})`],
-                        ["printed", `Impressos (${printedCount})`],
-                      ] as const
-                    ).map(([k, l]) => (
+                  <div className="flex flex-wrap gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGroupFilter("all");
+                        setSelectedStock(new Set());
+                      }}
+                      className={`rounded-full px-2.5 py-1 transition-colors ${
+                        groupFilter === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      Todos ({stockPlates.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGroupFilter("none");
+                        setSelectedStock(new Set());
+                      }}
+                      className={`rounded-full px-2.5 py-1 transition-colors ${
+                        groupFilter === "none" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      }`}
+                    >
+                      Sem grupo ({ungroupedCount})
+                    </button>
+                    {groups.map(([name, count]) => (
                       <button
-                        key={k}
+                        key={name}
                         type="button"
                         onClick={() => {
-                          setPrintFilter(k);
+                          setGroupFilter(name);
                           setSelectedStock(new Set());
                         }}
                         className={`rounded-full px-2.5 py-1 transition-colors ${
-                          printFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                          groupFilter === name ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                         }`}
                       >
-                        {l}
+                        {name} ({count})
                       </button>
                     ))}
                   </div>
@@ -546,26 +616,52 @@ function Lotes() {
                   </button>
                 </div>
 
+                {groupFilter !== "all" && groupFilter !== "none" && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <Label className="text-xs">Renomear "{groupFilter}"</Label>
+                    <Input
+                      value={renameDraft}
+                      onChange={(e) => setRenameDraft(e.target.value)}
+                      className="h-8 w-48 text-xs"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={groupBusy || !renameDraft.trim() || renameDraft.trim() === groupFilter}
+                      onClick={() => void renameGroup(groupFilter, renameDraft)}
+                      className="h-8 text-xs"
+                    >
+                      Renomear grupo
+                    </Button>
+                  </div>
+                )}
+
                 {selectedStock.size > 0 && (
                   <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-surface px-3 py-2">
                     <p className="text-xs font-semibold">{selectedStock.size} selecionado(s)</p>
+                    <Input
+                      value={groupNameDraft}
+                      onChange={(e) => setGroupNameDraft(e.target.value)}
+                      placeholder="Nome do grupo (ex.: Estoque 1)"
+                      className="h-8 w-48 text-xs"
+                    />
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={markBusy}
-                      onClick={() => void markPrinted(true)}
-                      className="h-7 text-xs"
+                      disabled={groupBusy || !groupNameDraft.trim()}
+                      onClick={() => void assignGroup(groupNameDraft.trim())}
+                      className="h-8 text-xs"
                     >
-                      Marcar como impresso
+                      Salvar no grupo
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
-                      disabled={markBusy}
-                      onClick={() => void markPrinted(false)}
-                      className="h-7 text-xs"
+                      variant="ghost"
+                      disabled={groupBusy}
+                      onClick={() => void assignGroup(null)}
+                      className="h-8 text-xs"
                     >
-                      Marcar como não impresso
+                      Remover do grupo
                     </Button>
                     <Button
                       size="sm"
@@ -573,7 +669,7 @@ function Lotes() {
                       onClick={() =>
                         void exportSelectedQrZip(products.find((p) => p.id === expandedStock)?.name ?? "produto")
                       }
-                      className="h-7 text-xs"
+                      className="h-8 text-xs"
                     >
                       Baixar QR só desses (.zip)
                     </Button>
@@ -582,7 +678,7 @@ function Lotes() {
                       onClick={() => setSelectedStock(new Set())}
                       className="text-xs text-muted-foreground underline underline-offset-2"
                     >
-                      limpar
+                      limpar seleção
                     </button>
                   </div>
                 )}
@@ -590,22 +686,23 @@ function Lotes() {
                 <div className="mt-2 max-h-64 overflow-y-auto grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
                   {filteredStockPlates.map((sp) => {
                     const selected = selectedStock.has(sp.id);
-                    const printed = sp.printed_at !== null;
+                    const grouped = sp.print_group !== null;
                     return (
                       <button
                         key={sp.id}
                         type="button"
                         onClick={() => toggleSelected(sp.id)}
                         aria-pressed={selected}
+                        title={sp.print_group ?? undefined}
                         className={`rounded-lg border px-2 py-1 font-mono text-xs text-left transition-colors ${
                           selected
                             ? "border-primary bg-primary/10"
-                            : printed
+                            : grouped
                               ? "border-border bg-muted text-muted-foreground"
                               : "border-border bg-card"
                         }`}
                       >
-                        {printed ? "✓ " : ""}
+                        {grouped ? "✓ " : ""}
                         {sp.short_code}
                       </button>
                     );
