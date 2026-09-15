@@ -33,6 +33,7 @@ function Placas() {
   const { userId, email } = usePanel();
   const [rows, setRows] = useState<Plate[] | null>(null);
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | (typeof STATUS)[number]>("all");
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -83,7 +84,13 @@ function Placas() {
     });
   }
 
+  const statusCounts = (rows ?? []).reduce<Record<string, number>>((acc, r) => {
+    acc[r.status] = (acc[r.status] ?? 0) + 1;
+    return acc;
+  }, {});
+
   const filtered = (rows ?? []).filter((r) => {
+    if (statusFilter !== "all" && r.status !== statusFilter) return false;
     if (!q.trim()) return true;
     const t = q.toLowerCase();
     return (
@@ -110,6 +117,26 @@ function Placas() {
           Mostrando as 500 placas mais recentes — use a busca pra achar placas mais antigas.
         </p>
       )}
+
+      <div className="mt-3 flex flex-wrap gap-1 rounded-full bg-secondary p-1 text-xs font-semibold w-fit">
+        {(
+          [
+            ["all", `Todos (${rows?.length ?? 0})`],
+            ...STATUS.map((s) => [s, `${STATUS_LABEL[s]} (${statusCounts[s] ?? 0})`] as const),
+          ] as const
+        ).map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setStatusFilter(k)}
+            className={`rounded-full px-3 py-1.5 transition-colors ${
+              statusFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
 
       {rows === null ? (
         <p className="mt-8 text-sm text-muted-foreground">Carregando…</p>
