@@ -198,15 +198,18 @@ function Orders() {
     if (changes.payment_status === "pago" && row.payment_status !== "pago") {
       try {
         await runSendOrderEmail({ data: { orderId: row.id, event: "pagamento_confirmado" } });
-      } catch {
-        // best-effort -- status já foi salvo
+      } catch (emailError) {
+        // Status já foi salvo -- só o e-mail falhou. Avisa em vez de engolir.
+        console.error("Falha ao enviar e-mail pagamento_confirmado", emailError);
+        toast.error("Status salvo, mas o e-mail de confirmação não foi enviado.");
       }
     }
     if (changes.fulfillment_status === "em_producao" && row.fulfillment_status !== "em_producao") {
       try {
         await runSendOrderEmail({ data: { orderId: row.id, event: "em_producao" } });
-      } catch {
-        // best-effort -- status já foi salvo
+      } catch (emailError) {
+        console.error("Falha ao enviar e-mail em_producao", emailError);
+        toast.error("Status salvo, mas o e-mail de produção não foi enviado.");
       }
     }
     await supabase.from("audit_log").insert({
