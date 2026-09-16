@@ -9,11 +9,14 @@ export const Route = createFileRoute("/painel/scans")({ component: Scans });
 type PlateRow = {
   id: string;
   token: string;
+  short_code: string;
   status: string;
   scan_count: number;
   last_scan_at: string | null;
+  batch_id: string | null;
   businesses: { name: string } | null;
   products: { name: string } | null;
+  batches: { code: string; label: string | null } | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -29,13 +32,14 @@ function Scans() {
   const [plates, setPlates] = useState<PlateRow[] | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [q, setQ] = useState("");
+  const [loteFilter, setLoteFilter] = useState<"all" | "com_lote" | "estoque">("all");
 
   const load = useCallback(async () => {
     const since = new Date(Date.now() - 30 * DAY).toISOString();
     const [p, e] = await Promise.all([
       supabase
         .from("plates")
-        .select("id, token, status, scan_count, last_scan_at, businesses(name), products(name)")
+        .select("id, token, short_code, status, scan_count, last_scan_at, batch_id, businesses(name), products(name), batches(code, label)")
         .order("scan_count", { ascending: false })
         .limit(500),
       supabase
@@ -80,13 +84,23 @@ function Scans() {
 
   const allTime = (plates ?? []).reduce((s, p) => s + p.scan_count, 0);
 
+  const loteCounts = {
+    all: plates?.length ?? 0,
+    com_lote: (plates ?? []).filter((p) => p.batch_id).length,
+    estoque: (plates ?? []).filter((p) => !p.batch_id).length,
+  };
+
   const filtered = (plates ?? []).filter((p) => {
+    if (loteFilter === "com_lote" && !p.batch_id) return false;
+    if (loteFilter === "estoque" && p.batch_id) return false;
     if (!q.trim()) return true;
     const t = q.toLowerCase();
     return (
       p.token.toLowerCase().includes(t) ||
+      p.short_code.toLowerCase().includes(t) ||
       p.businesses?.name.toLowerCase().includes(t) ||
-      p.products?.name.toLowerCase().includes(t)
+      p.products?.name.toLowerCase().includes(t) ||
+      p.batches?.code.toLowerCase().includes(t)
     );
   });
 
@@ -106,6 +120,27 @@ function Scans() {
           Tabela mostra as 500 placas com mais scans — não é a lista completa.
         </p>
       )}
+
+      <div className="mt-2 flex flex-wrap gap-1 rounded-full bg-secondary p-1 text-xs font-semibold w-fit">
+        {(
+          [
+            ["all", `Todos (${loteCounts.all})`],
+            ["com_lote", `Em lote (${loteCounts.com_lote})`],
+            ["estoque", `Estoque solto (${loteCounts.estoque})`],
+          ] as const
+        ).map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setLoteFilter(k)}
+            className={`rounded-full px-3 py-1.5 transition-colors ${
+              loteFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-4">
         <Stat label="Total (sempre)" value={allTime} />
@@ -128,6 +163,7 @@ function Scans() {
                 <th className="px-4 py-3">Placa</th>
                 <th className="px-4 py-3">Produto</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Lote</th>
                 <th className="px-4 py-3">Negócio</th>
                 <th className="px-4 py-3 text-right">7 dias</th>
                 <th className="px-4 py-3 text-right">30 dias</th>
@@ -140,7 +176,11 @@ function Scans() {
                 const s = stats.per.get(p.id) ?? { d7: 0, d30: 0 };
                 return (
                   <tr key={p.id} className="border-b border-border/60 last:border-0">
-                    <td className="px-4 py-3 font-mono text-xs">{p.token}</td>
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs font-bold">{p.short_code}</span>
+                      <br />
+                      <span className="font-mono text-[10px] text-muted-foreground">{p.token}</span>
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">{p.products?.name ?? "—"}</td>
                     <td className="px-4 py-3">
                       <span
@@ -154,6 +194,13 @@ function Scans() {
                       >
                         {STATUS_LABEL[p.status] ?? p.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {p.batches ? (
+                        <span className="font-mono">{p.batches.code}</span>
+                      ) : (
+                        <span className="text-amber-800">estoque</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{p.businesses?.name ?? "—"}</td>
                     <td className="px-4 py-3 text-right">{s.d7}</td>

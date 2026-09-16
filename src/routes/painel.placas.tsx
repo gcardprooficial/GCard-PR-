@@ -19,14 +19,17 @@ const STATUS_LABEL: Record<string, string> = {
 type Plate = {
   id: string;
   token: string;
+  short_code: string;
   status: string;
   destination_url: string | null;
   scan_count: number;
   last_scan_at: string | null;
   activated_at: string | null;
+  batch_id: string | null;
   products: { name: string } | null;
   orders: { order_number: number; customer_name: string } | null;
   businesses: { name: string; review_url: string } | null;
+  batches: { code: string; label: string | null; owner_email: string | null } | null;
 };
 
 function Placas() {
@@ -34,12 +37,13 @@ function Placas() {
   const [rows, setRows] = useState<Plate[] | null>(null);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | (typeof STATUS)[number]>("all");
+  const [loteFilter, setLoteFilter] = useState<"all" | "com_lote" | "estoque">("all");
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("plates")
       .select(
-        "id, token, status, destination_url, scan_count, last_scan_at, activated_at, products(name), orders(order_number, customer_name), businesses(name, review_url)",
+        "id, token, short_code, status, destination_url, scan_count, last_scan_at, activated_at, batch_id, products(name), orders(order_number, customer_name), businesses(name, review_url), batches(code, label, owner_email)",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -89,15 +93,26 @@ function Placas() {
     return acc;
   }, {});
 
+  const loteCounts = {
+    all: rows?.length ?? 0,
+    com_lote: (rows ?? []).filter((r) => r.batch_id).length,
+    estoque: (rows ?? []).filter((r) => !r.batch_id).length,
+  };
+
   const filtered = (rows ?? []).filter((r) => {
     if (statusFilter !== "all" && r.status !== statusFilter) return false;
+    if (loteFilter === "com_lote" && !r.batch_id) return false;
+    if (loteFilter === "estoque" && r.batch_id) return false;
     if (!q.trim()) return true;
     const t = q.toLowerCase();
     return (
       r.token.toLowerCase().includes(t) ||
+      r.short_code.toLowerCase().includes(t) ||
       r.businesses?.name.toLowerCase().includes(t) ||
       r.orders?.customer_name.toLowerCase().includes(t) ||
-      String(r.orders?.order_number ?? "").includes(t)
+      String(r.orders?.order_number ?? "").includes(t) ||
+      r.batches?.code.toLowerCase().includes(t) ||
+      r.batches?.owner_email?.toLowerCase().includes(t)
     );
   });
 
@@ -108,7 +123,7 @@ function Placas() {
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar token, negócio, pedido…"
+          placeholder="Buscar token, código, negócio, lote…"
           className="h-10 w-64"
         />
       </div>
@@ -138,6 +153,27 @@ function Placas() {
         ))}
       </div>
 
+      <div className="mt-2 flex flex-wrap gap-1 rounded-full bg-secondary p-1 text-xs font-semibold w-fit">
+        {(
+          [
+            ["all", `Todos (${loteCounts.all})`],
+            ["com_lote", `Em lote (${loteCounts.com_lote})`],
+            ["estoque", `Estoque solto (${loteCounts.estoque})`],
+          ] as const
+        ).map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setLoteFilter(k)}
+            className={`rounded-full px-3 py-1.5 transition-colors ${
+              loteFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+
       {rows === null ? (
         <p className="mt-8 text-sm text-muted-foreground">Carregando…</p>
       ) : filtered.length === 0 ? (
@@ -150,11 +186,25 @@ function Placas() {
             <div key={r.id} className="rounded-2xl bg-card p-5 card-soft">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-mono text-sm font-semibold">{r.token}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-sm font-black tracking-wide bg-surface px-2 py-1 rounded-lg border border-primary/30">
+                      {r.short_code}
+                    </span>
+                    <span className="font-mono text-xs text-muted-foreground">{r.token}</span>
+                  </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {r.products?.name ?? "—"}
                     {r.orders ? ` · pedido #${r.orders.order_number} (${r.orders.customer_name})` : ""}
                   </p>
+                  {r.batches ? (
+                    <p className="mt-1 text-sm">
+                      Lote: <span className="font-mono font-semibold">{r.batches.code}</span>
+                      {r.batches.label ? ` · ${r.batches.label}` : ""}
+                      {r.batches.owner_email ? ` · ${r.batches.owner_email}` : ""}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-amber-800">Estoque solto (sem lote)</p>
+                  )}
                   {r.businesses && (
                     <p className="text-sm text-muted-foreground">Negócio: {r.businesses.name}</p>
                   )}
