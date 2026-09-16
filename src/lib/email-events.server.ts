@@ -45,7 +45,7 @@ export async function dispatchOrderEmailEvent(orderId: string, event: OrderEmail
   const db = supabaseAdmin as any;
   const { data: order, error: orderError } = await db
     .from("orders")
-    .select("id, order_number, customer_name, customer_email, tracking_code, total_cents")
+    .select("id, order_number, customer_name, customer_email, tracking_code, total_cents, kind")
     .eq("id", orderId)
     .maybeSingle();
   if (orderError) throw orderError;
@@ -81,7 +81,22 @@ export async function dispatchOrderEmailEvent(orderId: string, event: OrderEmail
   const tracking = order.tracking_code
     ? `<p><strong>Código de rastreio:</strong> ${escapeHtml(order.tracking_code)}</p>`
     : "";
-  const html = `<!doctype html><html lang="pt-BR"><body style="font-family:Arial,sans-serif;color:#171717;line-height:1.6"><h1>${eventTitle(event)}</h1><p>Olá, ${escapeHtml(order.customer_name)}.</p><p>Seu pedido <strong>#${escapeHtml(order.order_number)}</strong> está atualizado.</p><p><strong>Total:</strong> ${formattedTotal}</p>${tracking}<p>Você receberá novas atualizações quando houver mudança no pedido.</p><hr><p style="font-size:12px;color:#666">E-mail transacional sobre seu pedido. Para comunicações estratégicas, usamos apenas contatos com consentimento LGPD.</p></body></html>`;
+
+  let nextSteps = "<p>Você receberá novas atualizações quando houver mudança no pedido.</p>";
+  if (event === "pagamento_confirmado" && order.kind === "revenda") {
+    nextSteps =
+      "<p>Suas placas chegam em branco, sem QR/NFC configurado ainda — isso é normal, faz parte do modelo de revenda.</p>" +
+      "<p>Assim que o pedido for produzido, você recebe um <strong>código de lote</strong> (algo como <code>L-XXXXXX-XXXXXX</code>) por aqui ou no WhatsApp.</p>" +
+      '<p>Com esse código, entre em <a href="https://gcardpro.com.br/ativar">gcardpro.com.br/ativar</a>, faça login com este mesmo e-mail e resgate seu lote pra configurar e ativar cada placa.</p>';
+  } else if (event === "pagamento_confirmado") {
+    nextSteps =
+      "<p>Sua placa está sendo produzida já configurada com o link de avaliação do seu negócio. Assim que for enviada, você recebe o código de rastreio por aqui.</p>";
+  } else if (event === "pedido_recebido") {
+    nextSteps =
+      "<p>Assim que o pagamento for confirmado, te avisamos por aqui com os próximos passos.</p>";
+  }
+
+  const html = `<!doctype html><html lang="pt-BR"><body style="font-family:Arial,sans-serif;color:#171717;line-height:1.6"><h1>${eventTitle(event)}</h1><p>Olá, ${escapeHtml(order.customer_name)}.</p><p>Seu pedido <strong>#${escapeHtml(order.order_number)}</strong> está atualizado.</p><p><strong>Total:</strong> ${formattedTotal}</p>${tracking}${nextSteps}<p>Dúvidas? Chama a gente no Instagram <a href="https://instagram.com/gcardpro.oficial">@gcardpro.oficial</a>.</p><hr><p style="font-size:12px;color:#666">E-mail transacional sobre seu pedido. Para comunicações estratégicas, usamos apenas contatos com consentimento LGPD.</p></body></html>`;
 
   try {
     const result = await sendWithResend({

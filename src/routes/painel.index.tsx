@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
-import { saveOrderTracking } from "@/lib/panel.functions";
+import { saveOrderTracking, sendPaymentConfirmedEmail } from "@/lib/panel.functions";
 import { usePanel } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +54,7 @@ type OrderRow = {
   ship_zip: string | null;
   internal_notes: string | null;
   businesses: { name: string; review_url: string } | null;
+  order_items: { product_name: string; quantity: number; products: { image_url: string | null } | null }[];
 };
 
 type BatchByOrder = { orderId: string; code: string; codes_sent_at: string | null };
@@ -69,6 +70,7 @@ function Orders() {
   const { userId, email } = usePanel();
   const search = Route.useSearch();
   const runSaveTracking = useServerFn(saveOrderTracking);
+  const runSendPaymentEmail = useServerFn(sendPaymentConfirmedEmail);
   const [rows, setRows] = useState<OrderRow[] | null>(null);
   const [batchesByOrder, setBatchesByOrder] = useState<Record<string, BatchByOrder>>({});
   const [kindFilter, setKindFilter] = useState<"all" | "individual" | "revenda">("all");
@@ -78,7 +80,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, fulfillment_status, tracking_code, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url)",
+        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, fulfillment_status, tracking_code, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url))",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -165,6 +167,11 @@ function Orders() {
       entity_id: String(batchId),
       details: { order_id: row.id, quantity: row.quantity },
     });
+    try {
+      await runSendPaymentEmail({ data: { orderId: row.id } });
+    } catch {
+      // e-mail é best-effort aqui -- lote já foi gerado, não bloqueia o fluxo
+    }
     setGeneratingFor(null);
     toast.success(`Lote gerado pro pedido #${row.order_number}.`);
     void load();
@@ -175,6 +182,13 @@ function Orders() {
     if (error) {
       toast.error("Não foi possível salvar.");
       return;
+    }
+    if (changes.payment_status === "pago" && row.payment_status !== "pago") {
+      try {
+        await runSendPaymentEmail({ data: { orderId: row.id } });
+      } catch {
+        // best-effort -- status já foi salvo
+      }
     }
     await supabase.from("audit_log").insert({
       actor_id: userId,
@@ -266,17 +280,29 @@ function Orders() {
                   ? "LOJA PRÓPRIA — vai configurada com o negócio abaixo"
                   : "REVENDA — enviar em branco, sem configuração (códigos na aba Lotes)"}
               </div>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+              <div className="flex flex-wrap items-start gap-4">
+                {r.order_items[0]?.products?.image_url && (
+                  <img
+                    src={r.order_items[0].products.image_url}
+                    alt={r.order_items[0].product_name}
+                    className="size-16 shrink-0 rounded-xl border border-border object-cover"
+                  />
+                )}
+                <div className="flex-1">
                   <p className="font-display text-lg">
                     #{r.order_number}{" "}
                     <span className="text-sm font-sans text-muted-foreground">
                       {new Date(r.created_at).toLocaleString("pt-BR")} · {r.kind}
                     </span>
                   </p>
+                  {r.order_items.length > 0 && (
+                    <p className="mt-0.5 text-sm font-semibold">
+                      {r.order_items.map((it) => `${it.product_name} · ${it.quantity} un.`).join(" + ")}
+                    </p>
+                  )}
                   <p className="mt-1 text-sm">
                     {r.customer_name} · {r.customer_email}
-                    {r.customer_phone ? ` · ${r.customer_phone}` : ""}
+                    {r.customer_phone ? ` · WhatsApp ${r.customer_phone}` : ""}
                     {r.customer_document ? ` · ${r.customer_document}` : ""}
                   </p>
                   {r.businesses && (

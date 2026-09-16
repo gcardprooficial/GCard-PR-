@@ -52,6 +52,16 @@ export const confirmOrderPayment = createServerFn({ method: "POST" })
     return { ok: true as const, ...emitted };
   });
 
+/** Dispara o e-mail de "pagamento confirmado" (idempotente -- não duplica se já foi enviado). */
+export const sendPaymentConfirmedEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => orderIdSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeam(context.userId);
+    const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
+    return dispatchOrderEmailEvent(data.orderId, "pagamento_confirmado");
+  });
+
 const trackingSchema = z.object({
   orderId: z.string().uuid(),
   trackingCode: z.string().trim().max(120).nullable(),

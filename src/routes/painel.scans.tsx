@@ -2,15 +2,24 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/painel/scans")({ component: Scans });
 
 type PlateRow = {
   id: string;
   token: string;
+  status: string;
   scan_count: number;
   last_scan_at: string | null;
   businesses: { name: string } | null;
+  products: { name: string } | null;
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  nao_ativada: "Não ativada",
+  ativada: "Ativada",
+  bloqueada: "Bloqueada",
 };
 type Event = { plate_id: string | null; created_at: string; device: string | null };
 
@@ -19,13 +28,14 @@ const DAY = 86_400_000;
 function Scans() {
   const [plates, setPlates] = useState<PlateRow[] | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
+  const [q, setQ] = useState("");
 
   const load = useCallback(async () => {
     const since = new Date(Date.now() - 30 * DAY).toISOString();
     const [p, e] = await Promise.all([
       supabase
         .from("plates")
-        .select("id, token, scan_count, last_scan_at, businesses(name)")
+        .select("id, token, status, scan_count, last_scan_at, businesses(name), products(name)")
         .order("scan_count", { ascending: false })
         .limit(500),
       supabase
@@ -70,9 +80,27 @@ function Scans() {
 
   const allTime = (plates ?? []).reduce((s, p) => s + p.scan_count, 0);
 
+  const filtered = (plates ?? []).filter((p) => {
+    if (!q.trim()) return true;
+    const t = q.toLowerCase();
+    return (
+      p.token.toLowerCase().includes(t) ||
+      p.businesses?.name.toLowerCase().includes(t) ||
+      p.products?.name.toLowerCase().includes(t)
+    );
+  });
+
   return (
     <>
-      <h1 className="text-2xl">Scans</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl">Scans</h1>
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar placa, negócio, produto…"
+          className="h-9 w-64"
+        />
+      </div>
       {plates && plates.length >= 500 && (
         <p className="mt-1 text-xs text-amber-800">
           Tabela mostra as 500 placas com mais scans — não é a lista completa.
@@ -90,12 +118,16 @@ function Scans() {
         <p className="mt-8 text-sm text-muted-foreground">Carregando…</p>
       ) : plates.length === 0 ? (
         <p className="mt-8 text-sm text-muted-foreground">Nenhuma placa ainda.</p>
+      ) : filtered.length === 0 ? (
+        <p className="mt-8 text-sm text-muted-foreground">Nada encontrado.</p>
       ) : (
         <div className="mt-6 overflow-x-auto rounded-2xl bg-card card-soft">
           <table className="w-full text-sm">
             <thead className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">Placa</th>
+                <th className="px-4 py-3">Produto</th>
+                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Negócio</th>
                 <th className="px-4 py-3 text-right">7 dias</th>
                 <th className="px-4 py-3 text-right">30 dias</th>
@@ -104,11 +136,25 @@ function Scans() {
               </tr>
             </thead>
             <tbody>
-              {plates.map((p) => {
+              {filtered.map((p) => {
                 const s = stats.per.get(p.id) ?? { d7: 0, d30: 0 };
                 return (
                   <tr key={p.id} className="border-b border-border/60 last:border-0">
                     <td className="px-4 py-3 font-mono text-xs">{p.token}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{p.products?.name ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          p.status === "ativada"
+                            ? "bg-green-100 text-green-800"
+                            : p.status === "bloqueada"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-accent text-accent-foreground"
+                        }`}
+                      >
+                        {STATUS_LABEL[p.status] ?? p.status}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">{p.businesses?.name ?? "—"}</td>
                     <td className="px-4 py-3 text-right">{s.d7}</td>
                     <td className="px-4 py-3 text-right">{s.d30}</td>
