@@ -895,6 +895,11 @@ function Comprar() {
                         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
                           {item.format}
                         </p>
+                        {item.slug === "plaquinha-10x10" && (
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            Adesivo retroverso (espelhado, colado por trás do acrílico).
+                          </p>
+                        )}
 
                         <div className="mt-3 flex items-center gap-1.5">
                           {[

@@ -821,6 +821,11 @@ function Home() {
                       {product.slug === "plaquinha-10x10" && "10 x 10 cm · Quadrada"}
                       {product.slug === "plaquinha-10x15-l" && "10 x 15 cm"}
                     </p>
+                    {product.slug === "plaquinha-10x10" && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Arte aplicada em adesivo retroverso (espelhado, colado por trás do acrílico).
+                      </p>
+                    )}
 
                     {isSoon ? (
                       <Button disabled size="sm" className="mt-4 w-full rounded-xl" variant="outline">
