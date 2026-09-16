@@ -188,6 +188,34 @@ export async function dispatchOrderEmailEvent(orderId: string, event: OrderEmail
   }
 }
 
+/** Avisa o dono da loja quando o pagamento de um pedido não pôde ser gerado
+ *  nem depois de retry -- sem isso, ninguém saberia até o cliente reclamar. */
+export async function notifyAdminPaymentFailure(order: {
+  order_number: number;
+  customer_name: string;
+  customer_email: string;
+}) {
+  const to = process.env["ADMIN_NOTIFY_EMAIL"];
+  if (!to) return { skipped: true, reason: "ADMIN_NOTIFY_EMAIL ausente" };
+  const html = emailShell({
+    title: "Link de pagamento falhou",
+    bodyHtml:
+      `<p>O pedido <strong>#${escapeHtml(order.order_number)}</strong> de ${escapeHtml(order.customer_name)} ` +
+      `(${escapeHtml(order.customer_email)}) não conseguiu gerar o link do Mercado Pago, mesmo depois de retry automático.</p>` +
+      `<p>Entra no painel e usa o botão <strong>"Gerar e copiar link"</strong> no pedido pra mandar manualmente pro cliente.</p>`,
+  });
+  try {
+    return await sendWithResend({
+      to,
+      subject: `⚠️ Falha no pagamento — pedido #${order.order_number}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Falha ao notificar admin sobre pagamento", error);
+    return { sent: false };
+  }
+}
+
 export async function upsertCustomerConsent(input: {
   email: string;
   name: string;

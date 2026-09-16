@@ -34,6 +34,24 @@ export const createCheckoutPreference = createServerFn({ method: "POST" })
     };
 
     const origin = process.env["PUBLIC_APP_URL"] ?? "https://gcardpro.com.br";
-    const pref = await provider.createPreference({ order: orderForCheckout as any, origin });
-    return { ok: true as const, url: pref.url, reference: pref.reference };
+
+    // Instabilidade passageira na API do Mercado Pago acontece -- tenta mais
+    // duas vezes antes de deixar o comprador travado sem link.
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const pref = await provider.createPreference({ order: orderForCheckout as any, origin });
+        return { ok: true as const, url: pref.url, reference: pref.reference };
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    console.error("createCheckoutPreference: falhou após 3 tentativas", {
+      orderId: order.id,
+      lastError,
+    });
+    const { notifyAdminPaymentFailure } = await import("@/lib/email-events.server");
+    await notifyAdminPaymentFailure(order);
+    return { ok: false as const, error: "provider_error" };
   });
