@@ -14,6 +14,8 @@ import heroCartao from "@/assets/gcard-pro-hero-barbearia.jpeg";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-mockup.jpg";
 import produtoPlaquinhaL from "@/assets/gcard-pro-plaquinha-l-provisorio.jpg";
+import acrilico10x10Cristal from "@/assets/acrilico-10x10-cristal.jpg";
+import acrilicoLCristal from "@/assets/acrilico-l-cristal.jpg";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 const catalogQuery = queryOptions({
@@ -119,7 +121,12 @@ const IMAGES: Record<string, string> = {
   "cartao-bolso": produtoCartao,
   "plaquinha-10x10": produtoPlaquinha10x10,
   "plaquinha-10x15-l": produtoPlaquinhaL,
+  "acrilico-10x10-sem-arte": acrilico10x10Cristal,
+  "acrilico-15x10-l-sem-arte": acrilicoLCristal,
 };
+
+/** Loja no Mercado Livre — preencher quando o link estiver pronto. */
+const MERCADO_LIVRE_URL = "";
 
 const FALLBACK_PRODUCTS = [
   {
@@ -130,6 +137,7 @@ const FALLBACK_PRODUCTS = [
     status: "ativo",
     has_nfc: true,
     has_qr: false,
+    is_blank: false,
   },
 ] as const;
 
@@ -726,17 +734,28 @@ function Home() {
       {/* ===== MODELOS ===== */}
       <section id="modelos" className="relative border-y border-border bg-surface/60">
         <div className="mx-auto max-w-6xl px-5 py-16 md:py-20">
-          <div className="max-w-xl">
+          <div className="max-w-2xl">
             <p className="animate-rise text-xs font-black uppercase tracking-[0.2em] text-primary">
               Modelos disponíveis
             </p>
             <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-              Cartão de bolso ou plaquinha de balcão.
+              Pronto pra usar, ou acrílico puro pra sua arte.
             </h2>
+            <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground">
+              Duas linhas: a <strong className="text-foreground">configurada</strong>, que chega
+              com a arte impressa e o link da sua avaliação já gravado — é só colocar no balcão. E o{" "}
+              <strong className="text-foreground">acrílico sem impressão</strong>, pra quem já tem
+              a própria arte e quer só o material cortado.
+            </p>
           </div>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-3 md:gap-7">
-            {products.map((product, i) => {
+          <p className="mt-10 animate-rise text-xs font-black uppercase tracking-[0.18em] text-foreground/70">
+            Com arte · chega configurado e funcionando
+          </p>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 md:gap-7">
+            {products
+              .filter((p) => !p.is_blank)
+              .map((product, i) => {
               const isSoon = product.status !== "ativo";
               return (
                 <div
@@ -818,6 +837,83 @@ function Home() {
                 </div>
               );
             })}
+          </div>
+
+          {/* ===== ACRÍLICO SEM ARTE ===== */}
+          {products.some((p) => p.is_blank) && (
+            <>
+              <div className="mt-14 flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-foreground/70">
+                  Sem arte · acrílico puro pra você personalizar
+                </p>
+                <span className="badge-pill bg-g-green/15 text-foreground">
+                  Frete grátis · kit a partir de 10 un.
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-5 sm:grid-cols-2 md:gap-7">
+                {products
+                  .filter((p) => p.is_blank)
+                  .map((product) => (
+                    <div
+                      key={product.id}
+                      className="group animate-rise overflow-hidden rounded-3xl border border-border bg-card card-soft card-soft-hover"
+                    >
+                      <div className="relative aspect-4/3 overflow-hidden bg-surface">
+                        <img
+                          src={IMAGES[product.slug] ?? produtoCartao}
+                          alt={product.name}
+                          className="h-full w-full object-contain p-6 transition-all duration-700 group-hover:scale-105"
+                          loading="lazy"
+                          draggable={false}
+                        />
+                      </div>
+                      <div className="p-5 sm:p-6">
+                        <h3 className="text-lg font-bold sm:text-xl">{product.name}</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">{product.format}</p>
+                        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                          Sem impressão nenhuma. Disponível em{" "}
+                          <strong className="text-foreground">cristal, branco e preto</strong> — você
+                          aplica a sua arte ou adesivo.
+                        </p>
+                        <Button asChild size="sm" className="mt-4 w-full rounded-xl" variant="outline">
+                          <Link to="/comprar" search={{ caminho: "lojista" }}>
+                            Ver preços e cores
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </>
+          )}
+
+          {/* ===== SOB MEDIDA + MERCADO LIVRE ===== */}
+          <div className="mt-12 grid gap-5 md:grid-cols-2">
+            <div className="rounded-3xl border border-dashed border-foreground/20 bg-card p-6 sm:p-7">
+              <h3 className="text-lg font-bold">Precisa de outra medida?</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Cortamos acrílico em outros tamanhos e formatos sob encomenda. Fala com a gente pelo
+                chat aqui do site (canto inferior direito) que a gente monta seu orçamento.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-border bg-card p-6 sm:p-7">
+              <h3 className="text-lg font-bold">Prefere comprar pelo Mercado Livre?</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Também vendemos por lá, com a proteção e o frete do Mercado Envios.
+              </p>
+              {MERCADO_LIVRE_URL ? (
+                <Button asChild size="sm" variant="outline" className="mt-4 rounded-xl">
+                  <a href={MERCADO_LIVRE_URL} target="_blank" rel="noopener noreferrer">
+                    Ver nossa loja no Mercado Livre ↗
+                  </a>
+                </Button>
+              ) : (
+                <p className="mt-4 text-xs font-semibold text-muted-foreground">
+                  Link da loja em breve.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </section>
