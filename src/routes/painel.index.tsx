@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
 import { saveOrderTracking, sendOrderEmail } from "@/lib/panel.functions";
+import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { usePanel } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +84,7 @@ function Orders() {
   const search = Route.useSearch();
   const runSaveTracking = useServerFn(saveOrderTracking);
   const runSendOrderEmail = useServerFn(sendOrderEmail);
+  const runCreatePreference = useServerFn(createCheckoutPreference);
   const [rows, setRows] = useState<OrderRow[] | null>(null);
   const [batchesByOrder, setBatchesByOrder] = useState<Record<string, BatchByOrder>>({});
   const [kindFilter, setKindFilter] = useState<"all" | "individual" | "revenda">("all");
@@ -406,6 +408,40 @@ function Orders() {
                     ))}
                   </select>
                 </div>
+                {r.payment_status !== "pago" && (
+                  <div>
+                    <Label className="text-xs">Link de pagamento</Label>
+                    <div className="mt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          void (async () => {
+                            try {
+                              const pref = await runCreatePreference({
+                                data: { orderNumber: r.order_number },
+                              });
+                              if (!pref.ok || !pref.url) {
+                                toast.error(
+                                  pref.ok === false && pref.error === "payment_provider_not_configured"
+                                    ? "Mercado Pago não está configurado."
+                                    : "Não foi possível gerar o link.",
+                                );
+                                return;
+                              }
+                              await navigator.clipboard.writeText(pref.url);
+                              toast.success(`Link do pedido #${r.order_number} copiado.`);
+                            } catch {
+                              toast.error("Não foi possível gerar o link.");
+                            }
+                          })();
+                        }}
+                      >
+                        Gerar e copiar link
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <div>
                   <Label className="text-xs">Produção</Label>
                   <select
