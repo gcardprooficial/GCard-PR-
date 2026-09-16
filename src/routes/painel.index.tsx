@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
-import { saveOrderTracking, sendPaymentConfirmedEmail } from "@/lib/panel.functions";
+import { saveOrderTracking, sendOrderEmail } from "@/lib/panel.functions";
 import { usePanel } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,18 @@ const PAYMENT_LABEL: Record<string, string> = {
   estornado: "Estornado",
   cancelado: "Cancelado",
 };
+
+function formatCpf(doc: string | null): string {
+  const digits = (doc ?? "").replace(/\D/g, "");
+  if (digits.length !== 11) return doc || "—";
+  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+}
+
+function formatCep(zip: string): string {
+  const digits = zip.replace(/\D/g, "");
+  if (digits.length !== 8) return zip;
+  return digits.replace(/(\d{5})(\d{3})/, "$1-$2");
+}
 
 type OrderRow = {
   id: string;
@@ -70,7 +82,7 @@ function Orders() {
   const { userId, email } = usePanel();
   const search = Route.useSearch();
   const runSaveTracking = useServerFn(saveOrderTracking);
-  const runSendPaymentEmail = useServerFn(sendPaymentConfirmedEmail);
+  const runSendOrderEmail = useServerFn(sendOrderEmail);
   const [rows, setRows] = useState<OrderRow[] | null>(null);
   const [batchesByOrder, setBatchesByOrder] = useState<Record<string, BatchByOrder>>({});
   const [kindFilter, setKindFilter] = useState<"all" | "individual" | "revenda">("all");
@@ -168,7 +180,7 @@ function Orders() {
       details: { order_id: row.id, quantity: row.quantity },
     });
     try {
-      await runSendPaymentEmail({ data: { orderId: row.id } });
+      await runSendOrderEmail({ data: { orderId: row.id, event: "lote_criado" } });
     } catch {
       // e-mail é best-effort aqui -- lote já foi gerado, não bloqueia o fluxo
     }
@@ -185,7 +197,14 @@ function Orders() {
     }
     if (changes.payment_status === "pago" && row.payment_status !== "pago") {
       try {
-        await runSendPaymentEmail({ data: { orderId: row.id } });
+        await runSendOrderEmail({ data: { orderId: row.id, event: "pagamento_confirmado" } });
+      } catch {
+        // best-effort -- status já foi salvo
+      }
+    }
+    if (changes.fulfillment_status === "em_producao" && row.fulfillment_status !== "em_producao") {
+      try {
+        await runSendOrderEmail({ data: { orderId: row.id, event: "em_producao" } });
       } catch {
         // best-effort -- status já foi salvo
       }
@@ -300,11 +319,16 @@ function Orders() {
                       {r.order_items.map((it) => `${it.product_name} · ${it.quantity} un.`).join(" + ")}
                     </p>
                   )}
-                  <p className="mt-1 text-sm">
-                    {r.customer_name} · {r.customer_email}
-                    {r.customer_phone ? ` · WhatsApp ${r.customer_phone}` : ""}
-                    {r.customer_document ? ` · ${r.customer_document}` : ""}
-                  </p>
+                  <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-sm">
+                    <dt className="text-muted-foreground">Nome:</dt>
+                    <dd>{r.customer_name}</dd>
+                    <dt className="text-muted-foreground">E-mail:</dt>
+                    <dd>{r.customer_email}</dd>
+                    <dt className="text-muted-foreground">WhatsApp:</dt>
+                    <dd>{r.customer_phone || "—"}</dd>
+                    <dt className="text-muted-foreground">CPF:</dt>
+                    <dd>{formatCpf(r.customer_document)}</dd>
+                  </dl>
                   {r.businesses && (
                     <p className="mt-1 text-sm text-muted-foreground">
                       Negócio: {r.businesses.name} ·{" "}
@@ -342,17 +366,11 @@ function Orders() {
                       </Button>
                     </div>
                   )}
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {[
-                      r.ship_street,
-                      r.ship_number,
-                      r.ship_district,
-                      r.ship_city,
-                      r.ship_state,
-                      r.ship_zip,
-                    ]
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {[r.ship_street, r.ship_number, r.ship_district, r.ship_city, r.ship_state]
                       .filter(Boolean)
                       .join(", ") || "Sem endereço"}
+                    {r.ship_zip ? ` · CEP ${formatCep(r.ship_zip)}` : " · CEP —"}
                   </p>
                 </div>
                 <div className="text-right">

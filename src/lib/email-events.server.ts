@@ -1,10 +1,17 @@
 import { randomUUID } from "node:crypto";
 
-export type OrderEmailEvent = "pedido_recebido" | "pagamento_confirmado" | "pedido_enviado";
+export type OrderEmailEvent =
+  | "pedido_recebido"
+  | "pagamento_confirmado"
+  | "lote_criado"
+  | "em_producao"
+  | "pedido_enviado";
 
 const SUBJECTS: Record<OrderEmailEvent, string> = {
   pedido_recebido: "Recebemos seu pedido GCard-PRÓ",
   pagamento_confirmado: "Pagamento confirmado — pedido GCard-PRÓ",
+  lote_criado: "Seu lote está pronto — GCard-PRÓ",
+  em_producao: "Seu pedido entrou em produção — GCard-PRÓ",
   pedido_enviado: "Seu pedido GCard-PRÓ foi enviado",
 };
 
@@ -20,6 +27,8 @@ function escapeHtml(value: string | number | null | undefined) {
 function eventTitle(event: OrderEmailEvent) {
   if (event === "pedido_recebido") return "Pedido recebido";
   if (event === "pagamento_confirmado") return "Pagamento confirmado";
+  if (event === "lote_criado") return "Seu lote está pronto";
+  if (event === "em_producao") return "Pedido em produção";
   return "Pedido enviado";
 }
 
@@ -86,14 +95,31 @@ export async function dispatchOrderEmailEvent(orderId: string, event: OrderEmail
   if (event === "pagamento_confirmado" && order.kind === "revenda") {
     nextSteps =
       "<p>Suas placas chegam em branco, sem QR/NFC configurado ainda — isso é normal, faz parte do modelo de revenda.</p>" +
-      "<p>Assim que o pedido for produzido, você recebe um <strong>código de lote</strong> (algo como <code>L-XXXXXX-XXXXXX</code>) por aqui ou no WhatsApp.</p>" +
-      '<p>Com esse código, entre em <a href="https://gcardpro.com.br/ativar">gcardpro.com.br/ativar</a>, faça login com este mesmo e-mail e resgate seu lote pra configurar e ativar cada placa.</p>';
+      "<p>Vamos preparar seu lote e te avisamos por aqui assim que estiver pronto, com o código de resgate.</p>";
   } else if (event === "pagamento_confirmado") {
     nextSteps =
       "<p>Sua placa está sendo produzida já configurada com o link de avaliação do seu negócio. Assim que for enviada, você recebe o código de rastreio por aqui.</p>";
   } else if (event === "pedido_recebido") {
     nextSteps =
       "<p>Assim que o pagamento for confirmado, te avisamos por aqui com os próximos passos.</p>";
+  } else if (event === "lote_criado") {
+    const { data: batch } = await db
+      .from("batches")
+      .select("code")
+      .eq("owner_order_id", orderId)
+      .maybeSingle();
+    const code = batch?.code ?? "";
+    nextSteps =
+      "<p>Seu lote de plaquinhas já está pronto pra ativar!</p>" +
+      `<p><strong>Código do lote:</strong> <code style="font-size:16px">${escapeHtml(code)}</code></p>` +
+      '<p>Entre em <a href="https://gcardpro.com.br/ativar">gcardpro.com.br/ativar</a> e faça duas coisas:</p>' +
+      "<ol>" +
+      "<li>Entre com este mesmo e-mail da compra — se o lote já estiver vinculado, ele aparece automático; ou</li>" +
+      `<li>Cole o código do lote acima no campo de resgate.</li>` +
+      "</ol>" +
+      "<p>Depois é só configurar o link de avaliação de cada plaquinha que você for entregar.</p>";
+  } else if (event === "em_producao") {
+    nextSteps = "<p>Seu pedido entrou em produção. Assim que for enviado, você recebe o código de rastreio por aqui.</p>";
   }
 
   const html = `<!doctype html><html lang="pt-BR"><body style="font-family:Arial,sans-serif;color:#171717;line-height:1.6"><h1>${eventTitle(event)}</h1><p>Olá, ${escapeHtml(order.customer_name)}.</p><p>Seu pedido <strong>#${escapeHtml(order.order_number)}</strong> está atualizado.</p><p><strong>Total:</strong> ${formattedTotal}</p>${tracking}${nextSteps}<p>Dúvidas? Chama a gente no Instagram <a href="https://instagram.com/gcardpro.oficial">@gcardpro.oficial</a>.</p><hr><p style="font-size:12px;color:#666">E-mail transacional sobre seu pedido. Para comunicações estratégicas, usamos apenas contatos com consentimento LGPD.</p></body></html>`;

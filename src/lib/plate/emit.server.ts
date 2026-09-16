@@ -43,8 +43,10 @@ async function insertPlates(
  * Emit plates for a paid order. Idempotent.
  * - kind "individual": N plates tied to the order, já ativadas apontando para o
  *   negócio informado na compra.
- * - kind "revenda": um lote (batch) é criado para o pedido, com N códigos em
- *   branco. O revendedor ativa cada um no painel dele.
+ * - kind "revenda": NÃO gera nada aqui -- lote é montado manualmente pelo
+ *   admin a partir do estoque físico (painel de Pedidos, "Gerar lote do
+ *   estoque"), pra garantir que todo código emitido corresponde a uma
+ *   plaquinha realmente impressa.
  */
 export async function emitPlatesForOrder(orderId: string): Promise<{ created: number; total: number }> {
   const { data: order } = await supabaseAdmin
@@ -56,58 +58,9 @@ export async function emitPlatesForOrder(orderId: string): Promise<{ created: nu
   if (!order) throw new Error(`emitPlatesForOrder: pedido ${orderId} não encontrado`);
   if (order.payment_status !== "pago") return { created: 0, total: 0 };
 
+  if (order.kind === "revenda") return { created: 0, total: 0 };
+
   const productId = await firstProductId(orderId);
-
-  if (order.kind === "revenda") {      // Try to find existing batch
-      const { data: existingBatch } = await supabaseAdmin
-        .from("batches")
-        .select("id")
-        .eq("owner_order_id", orderId)
-        .maybeSingle();
-      let batch = existingBatch;
-      if (!batch) {
-        // Create a new batch with a unique code, retry on conflict
-        for (let attempt = 0; attempt < 3; attempt++) {
-          const code = `L-${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${generatePlateToken(5)}`;
-          const { data: nb, error } = await supabaseAdmin
-            .from("batches")
-            .insert({
-              code,
-              label: `Pedido #${order.order_number}`,
-              product_id: productId,
-              quantity: order.quantity,
-              owner_email: order.customer_email,
-              owner_order_id: orderId,
-              status: "produzido",
-            })
-            .select("id")
-            .single();
-          if (!error) {
-            batch = nb;
-            break;
-          }
-          if (!error.message.includes("batches_code_key")) throw error;
-          // else retry
-        }
-        if (!batch) throw new Error("Failed to generate unique batch code");
-      }
-
-
-
-    const { data: existing } = await supabaseAdmin.from("plates").select("id").eq("batch_id", batch.id);
-    const have = existing?.length ?? 0;
-    const missing = order.quantity - have;
-    if (missing <= 0) return { created: 0, total: have };
-
-    const created = await insertPlates(missing, {
-      batch_id: batch.id,
-      product_id: productId,
-      business_id: null,
-      destination_url: null,
-      activated: false,
-    });
-    return { created, total: have + created };
-  }
 
   // individual
   const { data: existing } = await supabaseAdmin.from("plates").select("id").eq("order_id", orderId);
