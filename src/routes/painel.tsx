@@ -2,11 +2,22 @@ import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-r
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import {
+  LayoutDashboard,
+  Package,
+  Users,
+  Boxes,
+  Wallet,
+  Calculator,
+  CreditCard,
+  ScanLine,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import logoIconBranco from "@/assets/logo/Icone_G_Logo_512x512_Branco.png";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 export const Route = createFileRoute("/painel")({
@@ -15,14 +26,14 @@ export const Route = createFileRoute("/painel")({
 });
 
 const TABS = [
-  { to: "/painel/visao-geral", label: "Visão geral" },
-  { to: "/painel", label: "Pedidos", exact: true },
-  { to: "/painel/clientes", label: "Clientes" },
-  { to: "/painel/lotes", label: "Lotes" },
-  { to: "/painel/financeiro", label: "Financeiro" },
-  { to: "/painel/calculadora", label: "Calculadora" },
-  { to: "/painel/placas", label: "Placas" },
-  { to: "/painel/scans", label: "Scans" },
+  { to: "/painel/visao-geral", label: "Visão geral", icon: LayoutDashboard },
+  { to: "/painel", label: "Pedidos", exact: true, icon: Package },
+  { to: "/painel/clientes", label: "Clientes", icon: Users },
+  { to: "/painel/lotes", label: "Lotes", icon: Boxes },
+  { to: "/painel/financeiro", label: "Financeiro", icon: Wallet },
+  { to: "/painel/calculadora", label: "Calculadora", icon: Calculator },
+  { to: "/painel/placas", label: "Placas", icon: CreditCard },
+  { to: "/painel/scans", label: "Scans", icon: ScanLine },
 ] as const;
 
 function PanelLayout() {
@@ -66,44 +77,47 @@ function PanelLayout() {
     );
 
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <Link to="/" className="inline-flex items-center gap-3">
-            <img src={logoTransparente} alt="GCard-PRÓ" className="h-9 w-auto" draggable={false} />
-            <span className="text-muted-foreground">/ painel</span>
-          </Link>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden text-muted-foreground sm:inline">{session.user.email}</span>
-            <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut()}>
-              Sair
-            </Button>
-          </div>
+    <div className="flex min-h-screen bg-surface">
+      <aside className="flex w-60 shrink-0 flex-col bg-foreground text-white">
+        <div className="flex items-center gap-2.5 border-b border-white/10 px-5 py-[22px]">
+          <img src={logoIconBranco} alt="GCard-PRÓ" className="size-7 object-contain" draggable={false} />
+          <span className="text-sm font-bold text-white/70">/ painel</span>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 px-5">
+        <nav className="flex flex-1 flex-col gap-1 p-3">
           {TABS.map((t) => {
-            const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
+            const active = "exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to);
+            const Icon = t.icon;
             return (
               <Link
                 key={t.to}
                 to={t.to}
-                className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-                  active
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                  active ? "bg-primary/15 text-primary" : "text-white/70 hover:bg-white/5 hover:text-white"
                 }`}
               >
+                <Icon className="size-[18px] shrink-0" />
                 {t.label}
               </Link>
             );
           })}
         </nav>
-      </header>
+        <div className="border-t border-white/10 px-5 py-4">
+          <p className="text-xs text-white/50">{session.user.email}</p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2.5 h-9 w-full border-white/15 bg-white/[0.08] text-white hover:bg-white/15 hover:text-white"
+            onClick={() => supabase.auth.signOut()}
+          >
+            Sair
+          </Button>
+        </div>
+      </aside>
 
       <PanelCtx.Provider value={{ userId: session.user.id, email: session.user.email ?? "" }}>
-        <div className="mx-auto max-w-6xl px-5 py-8">
+        <main className="min-w-0 flex-1 px-9 pb-16 pt-8">
           <Outlet />
-        </div>
+        </main>
       </PanelCtx.Provider>
     </div>
   );
