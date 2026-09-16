@@ -120,6 +120,8 @@ const IMAGES: Record<string, string> = {
   "cartao-bolso": produtoCartao,
   "plaquinha-10x10": produtoPlaquinha10x10,
   "plaquinha-10x15-l": produtoPlaquinhaL,
+  "acrilico-10x10-sem-arte": acrilico10x10Cristal,
+  "acrilico-15x10-l-sem-arte": acrilicoLCristal,
 };
 
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
@@ -198,9 +200,9 @@ function Comprar() {
   // desabilita quem não é ativo. Antes travava em só cartão-bolso.
   const catalogProducts = data.products
     .filter((item) => item.status !== "oculto")
-    // Acrílico puro (sem QR/NFC) não tem código pra ativar, então não entra no
-    // fluxo de revenda — lá o que se vende é código, não material.
-    .filter((item) => !(isResale && item.is_blank));
+    // Acrílico puro (sem QR/NFC) só entra no fluxo de revenda/atacado — lojista
+    // final só compra cartão de bolso e plaquinha 10x10 já prontos.
+    .filter((item) => !(!isResale && item.is_blank));
   // O checkout não pode ficar sem opções quando o catálogo ainda não foi publicado.
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
@@ -228,10 +230,12 @@ function Comprar() {
   // Acrílico puro pula negócio/Google (não tem link pra gravar) e ganha a etapa
   // de cor no lugar.
   const isBlank = product?.is_blank ?? false;
-  const steps = isResale
-    ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
-    : isBlank
-      ? (["estilo", "cor", "quantidade", "dados", "entrega", "revisao"] as const)
+  const steps = isBlank
+    ? isResale
+      ? (["estilo", "cor", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
+      : (["estilo", "cor", "quantidade", "dados", "entrega", "revisao"] as const)
+    : isResale
+      ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
       : (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "revisao"] as const);
   const step = steps[stepIndex];
 
