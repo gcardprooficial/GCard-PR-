@@ -237,6 +237,15 @@ function Comprar() {
     setQuantity(caminho === "revenda" ? 10 : 1);
   }, [caminho]);
 
+  // E-mail do pedido = e-mail da conta em revenda, senão /ativar não acha o lote depois.
+  // Precisa ficar junto dos outros hooks, antes de qualquer early return -- senão a
+  // contagem de hooks muda entre renders e o React quebra (erro #310).
+  useEffect(() => {
+    if (isResale && session?.user.email && customer.email !== session.user.email) {
+      setCustomer((prev) => ({ ...prev, email: session.user.email! }));
+    }
+  }, [isResale, session]);
+
   const unitPrice = useMemo(() => {
     if (!plan) return 0;
     return resolveUnitPrice(plan, product, quantity, isResale);
@@ -605,13 +614,6 @@ function Comprar() {
       </div>
     );
   }
-
-  // E-mail do pedido = e-mail da conta em revenda, senão /ativar não acha o lote depois.
-  useEffect(() => {
-    if (isResale && session?.user.email && customer.email !== session.user.email) {
-      setCustomer((prev) => ({ ...prev, email: session.user.email! }));
-    }
-  }, [isResale, session]);
 
   const canAdvance = (() => {
     switch (step) {
