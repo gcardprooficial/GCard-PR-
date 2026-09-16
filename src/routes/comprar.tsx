@@ -393,9 +393,17 @@ function Comprar() {
           window.location.href = pref.url;
           return;
         }
+        // Pedido foi criado, mas não tem link de pagamento (provedor não configurado
+        // ou erro). Sem isso o comprador fica preso achando que já pagou.
+        console.error("create preference sem url", pref);
+        toast.error(
+          "Pedido registrado, mas não conseguimos abrir o pagamento agora. Chama no chat que a gente resolve.",
+        );
       } catch (e) {
-        // provider not configured or error — fall back to manual flow
-        console.debug("create preference failed", e);
+        console.error("create preference failed", e);
+        toast.error(
+          "Pedido registrado, mas não conseguimos abrir o pagamento agora. Chama no chat que a gente resolve.",
+        );
       }
     } catch (error) {
       console.error(error);
