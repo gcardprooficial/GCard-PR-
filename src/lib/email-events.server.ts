@@ -24,6 +24,34 @@ function escapeHtml(value: string | number | null | undefined) {
     .replaceAll("'", "&#039;");
 }
 
+/** Envelope visual com a marca -- usado por todo e-mail transacional. */
+function emailShell(input: { title: string; bodyHtml: string }): string {
+  return `<!doctype html>
+<html lang="pt-BR">
+<body style="margin:0;padding:0;background:#F4F3F0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1A1A1A;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+    <div style="text-align:center;padding-bottom:24px;">
+      <img src="https://gcardpro.com.br/favicon-512.png" width="40" height="40" alt="GCard-PRÓ" style="border-radius:10px;vertical-align:middle;" />
+      <span style="font-size:20px;font-weight:800;vertical-align:middle;margin-left:10px;color:#1A1A1A;">GCard-PRÓ</span>
+    </div>
+    <div style="background:#FFFFFF;border-radius:20px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#1A1A1A;">${escapeHtml(input.title)}</h1>
+      <div style="font-size:15px;line-height:1.65;color:#333333;">${input.bodyHtml}</div>
+    </div>
+    <div style="text-align:center;padding-top:24px;">
+      <p style="margin:0 0 6px;font-size:13px;color:#8A8A8A;">
+        Dúvidas? Chama a gente no Instagram
+        <a href="https://instagram.com/gcardpro.oficial" style="color:#1A1A1A;font-weight:600;text-decoration:none;">@gcardpro.oficial</a>
+      </p>
+      <p style="margin:0;font-size:11px;color:#B0B0B0;">
+        E-mail transacional sobre seu pedido. Para comunicações estratégicas, usamos apenas contatos com consentimento LGPD.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 function eventTitle(event: OrderEmailEvent) {
   if (event === "pedido_recebido") return "Pedido recebido";
   if (event === "pagamento_confirmado") return "Pagamento confirmado";
@@ -122,7 +150,15 @@ export async function dispatchOrderEmailEvent(orderId: string, event: OrderEmail
     nextSteps = "<p>Seu pedido entrou em produção. Assim que for enviado, você recebe o código de rastreio por aqui.</p>";
   }
 
-  const html = `<!doctype html><html lang="pt-BR"><body style="font-family:Arial,sans-serif;color:#171717;line-height:1.6"><h1>${eventTitle(event)}</h1><p>Olá, ${escapeHtml(order.customer_name)}.</p><p>Seu pedido <strong>#${escapeHtml(order.order_number)}</strong> está atualizado.</p><p><strong>Total:</strong> ${formattedTotal}</p>${tracking}${nextSteps}<p>Dúvidas? Chama a gente no Instagram <a href="https://instagram.com/gcardpro.oficial">@gcardpro.oficial</a>.</p><hr><p style="font-size:12px;color:#666">E-mail transacional sobre seu pedido. Para comunicações estratégicas, usamos apenas contatos com consentimento LGPD.</p></body></html>`;
+  const html = emailShell({
+    title: eventTitle(event),
+    bodyHtml:
+      `<p>Olá, ${escapeHtml(order.customer_name)}.</p>` +
+      `<p>Seu pedido <strong>#${escapeHtml(order.order_number)}</strong> está atualizado.</p>` +
+      `<p style="margin:16px 0;padding:12px 16px;background:#F4F3F0;border-radius:12px;font-weight:700;">Total: ${formattedTotal}</p>` +
+      tracking +
+      nextSteps,
+  });
 
   try {
     const result = await sendWithResend({
