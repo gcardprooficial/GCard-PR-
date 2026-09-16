@@ -72,6 +72,8 @@ const orderSchema = z.object({
   business: businessSchema.nullable().optional(),
   planSlug: z.string().trim().min(2).max(60),
   productSlug: z.string().trim().min(2).max(60),
+  /** Cor escolhida (só acrílico puro tem). Vai no nome do item pra produção saber o que separar. */
+  colorSlug: z.string().trim().max(40).optional().nullable(),
   quantity: z.number().int().min(1).max(500),
   teamSize: z.string().trim().max(40).optional().nullable(),
   marketingConsent: z.boolean().default(false),
@@ -121,7 +123,9 @@ export const createPendingOrder = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabaseAdmin
         .from("products")
-        .select("id, name, slug, price_delta_cents, resale_delta_cents, status")
+        .select(
+          "id, name, slug, price_delta_cents, resale_delta_cents, status, is_blank, min_quantity, color_variants",
+        )
         .eq("slug", data.productSlug)
         .maybeSingle(),
     ]);
@@ -129,6 +133,15 @@ export const createPendingOrder = createServerFn({ method: "POST" })
     if (!plan || !plan.is_active) throw new Error("Plano indisponível.");
     if (!product || product.status !== "ativo") {
       throw new Error("Produto indisponível no momento.");
+    }
+    const prod = product as typeof product & {
+      is_blank?: boolean;
+      min_quantity?: number;
+      color_variants?: { slug: string; name: string; delta_cents: number }[] | null;
+    };
+    // Acrílico é kit fechado: o mínimo dele manda, não o do plano.
+    if (prod.min_quantity && data.quantity < prod.min_quantity) {
+      throw new Error(`Este produto é vendido em kit de ${prod.min_quantity} unidades ou mais.`);
     }
     if (data.quantity < plan.min_quantity) throw new Error("Quantidade abaixo do mínimo do plano.");
     if (plan.max_quantity && data.quantity > plan.max_quantity) {
@@ -140,7 +153,7 @@ export const createPendingOrder = createServerFn({ method: "POST" })
         .from("plan_price_tiers")
         .select("min_quantity, unit_price_cents, label")
         .eq("plan_id", plan.id),
-      plan.is_resale
+      plan.is_resale || prod.is_blank
         ? supabaseAdmin
             .from("product_price_tiers")
             .select("min_quantity, unit_price_cents, label")
@@ -148,15 +161,24 @@ export const createPendingOrder = createServerFn({ method: "POST" })
         : Promise.resolve({ data: null }),
     ]);
 
+    // Cor precisa existir no catálogo do produto -- delta nunca vem do navegador.
+    const colorVariant = data.colorSlug
+      ? (prod.color_variants ?? []).find((c) => c.slug === data.colorSlug)
+      : null;
+    if (data.colorSlug && !colorVariant) throw new Error("Cor indisponível para este produto.");
+    const colorDelta = colorVariant?.delta_cents ?? 0;
+
     // Price is always recomputed here — never trusted from the browser.
-    // Produto com faixa de revenda própria usa ela; senão, plano + adicional.
+    // Produto com faixa própria usa ela; senão, plano + adicional. Cor soma por cima.
     let unitPrice: number;
-    if (plan.is_resale && productTiers && productTiers.length > 0) {
-      unitPrice = unitPriceForQuantity(productTiers, data.quantity, productTiers[0].unit_price_cents);
+    if ((plan.is_resale || prod.is_blank) && productTiers && productTiers.length > 0) {
+      unitPrice =
+        unitPriceForQuantity(productTiers, data.quantity, productTiers[0].unit_price_cents) +
+        colorDelta;
     } else {
       const tierPrice = unitPriceForQuantity(tiers ?? [], data.quantity, plan.unit_price_cents);
       const delta = plan.is_resale ? product.resale_delta_cents : product.price_delta_cents;
-      unitPrice = tierPrice + delta;
+      unitPrice = tierPrice + delta + colorDelta;
     }
     const subtotal = unitPrice * data.quantity;
 
@@ -206,7 +228,9 @@ export const createPendingOrder = createServerFn({ method: "POST" })
     const { error: itemError } = await supabaseAdmin.from("order_items").insert({
       order_id: order.id,
       product_id: product.id,
-      product_name: `${product.name} — ${plan.name}`,
+      product_name: colorVariant
+        ? `${product.name} — ${colorVariant.name}`
+        : `${product.name} — ${plan.name}`,
       quantity: data.quantity,
       unit_price_cents: unitPrice,
       total_cents: subtotal,

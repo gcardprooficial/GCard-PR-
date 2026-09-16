@@ -6,7 +6,7 @@ import type { Session } from "@supabase/supabase-js";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { getCatalog, type CatalogProduct } from "@/lib/catalog.functions";
+import { getCatalog, type CatalogProduct, type ColorVariant } from "@/lib/catalog.functions";
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createPendingOrder } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
@@ -19,21 +19,46 @@ import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-mockup.jpg";
 import produtoPlaquinhaL from "@/assets/gcard-pro-plaquinha-l-provisorio.jpg";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
+import acrilico10x10Cristal from "@/assets/acrilico-10x10-cristal.jpg";
+import acrilico10x10Branco from "@/assets/acrilico-10x10-branco.jpg";
+import acrilico10x10Preto from "@/assets/acrilico-10x10-preto.jpg";
+import acrilicoLCristal from "@/assets/acrilico-l-cristal.jpg";
+import acrilicoLBranco from "@/assets/acrilico-l-branco.jpg";
+import acrilicoLPreto from "@/assets/acrilico-l-preto.jpg";
+
+/** Foto por produto+cor, pra etapa de escolha de cor do acrílico puro. */
+const COLOR_IMAGES: Record<string, string> = {
+  "acrilico-10x10-sem-arte:cristal": acrilico10x10Cristal,
+  "acrilico-10x10-sem-arte:branco": acrilico10x10Branco,
+  "acrilico-10x10-sem-arte:preto": acrilico10x10Preto,
+  "acrilico-15x10-l-sem-arte:cristal": acrilicoLCristal,
+  "acrilico-15x10-l-sem-arte:branco": acrilicoLBranco,
+  "acrilico-15x10-l-sem-arte:preto": acrilicoLPreto,
+};
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
 
-/** Produto com faixa de revenda própria usa ela; senão, plano + adicional fixo. */
+/** Produto com faixa própria usa ela; senão, plano + adicional fixo. Cor soma por cima. */
 function resolveUnitPrice(
   plan: { tiers: { min_quantity: number; unit_price_cents: number; label: string | null }[]; unit_price_cents: number },
   product: CatalogProduct | null,
   quantity: number,
   isResale: boolean,
+  color?: ColorVariant | null,
 ): number {
+  const colorDelta = color?.delta_cents ?? 0;
+  // Acrílico puro tem preço próprio por faixa (frete já diluído), não usa plano.
+  if (product?.is_blank && product.resale_tiers?.length) {
+    return (
+      unitPriceForQuantity(product.resale_tiers, quantity, product.resale_tiers[0].unit_price_cents) +
+      colorDelta
+    );
+  }
   if (isResale && product?.resale_tiers?.length) {
     return unitPriceForQuantity(product.resale_tiers, quantity, product.resale_tiers[0].unit_price_cents);
   }
   const delta = isResale ? (product?.resale_delta_cents ?? 0) : (product?.price_delta_cents ?? 0);
-  return unitPriceForQuantity(plan.tiers, quantity, plan.unit_price_cents) + delta;
+  return unitPriceForQuantity(plan.tiers, quantity, plan.unit_price_cents) + delta + colorDelta;
 }
 
 const searchSchema = z.object({
@@ -111,6 +136,9 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     resale_tiers: [],
     has_qr: false,
     has_nfc: true,
+    is_blank: false,
+    min_quantity: 1,
+    color_variants: null,
   },
 ];
 
@@ -168,13 +196,13 @@ function Comprar() {
   const publicPlanName = isResale ? "Kit para Revenda" : "Cartão Individual";
   // Mostra todo produto não oculto (ativo ou em_breve); a etapa "estilo" já
   // desabilita quem não é ativo. Antes travava em só cartão-bolso.
-  const catalogProducts = data.products.filter((item) => item.status !== "oculto");
+  const catalogProducts = data.products
+    .filter((item) => item.status !== "oculto")
+    // Acrílico puro (sem QR/NFC) não tem código pra ativar, então não entra no
+    // fluxo de revenda — lá o que se vende é código, não material.
+    .filter((item) => !(isResale && item.is_blank));
   // O checkout não pode ficar sem opções quando o catálogo ainda não foi publicado.
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
-
-  const steps = isResale
-    ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
-    : (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "revisao"] as const);
 
   // Revenda precisa de conta (o mesmo e-mail vai ativar os códigos depois em
   // /ativar). Loja própria segue como convidado — o time configura pelo painel.
@@ -194,9 +222,19 @@ function Comprar() {
   }, [isResale]);
 
   const [stepIndex, setStepIndex] = useState(0);
+  const [product, setProduct] = useState<CatalogProduct | null>(null);
+  const [color, setColor] = useState<ColorVariant | null>(null);
+
+  // Acrílico puro pula negócio/Google (não tem link pra gravar) e ganha a etapa
+  // de cor no lugar.
+  const isBlank = product?.is_blank ?? false;
+  const steps = isResale
+    ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
+    : isBlank
+      ? (["estilo", "cor", "quantidade", "dados", "entrega", "revisao"] as const)
+      : (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "revisao"] as const);
   const step = steps[stepIndex];
 
-  const [product, setProduct] = useState<CatalogProduct | null>(null);
   const [term, setTerm] = useState("");
   const [results, setResults] = useState<BusinessResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -248,10 +286,18 @@ function Comprar() {
 
   const unitPrice = useMemo(() => {
     if (!plan) return 0;
-    return resolveUnitPrice(plan, product, quantity, isResale);
-  }, [plan, product, quantity, isResale]);
+    return resolveUnitPrice(plan, product, quantity, isResale, color);
+  }, [plan, product, quantity, isResale, color]);
   const total = unitPrice * quantity;
   const maxQuantity = plan?.max_quantity ?? 500;
+  // Acrílico é kit fechado: mínimo vem do produto, não do plano.
+  const minQuantity = Math.max(plan?.min_quantity ?? 1, product?.min_quantity ?? 1);
+
+  // Trocar de produto zera a cor e reajusta a quantidade pro mínimo do kit.
+  useEffect(() => {
+    setColor(product?.color_variants?.[0] ?? null);
+    setQuantity((q) => Math.max(q, product?.min_quantity ?? 1));
+  }, [product]);
 
   const go = (delta: number) => {
     if (isTransitioning) return;
@@ -327,6 +373,7 @@ function Comprar() {
               : null,
           planSlug: plan.slug,
           productSlug: product.slug,
+          colorSlug: color?.slug ?? null,
           quantity,
           customer,
           marketingConsent,
@@ -621,12 +668,14 @@ function Comprar() {
         return !!product;
       case "conta":
         return !!session;
+      case "cor":
+        return !!color;
       case "negocio":
         return !!business || manualLink.trim().length > 10;
       case "confirmar":
         return !!business || manualLink.trim().length > 10;
       case "quantidade":
-        return quantity >= plan.min_quantity && quantity <= maxQuantity;
+        return quantity >= minQuantity && quantity <= maxQuantity;
       case "dados":
         return (
           customer.firstName.length >= 2 &&
@@ -651,6 +700,8 @@ function Comprar() {
 
   const stepLabels: Record<string, string> = {
     estilo: "Modelo",
+    cor: "Cor",
+    conta: "Conta",
     negocio: "Negócio",
     confirmar: "Confirmar",
     quantidade: "Qtd.",
@@ -882,6 +933,54 @@ function Comprar() {
           )}
 
           {step === "conta" && <ContaStep session={session} sessionReady={sessionReady} />}
+
+          {step === "cor" && (
+            <div>
+              <h1 className="text-2xl leading-tight sm:text-3xl">
+                Escolha a <span className="highlight-yellow">cor</span> do acrílico
+              </h1>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                Chega sem impressão nenhuma — acrílico puro, pronto pra você aplicar a sua arte ou
+                adesivo. Frete grátis já incluso no preço.
+              </p>
+
+              <div className="mt-7 grid gap-4 sm:grid-cols-3">
+                {(product?.color_variants ?? []).map((variant) => {
+                  const selected = color?.slug === variant.slug;
+                  const img = COLOR_IMAGES[`${product?.slug}:${variant.slug}`];
+                  return (
+                    <button
+                      key={variant.slug}
+                      type="button"
+                      onClick={() => setColor(variant)}
+                      className={`overflow-hidden rounded-2xl border-2 text-left transition-all card-soft ${
+                        selected
+                          ? "border-primary ring-4 ring-primary/15 shadow-xl"
+                          : "border-border bg-card hover:border-foreground/20"
+                      }`}
+                    >
+                      {img && (
+                        <img
+                          src={img}
+                          alt={variant.name}
+                          className="aspect-square w-full bg-surface object-contain"
+                          loading="lazy"
+                        />
+                      )}
+                      <div className="p-4">
+                        <p className="font-bold">{variant.name}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {variant.delta_cents === 0
+                            ? "Preço base"
+                            : `+ ${money(variant.delta_cents)} por unidade`}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {step === "negocio" && (
             <div>
@@ -1310,7 +1409,7 @@ function Comprar() {
                 <div className="mt-2 flex items-stretch gap-2">
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.max(plan.min_quantity, q - 1))}
+                    onClick={() => setQuantity((q) => Math.max(minQuantity, q - 1))}
                     className="btn-press inline-flex w-12 items-center justify-center rounded-2xl border-2 border-border bg-card text-2xl font-black text-foreground hover:border-primary hover:bg-primary/10"
                     aria-label="Diminuir quantidade"
                   >
@@ -1319,14 +1418,14 @@ function Comprar() {
                   <Input
                     id="qtd"
                     type="number"
-                    min={plan.min_quantity}
+                    min={minQuantity}
                     max={maxQuantity}
                     value={quantity}
                     onChange={(e) =>
                       setQuantity(
                         Math.min(
                           maxQuantity,
-                          Math.max(plan.min_quantity, Number(e.target.value) || plan.min_quantity),
+                          Math.max(minQuantity, Number(e.target.value) || minQuantity),
                         ),
                       )
                     }

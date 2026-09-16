@@ -34,7 +34,15 @@ export type CatalogProduct = {
   resale_tiers: PriceTier[];
   has_qr: boolean;
   has_nfc: boolean;
+  /** Acrílico puro, sem impressão: não gera placa, não entra em lote, não ativa nada. */
+  is_blank: boolean;
+  /** Kit fechado: quantidade mínima de venda desse produto. */
+  min_quantity: number;
+  /** Cores disponíveis; cada uma soma seu delta ao preço da faixa. Null = cor única. */
+  color_variants: ColorVariant[] | null;
 };
+
+export type ColorVariant = { slug: string; name: string; delta_cents: number };
 
 export type CatalogPlan = {
   id: string;
@@ -63,7 +71,7 @@ export const getCatalog = createServerFn({ method: "GET" }).handler(async () => 
     supabase
       .from("products")
       .select(
-        "id, slug, name, tagline, description, format, status, price_delta_cents, resale_delta_cents, has_qr, has_nfc",
+        "id, slug, name, tagline, description, format, status, price_delta_cents, resale_delta_cents, has_qr, has_nfc, is_blank, min_quantity, color_variants",
       )
       .order("sort_order"),
     supabase

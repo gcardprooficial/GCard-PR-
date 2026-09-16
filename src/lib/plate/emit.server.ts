@@ -62,6 +62,16 @@ export async function emitPlatesForOrder(orderId: string): Promise<{ created: nu
 
   const productId = await firstProductId(orderId);
 
+  // Acrílico puro (sem QR/NFC) é só o material: não tem código pra emitir.
+  if (productId) {
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select("is_blank")
+      .eq("id", productId)
+      .maybeSingle();
+    if ((product as { is_blank?: boolean } | null)?.is_blank) return { created: 0, total: 0 };
+  }
+
   // individual
   const { data: existing } = await supabaseAdmin.from("plates").select("id").eq("order_id", orderId);
   const have = existing?.length ?? 0;
