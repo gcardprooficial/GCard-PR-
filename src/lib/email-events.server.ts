@@ -148,6 +148,37 @@ export async function dispatchOrderEmailEvent(orderId: string, event: OrderEmail
       "<p>Depois é só configurar o link de avaliação de cada plaquinha que você for entregar.</p>";
   } else if (event === "em_producao") {
     nextSteps = "<p>Seu pedido entrou em produção. Assim que for enviado, você recebe o código de rastreio por aqui.</p>";
+  } else if (event === "pedido_enviado" && order.kind === "revenda") {
+    const { data: batch } = await db
+      .from("batches")
+      .select("id, code")
+      .eq("owner_order_id", orderId)
+      .maybeSingle();
+    const { data: plates } = batch
+      ? await db
+          .from("plates")
+          .select("short_code, token")
+          .eq("batch_id", batch.id)
+          .order("short_code")
+      : { data: [] };
+    const rows = (plates ?? [])
+      .map(
+        (p: { short_code: string; token: string }) =>
+          `<tr><td style="padding:4px 12px 4px 0;font-weight:700;">${escapeHtml(p.short_code)}</td>` +
+          `<td style="padding:4px 0;"><a href="https://gcardpro.com.br/r/${p.token}" style="color:#1A1A1A;">gcardpro.com.br/r/${escapeHtml(p.token)}</a></td></tr>`,
+      )
+      .join("");
+    nextSteps =
+      "<p>Suas plaquinhas chegam em branco, sem link de avaliação configurado — é assim mesmo no modelo de revenda.</p>" +
+      (batch?.code
+        ? `<p><strong>Código do lote:</strong> <code style="font-size:16px">${escapeHtml(batch.code)}</code></p>`
+        : "") +
+      (rows
+        ? "<p>Cada plaquinha física tem um código escrito nela. Guarda essa lista de referência:</p>" +
+          `<table style="border-collapse:collapse;font-size:14px;">${rows}</table>`
+        : "") +
+      '<p style="margin-top:16px;">Pra ativar cada uma: entra em <a href="https://gcardpro.com.br/ativar">gcardpro.com.br/ativar</a>, ' +
+      "acha o código da plaquinha na lista e cola o link de avaliação do Google do negócio dela.</p>";
   }
 
   const html = emailShell({
