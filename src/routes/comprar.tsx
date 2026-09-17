@@ -1984,6 +1984,7 @@ function ContaStep({ session, sessionReady }: { session: Session | null; session
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const [busy, setBusy] = useState(false);
+  const [signupSent, setSignupSent] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -1993,7 +1994,13 @@ function ContaStep({ session, sessionReady }: { session: Session | null; session
         ? await supabase.auth.signInWithPassword({ email, password })
         : await supabase.auth.signUp({ email, password });
     setBusy(false);
-    if (error) toast.error(mode === "login" ? "E-mail ou senha inválidos." : error.message);
+    if (error) {
+      toast.error(mode === "login" ? "E-mail ou senha inválidos." : error.message);
+      return;
+    }
+    // Sem sessão ainda = precisa confirmar o e-mail primeiro. Sem esse aviso o
+    // usuário clica de novo achando que falhou, e cada clique reenvia o e-mail.
+    if (mode === "signup") setSignupSent(true);
   }
 
   if (!sessionReady) return <p className="text-sm text-muted-foreground">Carregando…</p>;
@@ -2011,6 +2018,32 @@ function ContaStep({ session, sessionReady }: { session: Session | null; session
         </p>
         <Button variant="outline" size="sm" className="mt-4" onClick={() => supabase.auth.signOut()}>
           Trocar de conta
+        </Button>
+      </div>
+    );
+  }
+
+  if (signupSent) {
+    return (
+      <div>
+        <h1 className="text-2xl leading-tight sm:text-3xl">
+          Confirme seu <span className="highlight-yellow">e-mail</span>
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Mandamos um link de confirmação pra <strong className="text-foreground">{email}</strong>.
+          Abre o e-mail e clica no link — essa página atualiza sozinha assim que confirmar.
+        </p>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Não chegou? Confere a caixa de spam antes de tentar de novo — pedir de novo reenvia o
+          e-mail e pode demorar mais pra chegar.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4"
+          onClick={() => setSignupSent(false)}
+        >
+          Usar outro e-mail
         </Button>
       </div>
     );
