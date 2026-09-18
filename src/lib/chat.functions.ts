@@ -164,7 +164,5 @@ export const closeChat = createServerFn({ method: "POST" })
   });
 
 export function createVisitorToken() {
-  const uuid = globalThis.crypto?.randomUUID;
-  if (uuid) return `${uuid.call(globalThis.crypto)}${uuid.call(globalThis.crypto)}`;
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
 }
