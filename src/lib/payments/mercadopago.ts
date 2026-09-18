@@ -53,6 +53,17 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
 
     async createPreference({ order, origin }): Promise<CheckoutPreference> {
       const unitPrice = Math.round(order.total_cents / order.quantity) / 100;
+      // CPF/CNPJ ajuda a MP a registrar o pagamento (cartão/pix costumam exigir
+      // identificação do comprador). Sem isso alguns pedidos ficam travados na
+      // tela de pagamento com "Não conseguimos registrar o pedido".
+      const docDigits = (order.customer_document ?? "").replace(/\D/g, "");
+      const identification =
+        docDigits.length === 11
+          ? { type: "CPF", number: docDigits }
+          : docDigits.length === 14
+            ? { type: "CNPJ", number: docDigits }
+            : null;
+      const [firstName, ...rest] = order.customer_name.trim().split(/\s+/);
       const res = await fetch(`${API}/checkout/preferences`, {
         method: "POST",
         headers: { ...auth, "Content-Type": "application/json" },
@@ -66,7 +77,12 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
               currency_id: "BRL",
             },
           ],
-          payer: { name: order.customer_name, email: order.customer_email },
+          payer: {
+            name: firstName || order.customer_name,
+            surname: rest.join(" ") || undefined,
+            email: order.customer_email,
+            ...(identification ? { identification } : {}),
+          },
           external_reference: order.id,
           back_urls: {
             success: `${origin}/comprar?status=sucesso`,
