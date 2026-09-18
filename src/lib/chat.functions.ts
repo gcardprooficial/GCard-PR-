@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -165,5 +164,7 @@ export const closeChat = createServerFn({ method: "POST" })
   });
 
 export function createVisitorToken() {
-  return randomUUID() + randomUUID();
+  const uuid = globalThis.crypto?.randomUUID;
+  if (uuid) return `${uuid.call(globalThis.crypto)}${uuid.call(globalThis.crypto)}`;
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
 }
