@@ -1,11 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 export type OrderEmailEvent =
-  | "pedido_recebido"
-  | "pagamento_confirmado"
-  | "lote_criado"
-  | "em_producao"
-  | "pedido_enviado";
+  "pedido_recebido" | "pagamento_confirmado" | "lote_criado" | "em_producao" | "pedido_enviado";
 
 const SUBJECTS: Record<OrderEmailEvent, string> = {
   pedido_recebido: "Recebemos seu pedido GCard-PRÓ",
@@ -147,7 +143,8 @@ export async function dispatchOrderEmailEvent(orderId: string, event: OrderEmail
       "</ol>" +
       "<p>Depois é só configurar o link de avaliação de cada plaquinha que você for entregar.</p>";
   } else if (event === "em_producao") {
-    nextSteps = "<p>Seu pedido entrou em produção. Assim que for enviado, você recebe o código de rastreio por aqui.</p>";
+    nextSteps =
+      "<p>Seu pedido entrou em produção. Assim que for enviado, você recebe o código de rastreio por aqui.</p>";
   } else if (event === "pedido_enviado" && order.kind === "revenda") {
     const { data: batch } = await db
       .from("batches")
@@ -245,6 +242,32 @@ export async function notifyAdminPaymentFailure(order: {
     console.error("Falha ao notificar admin sobre pagamento", error);
     return { sent: false };
   }
+}
+
+export async function sendPaymentLinkEmail(
+  order: {
+    order_number: number;
+    customer_name: string;
+    customer_email: string;
+    total_cents: number;
+  },
+  paymentUrl: string,
+) {
+  const html = emailShell({
+    title: "Finalize seu pagamento",
+    bodyHtml:
+      `<p>Olá, ${escapeHtml(order.customer_name)}.</p>` +
+      `<p>Seu pedido <strong>#${escapeHtml(order.order_number)}</strong> está reservado e aguardando pagamento.</p>` +
+      `<p style="margin:16px 0;padding:12px 16px;background:#F4F3F0;border-radius:12px;font-weight:700;">Total: R$ ${(Number(order.total_cents ?? 0) / 100).toFixed(2).replace(".", ",")}</p>` +
+      `<p><a href="${escapeHtml(paymentUrl)}" style="display:inline-block;background:#F5B800;color:#1A1A1A;padding:14px 22px;border-radius:12px;font-weight:800;text-decoration:none;">Pagar agora</a></p>` +
+      `<p>Se o botão não abrir, copie este link:</p><p style="word-break:break-all;font-size:12px;color:#666;">${escapeHtml(paymentUrl)}</p>` +
+      `<p>Se você já realizou o pagamento, pode desconsiderar esta mensagem.</p>`,
+  });
+  return sendWithResend({
+    to: order.customer_email,
+    subject: `Finalize o pagamento do pedido #${order.order_number}`,
+    html,
+  });
 }
 
 export async function upsertCustomerConsent(input: {

@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
-import { saveOrderTracking, sendOrderEmail } from "@/lib/panel.functions";
+import { saveOrderTracking, sendOrderEmail, sendPaymentLinkEmail } from "@/lib/panel.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { usePanel } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,11 @@ type OrderRow = {
   ship_zip: string | null;
   internal_notes: string | null;
   businesses: { name: string; review_url: string } | null;
-  order_items: { product_name: string; quantity: number; products: { image_url: string | null } | null }[];
+  order_items: {
+    product_name: string;
+    quantity: number;
+    products: { image_url: string | null } | null;
+  }[];
 };
 
 type BatchByOrder = { orderId: string; code: string; codes_sent_at: string | null };
@@ -84,11 +88,13 @@ function Orders() {
   const search = Route.useSearch();
   const runSaveTracking = useServerFn(saveOrderTracking);
   const runSendOrderEmail = useServerFn(sendOrderEmail);
+  const runSendPaymentLinkEmail = useServerFn(sendPaymentLinkEmail);
   const runCreatePreference = useServerFn(createCheckoutPreference);
   const [rows, setRows] = useState<OrderRow[] | null>(null);
   const [batchesByOrder, setBatchesByOrder] = useState<Record<string, BatchByOrder>>({});
   const [kindFilter, setKindFilter] = useState<"all" | "individual" | "revenda">("all");
   const [q, setQ] = useState(search.q ?? "");
+  const [sendingPaymentFor, setSendingPaymentFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -172,7 +178,10 @@ function Orders() {
       toast.error(error.message);
       return;
     }
-    await supabase.from("batches").update({ owner_order_id: row.id }).eq("id", batchId as string);
+    await supabase
+      .from("batches")
+      .update({ owner_order_id: row.id })
+      .eq("id", batchId as string);
     await supabase.from("audit_log").insert({
       actor_id: userId,
       actor_email: email,
@@ -189,6 +198,19 @@ function Orders() {
     setGeneratingFor(null);
     toast.success(`Lote gerado pro pedido #${row.order_number}.`);
     void load();
+  }
+
+  async function sendPaymentLink(row: OrderRow) {
+    setSendingPaymentFor(row.id);
+    try {
+      await runSendPaymentLinkEmail({ data: { orderId: row.id } });
+      toast.success(`Link de pagamento enviado para ${row.customer_email}.`);
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Não foi possível enviar o e-mail.");
+    } finally {
+      setSendingPaymentFor(null);
+    }
   }
 
   async function patch(row: OrderRow, changes: Partial<OrderRow>) {
@@ -321,7 +343,9 @@ function Orders() {
                   </p>
                   {r.order_items.length > 0 && (
                     <p className="mt-0.5 text-sm font-semibold">
-                      {r.order_items.map((it) => `${it.product_name} · ${it.quantity} un.`).join(" + ")}
+                      {r.order_items
+                        .map((it) => `${it.product_name} · ${it.quantity} un.`)
+                        .join(" + ")}
                     </p>
                   )}
                   <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-sm">
@@ -423,7 +447,8 @@ function Orders() {
                               });
                               if (!pref.ok || !pref.url) {
                                 toast.error(
-                                  pref.ok === false && pref.error === "payment_provider_not_configured"
+                                  pref.ok === false &&
+                                    pref.error === "payment_provider_not_configured"
                                     ? "Mercado Pago não está configurado."
                                     : "Não foi possível gerar o link.",
                                 );
@@ -438,6 +463,13 @@ function Orders() {
                         }}
                       >
                         Gerar e copiar link
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => void sendPaymentLink(r)}
+                        disabled={sendingPaymentFor === r.id}
+                      >
+                        {sendingPaymentFor === r.id ? "Enviando…" : "Enviar por e-mail"}
                       </Button>
                     </div>
                   </div>
@@ -538,7 +570,9 @@ function Orders() {
                             <span className="text-muted-foreground">por {h.actor_email}</span>
                           )}
                           {h.details && (
-                            <span className="text-muted-foreground">{JSON.stringify(h.details)}</span>
+                            <span className="text-muted-foreground">
+                              {JSON.stringify(h.details)}
+                            </span>
                           )}
                         </li>
                       ))}
