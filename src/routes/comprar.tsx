@@ -179,7 +179,10 @@ function Comprar() {
     name: isResale ? "Kit para Revenda" : "Cartão Individual",
     audience: isResale ? "Comprar em quantidade e revender" : "Para usar no seu próprio balcão",
     description: null,
-    unit_price_cents: isResale ? 3790 : 5990,
+    // Lojista (não-revenda) não dilui frete em faixa de quantidade -- por isso
+    // o preço unitário já embute os R$20 de frete (ver nota em resolveUnitPrice
+    // / checkout.functions.ts: shipping_cents fica 0, o frete vem somado aqui).
+    unit_price_cents: isResale ? 3790 : 7990,
     min_quantity: isResale ? 10 : 1,
     max_quantity: isResale ? null : 5,
     is_resale: isResale,
@@ -190,8 +193,8 @@ function Comprar() {
           { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
         ]
       : [
-          { min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" },
-          { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" },
+          { min_quantity: 1, unit_price_cents: 7990, label: "1 a 4 unidades" },
+          { min_quantity: 5, unit_price_cents: 6990, label: "5 unidades" },
         ],
     packages: [],
   };
