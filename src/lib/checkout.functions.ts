@@ -237,14 +237,31 @@ export const createPendingOrder = createServerFn({ method: "POST" })
     });
     if (itemError) throw itemError;
 
-    const { upsertCustomerConsent, dispatchOrderEmailEvent } =
-      await import("@/lib/email-events.server");
-    await upsertCustomerConsent({
-      email: data.customer.email,
-      name: `${data.customer.firstName} ${data.customer.lastName}`.trim(),
-      consent: data.marketingConsent,
-    });
-    await dispatchOrderEmailEvent(order.id, "pedido_recebido");
+    // Consentimento e e-mail são efeitos secundários. Uma falha neles não pode
+    // desfazer nem mascarar um pedido já gravado.
+    try {
+      const { upsertCustomerConsent } = await import("@/lib/email-events.server");
+      await upsertCustomerConsent({
+        email: data.customer.email,
+        name: `${data.customer.firstName} ${data.customer.lastName}`.trim(),
+        consent: data.marketingConsent,
+      });
+    } catch (error) {
+      console.error("createPendingOrder: falha ao salvar consentimento", {
+        orderId: order.id,
+        error,
+      });
+    }
+
+    try {
+      const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
+      await dispatchOrderEmailEvent(order.id, "pedido_recebido");
+    } catch (error) {
+      console.error("createPendingOrder: falha ao registrar e-mail do pedido", {
+        orderId: order.id,
+        error,
+      });
+    }
 
     return {
       orderNumber: order.order_number,

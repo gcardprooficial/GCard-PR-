@@ -407,7 +407,12 @@ function Comprar() {
       }
     } catch (error) {
       console.error(error);
-      toast.error("Não conseguimos registrar o pedido. Confira os dados e tente de novo.");
+      const message = error instanceof Error ? error.message : "";
+      toast.error(
+        message && !/supabase|postgres|database|fetch|server/i.test(message)
+          ? message
+          : "Não conseguimos registrar o pedido agora. Confira os dados e tente novamente.",
+      );
     } finally {
       setSaving(false);
     }
