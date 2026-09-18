@@ -184,18 +184,24 @@ export const createPendingOrder = createServerFn({ method: "POST" })
 
     let businessId: string | null = null;
     if (data.business && parsedLink) {
-      const { data: business, error: businessError } = await supabaseAdmin
-        .from("businesses")
-        .insert({
-          name: data.business.name,
-          review_url: parsedLink.reviewUrl,
-          google_place_id: parsedLink.placeId,
-          address: data.business.address ?? null,
-        })
-        .select("id")
-        .single();
-      if (businessError) throw businessError;
-      businessId = business.id;
+      try {
+        const { data: business, error: businessError } = await supabaseAdmin
+          .from("businesses")
+          .insert({
+            name: data.business.name,
+            review_url: parsedLink.reviewUrl,
+            google_place_id: parsedLink.placeId,
+            address: data.business.address ?? null,
+          })
+          .select("id")
+          .single();
+        if (businessError) throw businessError;
+        businessId = business.id;
+      } catch (error) {
+        // O cadastro do negócio é auxiliar. Não bloqueie o pedido/pagamento se
+        // houver uma constraint ou divergência de migração nessa tabela.
+        console.error("createPendingOrder: falha ao salvar negócio", { error });
+      }
     }
 
     const { data: order, error: orderError } = await supabaseAdmin
