@@ -17,7 +17,9 @@ export const createCheckoutPreference = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin
       .from("orders")
-      .select("id, order_number, total_cents, quantity, customer_email, customer_name")
+      .select(
+        "id, order_number, total_cents, quantity, customer_email, customer_name, customer_document",
+      )
       .eq("order_number", data.orderNumber)
       .maybeSingle();
     if (!order) {
@@ -31,6 +33,7 @@ export const createCheckoutPreference = createServerFn({ method: "POST" })
       quantity: order.quantity,
       customer_email: order.customer_email,
       customer_name: order.customer_name,
+      customer_document: order.customer_document ?? null,
     };
 
     const origin = process.env["PUBLIC_APP_URL"] ?? "https://gcardpro.com.br";
