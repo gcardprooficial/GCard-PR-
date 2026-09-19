@@ -10,6 +10,17 @@ import { usePanel } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/painel/")({
   validateSearch: (search: Record<string, unknown>): { q?: string } =>
@@ -95,6 +106,7 @@ function Orders() {
   const [kindFilter, setKindFilter] = useState<"all" | "individual" | "revenda">("all");
   const [q, setQ] = useState(search.q ?? "");
   const [sendingPaymentFor, setSendingPaymentFor] = useState<string | null>(null);
+  const [deletingFor, setDeletingFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -211,6 +223,28 @@ function Orders() {
     } finally {
       setSendingPaymentFor(null);
     }
+  }
+
+  async function deleteOrder(row: OrderRow) {
+    setDeletingFor(row.id);
+    // order_items tem ON DELETE CASCADE, mas só se a policy de DELETE deixar
+    // o cascade rodar sob RLS -- ver migration orders_team_delete.
+    const { error } = await supabase.from("orders").delete().eq("id", row.id);
+    setDeletingFor(null);
+    if (error) {
+      toast.error("Não foi possível excluir. " + error.message);
+      return;
+    }
+    await supabase.from("audit_log").insert({
+      actor_id: userId,
+      actor_email: email,
+      action: "delete_order",
+      entity: "orders",
+      entity_id: row.id,
+      details: { order_number: row.order_number, customer_email: row.customer_email },
+    });
+    setRows((prev) => prev?.filter((r) => r.id !== row.id) ?? null);
+    toast.success(`Pedido #${row.order_number} excluído.`);
   }
 
   async function patch(row: OrderRow, changes: Partial<OrderRow>) {
@@ -542,14 +576,48 @@ function Orders() {
                   </div>
                 </div>
 
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => void toggleHistory(r.id)}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {historyOpenId === r.id ? "Ocultar histórico" : "Ver histórico"}
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => void toggleHistory(r.id)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {historyOpenId === r.id ? "Ocultar histórico" : "Ver histórico"}
+                  </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={deletingFor === r.id}
+                        className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        Excluir pedido
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir pedido #{r.order_number}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Apaga o pedido de {r.customer_name} ({r.customer_email}) e os itens dele
+                          pra sempre. Não dá pra desfazer. Se já tiver lote gerado, o lote continua
+                          existindo, só perde o vínculo com o pedido.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => void deleteOrder(r)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
 
               {historyOpenId === r.id && (
