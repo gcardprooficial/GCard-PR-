@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePanel } from "@/lib/panelContext";
@@ -15,6 +15,8 @@ const STATUS_LABEL: Record<string, string> = {
   ativada: "Ativada",
   bloqueada: "Bloqueada",
 };
+
+const PAGE = 40;
 
 type Plate = {
   id: string;
@@ -32,12 +34,26 @@ type Plate = {
   batches: { code: string; label: string | null; owner_email: string | null } | null;
 };
 
+type View = "lotes" | "estoque" | "todas";
+
+type BatchGroup = {
+  id: string;
+  code: string;
+  label: string | null;
+  owner_email: string | null;
+  plates: Plate[];
+  activated: number;
+  scans: number;
+};
+
 function Placas() {
   const { userId, email } = usePanel();
   const [rows, setRows] = useState<Plate[] | null>(null);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | (typeof STATUS)[number]>("all");
-  const [loteFilter, setLoteFilter] = useState<"all" | "com_lote" | "estoque">("all");
+  const [view, setView] = useState<View>("lotes");
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const [limit, setLimit] = useState(PAGE);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -45,8 +61,8 @@ function Placas() {
       .select(
         "id, token, short_code, status, destination_url, scan_count, last_scan_at, activated_at, batch_id, products(name), orders(order_number, customer_name), businesses(name, review_url), batches(code, label, owner_email)",
       )
-      .order("created_at", { ascending: false })
-      .limit(500);
+      .order("short_code", { ascending: true })
+      .limit(3000);
     if (error) {
       toast.error("Não foi possível carregar as placas.");
       return;
@@ -57,6 +73,11 @@ function Placas() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Trocar de visão/busca volta a paginação pro começo.
+  useEffect(() => {
+    setLimit(PAGE);
+  }, [view, q, statusFilter]);
 
   async function patch(row: Plate, changes: Record<string, unknown>) {
     const { error } = await supabase.from("plates").update(changes).eq("id", row.id);
@@ -73,7 +94,7 @@ function Placas() {
       details: changes,
     });
     setRows((prev) => prev?.map((r) => (r.id === row.id ? { ...r, ...changes } : r)) ?? null);
-    toast.success(`Placa ${row.token} atualizada.`);
+    toast.success(`Placa ${row.short_code} atualizada.`);
   }
 
   function setStatus(row: Plate, status: string) {
@@ -88,33 +109,162 @@ function Placas() {
     });
   }
 
+  const searching = q.trim().length > 0;
+
+  const matches = useCallback(
+    (r: Plate) => {
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (!searching) return true;
+      const t = q.toLowerCase();
+      return (
+        r.token.toLowerCase().includes(t) ||
+        r.short_code.toLowerCase().includes(t) ||
+        !!r.businesses?.name.toLowerCase().includes(t) ||
+        !!r.orders?.customer_name.toLowerCase().includes(t) ||
+        String(r.orders?.order_number ?? "").includes(t) ||
+        !!r.batches?.code.toLowerCase().includes(t) ||
+        !!r.batches?.owner_email?.toLowerCase().includes(t)
+      );
+    },
+    [q, searching, statusFilter],
+  );
+
   const statusCounts = (rows ?? []).reduce<Record<string, number>>((acc, r) => {
     acc[r.status] = (acc[r.status] ?? 0) + 1;
     return acc;
   }, {});
 
-  const loteCounts = {
-    all: rows?.length ?? 0,
-    com_lote: (rows ?? []).filter((r) => r.batch_id).length,
-    estoque: (rows ?? []).filter((r) => !r.batch_id).length,
-  };
+  // Estoque livre = sem lote e sem pedido (placas de loja própria já nascem ligadas a um pedido).
+  const stock = useMemo(
+    () => (rows ?? []).filter((r) => !r.batch_id && !r.orders && matches(r)),
+    [rows, matches],
+  );
 
-  const filtered = (rows ?? []).filter((r) => {
-    if (statusFilter !== "all" && r.status !== statusFilter) return false;
-    if (loteFilter === "com_lote" && !r.batch_id) return false;
-    if (loteFilter === "estoque" && r.batch_id) return false;
-    if (!q.trim()) return true;
-    const t = q.toLowerCase();
+  // Lotes mais recentes primeiro (o código começa com a data YYMMDD).
+  const groups = useMemo(() => {
+    const map = new Map<string, BatchGroup>();
+    for (const r of rows ?? []) {
+      if (!r.batch_id || !r.batches) continue;
+      let g = map.get(r.batch_id);
+      if (!g) {
+        g = {
+          id: r.batch_id,
+          code: r.batches.code,
+          label: r.batches.label,
+          owner_email: r.batches.owner_email,
+          plates: [],
+          activated: 0,
+          scans: 0,
+        };
+        map.set(r.batch_id, g);
+      }
+      g.plates.push(r);
+      if (r.status === "ativada") g.activated++;
+      g.scans += r.scan_count;
+    }
+    return [...map.values()]
+      .map((g) => ({ ...g, plates: g.plates.filter(matches) }))
+      .filter((g) => g.plates.length > 0)
+      .sort((a, b) => b.code.localeCompare(a.code));
+  }, [rows, matches]);
+
+  const all = useMemo(() => (rows ?? []).filter(matches), [rows, matches]);
+
+  const totalInLotes = (rows ?? []).filter((r) => r.batch_id).length;
+  const totalBatches = new Set((rows ?? []).filter((r) => r.batch_id).map((r) => r.batch_id)).size;
+  const totalStock = (rows ?? []).filter((r) => !r.batch_id && !r.orders).length;
+
+  function toggle(id: string) {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function renderPlate(r: Plate) {
     return (
-      r.token.toLowerCase().includes(t) ||
-      r.short_code.toLowerCase().includes(t) ||
-      r.businesses?.name.toLowerCase().includes(t) ||
-      r.orders?.customer_name.toLowerCase().includes(t) ||
-      String(r.orders?.order_number ?? "").includes(t) ||
-      r.batches?.code.toLowerCase().includes(t) ||
-      r.batches?.owner_email?.toLowerCase().includes(t)
+      <div key={r.id} className="rounded-2xl bg-card p-5 card-soft">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-sm font-black tracking-wide bg-surface px-2 py-1 rounded-lg border border-primary/30">
+                {r.short_code}
+              </span>
+              <span className="font-mono text-xs text-muted-foreground">{r.token}</span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {r.products?.name ?? "—"}
+              {r.orders ? ` · pedido #${r.orders.order_number} (${r.orders.customer_name})` : ""}
+            </p>
+            {r.businesses && <p className="text-sm text-muted-foreground">Negócio: {r.businesses.name}</p>}
+            <p className="mt-1 text-xs text-muted-foreground">
+              {r.scan_count} scans
+              {r.last_scan_at ? ` · último ${new Date(r.last_scan_at).toLocaleString("pt-BR")}` : ""}
+            </p>
+          </div>
+          <select
+            value={r.status}
+            onChange={(e) => setStatus(r, e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            {STATUS.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-3 border-t border-border pt-3">
+          <Label className="text-xs">Link de avaliação (destino)</Label>
+          <div className="mt-1 flex gap-2">
+            <Input
+              defaultValue={r.destination_url ?? r.businesses?.review_url ?? ""}
+              placeholder="https://search.google.com/local/writereview?placeid=..."
+              className="h-10"
+              id={`d-${r.id}`}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const el = document.getElementById(`d-${r.id}`) as HTMLInputElement | null;
+                const v = el?.value.trim() || null;
+                if (
+                  v &&
+                  !/^https:\/\/(search\.google\.com|www\.google\.com|google\.com|maps\.google\.com|g\.page)\//.test(v)
+                ) {
+                  toast.error("O link precisa ser do Google.");
+                  return;
+                }
+                void patch(r, { destination_url: v });
+              }}
+            >
+              Salvar
+            </Button>
+          </div>
+        </div>
+      </div>
     );
-  });
+  }
+
+  function moreButton(total: number) {
+    return total > limit ? (
+      <div className="mt-4 text-center">
+        <Button variant="outline" size="sm" onClick={() => setLimit((l) => l + PAGE)}>
+          Mostrar mais ({total - limit} restantes)
+        </Button>
+      </div>
+    ) : null;
+  }
+
+  const VIEWS: [View, string][] = [
+    ["lotes", `Por lote (${totalBatches} lotes · ${totalInLotes} placas)`],
+    ["estoque", `Estoque livre (${totalStock})`],
+    ["todas", `Todas (${rows?.length ?? 0})`],
+  ];
 
   return (
     <>
@@ -127,13 +277,26 @@ function Placas() {
           className="h-10 w-64"
         />
       </div>
-      {rows && rows.length >= 500 && (
-        <p className="mt-2 text-xs text-amber-800">
-          Mostrando as 500 placas mais recentes — use a busca pra achar placas mais antigas.
-        </p>
-      )}
 
-      <div className="mt-3 flex flex-wrap gap-1 rounded-full bg-secondary p-1 text-xs font-semibold w-fit">
+      <div className="mt-3 flex flex-wrap gap-2">
+        {VIEWS.map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setView(k)}
+            className={`rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors ${
+              view === k
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-2 flex flex-wrap gap-1 text-xs font-semibold text-muted-foreground">
+        <span className="self-center pr-1">Status:</span>
         {(
           [
             ["all", `Todos (${rows?.length ?? 0})`],
@@ -144,29 +307,8 @@ function Placas() {
             key={k}
             type="button"
             onClick={() => setStatusFilter(k)}
-            className={`rounded-full px-3 py-1.5 transition-colors ${
-              statusFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-            }`}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-2 flex flex-wrap gap-1 rounded-full bg-secondary p-1 text-xs font-semibold w-fit">
-        {(
-          [
-            ["all", `Todos (${loteCounts.all})`],
-            ["com_lote", `Em lote (${loteCounts.com_lote})`],
-            ["estoque", `Estoque solto (${loteCounts.estoque})`],
-          ] as const
-        ).map(([k, l]) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setLoteFilter(k)}
-            className={`rounded-full px-3 py-1.5 transition-colors ${
-              loteFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            className={`rounded-full px-3 py-1 transition-colors ${
+              statusFilter === k ? "bg-secondary text-foreground" : "hover:text-foreground"
             }`}
           >
             {l}
@@ -176,87 +318,60 @@ function Placas() {
 
       {rows === null ? (
         <p className="mt-8 text-sm text-muted-foreground">Carregando…</p>
-      ) : filtered.length === 0 ? (
-        <p className="mt-8 text-sm text-muted-foreground">
-          {rows.length === 0 ? "Nenhuma placa emitida ainda." : "Nada encontrado."}
-        </p>
-      ) : (
-        <div className="mt-6 space-y-3">
-          {filtered.map((r) => (
-            <div key={r.id} className="rounded-2xl bg-card p-5 card-soft">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-sm font-black tracking-wide bg-surface px-2 py-1 rounded-lg border border-primary/30">
-                      {r.short_code}
-                    </span>
-                    <span className="font-mono text-xs text-muted-foreground">{r.token}</span>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {r.products?.name ?? "—"}
-                    {r.orders ? ` · pedido #${r.orders.order_number} (${r.orders.customer_name})` : ""}
-                  </p>
-                  {r.batches ? (
-                    <p className="mt-1 text-sm">
-                      Lote: <span className="font-mono font-semibold">{r.batches.code}</span>
-                      {r.batches.label ? ` · ${r.batches.label}` : ""}
-                      {r.batches.owner_email ? ` · ${r.batches.owner_email}` : ""}
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-sm text-amber-800">Estoque solto (sem lote)</p>
-                  )}
-                  {r.businesses && (
-                    <p className="text-sm text-muted-foreground">Negócio: {r.businesses.name}</p>
-                  )}
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {r.scan_count} scans
-                    {r.last_scan_at
-                      ? ` · último ${new Date(r.last_scan_at).toLocaleString("pt-BR")}`
-                      : ""}
-                  </p>
-                </div>
-                <select
-                  value={r.status}
-                  onChange={(e) => setStatus(r, e.target.value)}
-                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  {STATUS.map((s) => (
-                    <option key={s} value={s}>
-                      {STATUS_LABEL[s]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mt-3 border-t border-border pt-3">
-                <Label className="text-xs">Link de avaliação (destino)</Label>
-                <div className="mt-1 flex gap-2">
-                  <Input
-                    defaultValue={r.destination_url ?? r.businesses?.review_url ?? ""}
-                    placeholder="https://search.google.com/local/writereview?placeid=..."
-                    className="h-10"
-                    id={`d-${r.id}`}
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const el = document.getElementById(`d-${r.id}`) as HTMLInputElement | null;
-                      const v = el?.value.trim() || null;
-                      if (v && !/^https:\/\/(search\.google\.com|www\.google\.com|google\.com|maps\.google\.com|g\.page)\//.test(v)) {
-                        toast.error("O link precisa ser do Google.");
-                        return;
-                      }
-                      void patch(r, { destination_url: v });
-                    }}
+      ) : view === "lotes" ? (
+        groups.length === 0 ? (
+          <p className="mt-8 text-sm text-muted-foreground">
+            {totalBatches === 0 ? "Nenhum lote criado ainda." : "Nada encontrado."}
+          </p>
+        ) : (
+          <div className="mt-6 space-y-3">
+            {groups.slice(0, limit).map((g) => {
+              const isOpen = searching || open.has(g.id);
+              return (
+                <div key={g.id} className="rounded-2xl border border-border bg-card card-soft">
+                  <button
+                    type="button"
+                    onClick={() => toggle(g.id)}
+                    className="flex w-full flex-wrap items-center justify-between gap-3 p-5 text-left"
                   >
-                    Salvar
-                  </Button>
+                    <div>
+                      <p className="font-mono text-sm font-bold">{g.code}</p>
+                      <p className="mt-0.5 text-sm text-muted-foreground">
+                        {g.label ?? "Sem descrição"}
+                        {g.owner_email ? ` · ${g.owner_email}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span>
+                        <strong>{g.activated}</strong>/{g.plates.length} ativadas
+                      </span>
+                      <span className="text-muted-foreground">{g.scans} scans</span>
+                      <span className="text-muted-foreground">{isOpen ? "▲" : "▼"}</span>
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="space-y-3 border-t border-border p-4">{g.plates.map(renderPlate)}</div>
+                  )}
                 </div>
-              </div>
+              );
+            })}
+            {moreButton(groups.length)}
+          </div>
+        )
+      ) : (
+        (() => {
+          const list = view === "estoque" ? stock : all;
+          return list.length === 0 ? (
+            <p className="mt-8 text-sm text-muted-foreground">
+              {rows.length === 0 ? "Nenhuma placa emitida ainda." : "Nada encontrado."}
+            </p>
+          ) : (
+            <div className="mt-6 space-y-3">
+              {list.slice(0, limit).map(renderPlate)}
+              {moreButton(list.length)}
             </div>
-          ))}
-        </div>
+          );
+        })()
       )}
     </>
   );
