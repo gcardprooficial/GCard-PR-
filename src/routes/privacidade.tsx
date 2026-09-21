@@ -54,6 +54,10 @@ function Privacidade() {
               entrega e o negócio do Google que você deseja vincular à placa. Esses dados são
               informados por você durante a compra.
             </p>
+            <p>
+              O controlador dos dados é <strong>Marusso Produções</strong>, CNPJ 68.194.199/0001-70,
+              Romeu Ferigatti, Indaiatuba/SP.
+            </p>
           </Section>
 
           <Section n="2" title="Para que usamos" icon="target">

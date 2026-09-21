@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { SecurityBadges } from "@/components/SecurityBadges";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-mockup.jpg";
 import produtoPlaquinhaL from "@/assets/gcard-pro-plaquinha-l-provisorio.jpg";
@@ -1940,6 +1941,8 @@ function Comprar() {
               ficam armazenados na GCard-PRÓ.
             </p>
           </div>
+
+          <SecurityBadges className="mt-3" />
         </div>
       </div>
 

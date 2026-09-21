@@ -58,6 +58,10 @@ function Termos() {
               compatível, abrem a tela de avaliação do Google do estabelecimento indicado pelo
               comprador. O cartão de bolso é entregue configurado.
             </p>
+            <p>
+              A GCard-PRÓ é operada por <strong>Marusso Produções</strong>, CNPJ 68.194.199/0001-70,
+              com sede em Romeu Ferigatti, Indaiatuba/SP.
+            </p>
           </Section>
 
           <Section n="2" title="Pedido e pagamento">

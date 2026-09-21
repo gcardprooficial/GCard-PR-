@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
+import { COMPANY_ADDRESS, COMPANY_ID_LINE } from "@/lib/company";
 
 export type OrderEmailEvent =
   | "pedido_recebido"
@@ -67,6 +68,9 @@ function emailShell(input: { title: string; bodyHtml: string }): string {
       </p>
       <p style="margin:0 0 6px;font-size:13px;color:#8A8A8A;">
         Ou no Instagram <a href="https://instagram.com/gcardpro.oficial" style="color:#1A1A1A;font-weight:600;text-decoration:none;">@gcardpro.oficial</a>
+      </p>
+      <p style="margin:0 0 6px;font-size:11px;color:#8A8A8A;">
+        ${COMPANY_ID_LINE} · ${COMPANY_ADDRESS}
       </p>
       <p style="margin:0;font-size:11px;color:#B0B0B0;">
         E-mail transacional sobre seu pedido. Para comunicações estratégicas, usamos apenas contatos com consentimento LGPD.

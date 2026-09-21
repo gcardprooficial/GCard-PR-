@@ -4,6 +4,7 @@ import { getCatalog } from "@/lib/catalog.functions";
 import { money } from "@/lib/pricing";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { ReviewLinkGenerator } from "@/components/ReviewLinkGenerator";
+import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
 import { VideoTutorialCard } from "@/components/VideoTutorialCard";
 import { Menu } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -112,6 +113,15 @@ export const Route = createFileRoute("/")({
           "@type": "Organization",
           name: "GCard-PRÓ",
           url: "https://www.gcardpro.com.br/",
+          legalName: COMPANY.legalName,
+          taxID: COMPANY.cnpj,
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: COMPANY.street,
+            addressLocality: COMPANY.city,
+            addressRegion: COMPANY.state,
+            addressCountry: "BR",
+          },
           logo: "https://www.gcardpro.com.br/favicon-512.png",
           sameAs: ["https://instagram.com/gcardpro.oficial"],
         }),
@@ -781,12 +791,14 @@ function Home() {
 
       {/* ===== COMPRA SEGURA ===== */}
       <section className="mx-auto max-w-6xl px-5 py-10">
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
             ["Compra segura", "Pagamento processado pelo Mercado Pago (Pix, cartão e boleto)"],
             ["Sem precisar de conta", "Pague como convidado, sem criar conta no Mercado Pago"],
             ["Dados protegidos", "Conexão criptografada (HTTPS) e tratamento conforme a LGPD"],
             ["Suporte de verdade", "Atendimento direto pelo WhatsApp, com quem fabrica"],
+            ["Empresa registrada", `${COMPANY.legalName} · CNPJ ${COMPANY.cnpj} · ${COMPANY_ADDRESS}`],
+            ["7 dias para desistir", "Direito de arrependimento (CDC, art. 49) em todas as compras"],
           ].map(([t, d]) => (
             <li
               key={t}
@@ -1165,7 +1177,12 @@ function Home() {
                 avaliação do Google.
               </p>
               <p className="mt-3 text-xs text-muted-foreground/70">
-                © {new Date().getFullYear()} GCard-PRÓ · CNPJ sob consulta
+                © {new Date().getFullYear()} GCard-PRÓ
+              </p>
+              <p className="mt-1 max-w-xs text-xs leading-relaxed text-muted-foreground/80">
+                {COMPANY.legalName} · CNPJ {COMPANY.cnpj}
+                <br />
+                {COMPANY_ADDRESS}
               </p>
             </div>
 
@@ -1281,6 +1298,8 @@ function Home() {
               "Compra segura pelo Mercado Pago",
               "Site protegido por HTTPS",
               "Seus dados protegidos (LGPD)",
+              "7 dias para desistir (CDC)",
+              `CNPJ ${COMPANY.cnpj}`,
               "Frete grátis para todo o Brasil",
             ].map((t) => (
               <li key={t} className="flex items-center gap-1.5">
