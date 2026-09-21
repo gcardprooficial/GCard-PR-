@@ -71,7 +71,8 @@ export const Route = createFileRoute("/comprar")({
   head: async () => {
     const catalog = await getCatalog().catch(() => null);
     const lojista = catalog?.plans.find((p) => p.slug === "lojista");
-    const products = (catalog?.products ?? []).filter((p) => p.status !== "oculto");
+    // Só o que o lojista pode comprar agora: ativo e não é acrílico sem arte (só revenda).
+    const offered = (catalog?.products ?? []).filter((p) => p.status === "ativo" && !p.is_blank);
     return {
       meta: [
         { title: "Montar meu GCard-PRÓ | Cartão de avaliação do Google" },
@@ -90,23 +91,38 @@ export const Route = createFileRoute("/comprar")({
       ],
       links: [{ rel: "canonical", href: "https://www.gcardpro.com.br/comprar" }],
       scripts:
-        lojista && products.length > 0
-          ? products.map((product) => ({
+        lojista && offered.length > 0
+          ? offered.map((product) => ({
               type: "application/ld+json",
               children: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "Product",
                 name: product.name,
+                sku: product.slug,
                 description: product.tagline ?? product.description ?? undefined,
+                image: [absoluteUrl(IMAGES[product.slug] ?? produtoCartao)],
                 brand: { "@type": "Brand", name: "GCard-PRÓ" },
                 offers: {
                   "@type": "Offer",
                   priceCurrency: "BRL",
-                  price: (
-                    resolveUnitPrice(lojista, product, 1, false) / 100
-                  ).toFixed(2),
+                  price: (resolveUnitPrice(lojista, product, 1, false) / 100).toFixed(2),
                   availability: "https://schema.org/InStock",
+                  itemCondition: "https://schema.org/NewCondition",
                   url: "https://www.gcardpro.com.br/comprar",
+                  // Frete grátis para todo o Brasil e 7 dias de arrependimento (CDC art. 49):
+                  // ambos já estão nos Termos de uso, então o dado estruturado só espelha o site.
+                  shippingDetails: {
+                    "@type": "OfferShippingDetails",
+                    shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "BRL" },
+                    shippingDestination: { "@type": "DefinedRegion", addressCountry: "BR" },
+                  },
+                  hasMerchantReturnPolicy: {
+                    "@type": "MerchantReturnPolicy",
+                    applicableCountry: "BR",
+                    returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+                    merchantReturnDays: 7,
+                    returnMethod: "https://schema.org/ReturnByMail",
+                  },
                 },
               }),
             }))
@@ -115,6 +131,12 @@ export const Route = createFileRoute("/comprar")({
   },
   component: Comprar,
 });
+
+/** Dado estruturado exige URL absoluta de imagem; os assets vêm do bundler como caminho relativo. */
+function absoluteUrl(path: string) {
+  if (/^https?:\/\//.test(path)) return path;
+  return `https://www.gcardpro.com.br${path.startsWith("/") ? path : `/${path}`}`;
+}
 
 const IMAGES: Record<string, string> = {
   "cartao-bolso": produtoCartao,
