@@ -40,30 +40,8 @@ export const Route = createFileRoute("/api/webhooks/mercadopago")({
           }
           if (!orderId) return new Response(null, { status: 204 });
 
-          const { data: before } = await db
-            .from("orders")
-            .select("payment_status")
-            .eq("id", orderId)
-            .maybeSingle();
-          const updates: Record<string, unknown> = {
-            payment_status: payment.status,
-            payment_provider: provider.name,
-            provider_payment_id: payment.providerPaymentId,
-            payment_method: payment.method ?? null,
-            external_reference: payment.externalReference ?? null,
-          };
-          if (payment.status === "pago") updates.paid_at = new Date().toISOString();
-          const { error } = await db.from("orders").update(updates).eq("id", orderId);
-          if (error) throw error;
-
-          if (payment.status === "pago") {
-            const { emitPlatesForOrder } = await import("@/lib/plate/emit.server");
-            await emitPlatesForOrder(orderId);
-            if (before?.payment_status !== "pago") {
-              const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
-              await dispatchOrderEmailEvent(orderId, "pagamento_confirmado");
-            }
-          }
+          const { applyPaymentToOrder } = await import("@/lib/payments/settle.server");
+          await applyPaymentToOrder(orderId, payment, provider.name);
           return new Response(null, { status: 204 });
         } catch (error) {
           console.error("Error handling Mercado Pago webhook", error);

@@ -21,6 +21,7 @@ import { Route as GuiaIndexRouteImport } from './routes/guia.index'
 import { Route as GuiaCartaoDeVisitaPorAproximacaoRouteImport } from './routes/guia.cartao-de-visita-por-aproximacao'
 import { Route as GuiaCartaoNfcVsCartaoDigitalRouteImport } from './routes/guia.cartao-nfc-vs-cartao-digital'
 import { Route as GuiaMelhorCartaoDigitalParaEmpresaRouteImport } from './routes/guia.melhor-cartao-digital-para-empresa'
+import { Route as PagamentoRetornoRouteImport } from './routes/pagamento.retorno'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculadora'
 import { Route as PainelClientesRouteImport } from './routes/painel.clientes'
@@ -30,6 +31,7 @@ import { Route as PainelPlacasRouteImport } from './routes/painel.placas'
 import { Route as PainelScansRouteImport } from './routes/painel.scans'
 import { Route as PainelVisaoGeralRouteImport } from './routes/painel.visao-geral'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as ApiCronDailyRouteImport } from './routes/api/cron/daily'
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 
 const IndexRoute = IndexRouteImport.update({
@@ -95,6 +97,11 @@ const GuiaMelhorCartaoDigitalParaEmpresaRoute =
     path: '/melhor-cartao-digital-para-empresa',
     getParentRoute: () => GuiaRoute,
   } as any)
+const PagamentoRetornoRoute = PagamentoRetornoRouteImport.update({
+  id: '/pagamento/retorno',
+  path: '/pagamento/retorno',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PainelIndexRoute = PainelIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -140,6 +147,11 @@ const RTokenRoute = RTokenRouteImport.update({
   path: '/r/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronDailyRoute = ApiCronDailyRouteImport.update({
+  id: '/api/cron/daily',
+  path: '/api/cron/daily',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWebhooksMercadopagoRoute = ApiWebhooksMercadopagoRouteImport.update({
   id: '/api/webhooks/mercadopago',
   path: '/api/webhooks/mercadopago',
@@ -158,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
+  '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
@@ -168,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/r/$token': typeof RTokenRoute
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
+  '/api/cron/daily': typeof ApiCronDailyRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
 export interface FileRoutesByTo {
@@ -180,6 +194,7 @@ export interface FileRoutesByTo {
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
+  '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
@@ -190,6 +205,7 @@ export interface FileRoutesByTo {
   '/r/$token': typeof RTokenRoute
   '/guia': typeof GuiaIndexRoute
   '/painel': typeof PainelIndexRoute
+  '/api/cron/daily': typeof ApiCronDailyRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
 export interface FileRoutesById {
@@ -205,6 +221,7 @@ export interface FileRoutesById {
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
+  '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
@@ -215,6 +232,7 @@ export interface FileRoutesById {
   '/r/$token': typeof RTokenRoute
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
+  '/api/cron/daily': typeof ApiCronDailyRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
 export interface FileRouteTypes {
@@ -231,6 +249,7 @@ export interface FileRouteTypes {
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/melhor-cartao-digital-para-empresa'
+    | '/pagamento/retorno'
     | '/painel/calculadora'
     | '/painel/clientes'
     | '/painel/financeiro'
@@ -241,6 +260,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/guia/'
     | '/painel/'
+    | '/api/cron/daily'
     | '/api/webhooks/mercadopago'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -253,6 +273,7 @@ export interface FileRouteTypes {
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/melhor-cartao-digital-para-empresa'
+    | '/pagamento/retorno'
     | '/painel/calculadora'
     | '/painel/clientes'
     | '/painel/financeiro'
@@ -263,6 +284,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/guia'
     | '/painel'
+    | '/api/cron/daily'
     | '/api/webhooks/mercadopago'
   id:
     | '__root__'
@@ -277,6 +299,7 @@ export interface FileRouteTypes {
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/melhor-cartao-digital-para-empresa'
+    | '/pagamento/retorno'
     | '/painel/calculadora'
     | '/painel/clientes'
     | '/painel/financeiro'
@@ -287,6 +310,7 @@ export interface FileRouteTypes {
     | '/r/$token'
     | '/guia/'
     | '/painel/'
+    | '/api/cron/daily'
     | '/api/webhooks/mercadopago'
   fileRoutesById: FileRoutesById
 }
@@ -299,7 +323,9 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   TermosRoute: typeof TermosRoute
   ApiUnsubscribeRoute: typeof ApiUnsubscribeRoute
+  PagamentoRetornoRoute: typeof PagamentoRetornoRoute
   RTokenRoute: typeof RTokenRoute
+  ApiCronDailyRoute: typeof ApiCronDailyRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
 }
 
@@ -389,6 +415,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuiaMelhorCartaoDigitalParaEmpresaRouteImport
       parentRoute: typeof GuiaRoute
     }
+    '/pagamento/retorno': {
+      id: '/pagamento/retorno'
+      path: '/pagamento/retorno'
+      fullPath: '/pagamento/retorno'
+      preLoaderRoute: typeof PagamentoRetornoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/painel/': {
       id: '/painel/'
       path: '/'
@@ -452,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/daily': {
+      id: '/api/cron/daily'
+      path: '/api/cron/daily'
+      fullPath: '/api/cron/daily'
+      preLoaderRoute: typeof ApiCronDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/webhooks/mercadopago': {
       id: '/api/webhooks/mercadopago'
       path: '/api/webhooks/mercadopago'
@@ -513,7 +553,9 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   TermosRoute: TermosRoute,
   ApiUnsubscribeRoute: ApiUnsubscribeRoute,
+  PagamentoRetornoRoute: PagamentoRetornoRoute,
   RTokenRoute: RTokenRoute,
+  ApiCronDailyRoute: ApiCronDailyRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
 }
 export const routeTree = rootRouteImport

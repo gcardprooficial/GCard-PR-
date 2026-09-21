@@ -48,13 +48,15 @@ export const confirmOrderPayment = createServerFn({ method: "POST" })
       if (updError) throw updError;
     }
 
+    const { recordSaleEntry } = await import("@/lib/payments/settle.server");
+    await recordSaleEntry(data.orderId);
     const emitted = await emitPlatesForOrder(data.orderId);
     return { ok: true as const, ...emitted };
   });
 
 const orderEmailSchema = z.object({
   orderId: z.string().uuid(),
-  event: z.enum(["pagamento_confirmado", "lote_criado", "em_producao"]),
+  event: z.enum(["pagamento_confirmado", "lote_criado", "em_producao", "pedido_entregue"]),
 });
 
 /** Dispara um e-mail de status do pedido pro cliente (idempotente -- não duplica se já foi enviado). */
@@ -63,8 +65,22 @@ export const sendOrderEmail = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderEmailSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertTeam(context.userId);
+    // "Pago" marcado à mão no painel também precisa cair no Financeiro.
+    if (data.event === "pagamento_confirmado") {
+      const { recordSaleEntry } = await import("@/lib/payments/settle.server");
+      await recordSaleEntry(data.orderId);
+    }
     const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
     return dispatchOrderEmailEvent(data.orderId, data.event);
+  });
+
+/** Pergunta ao Mercado Pago o que aconteceu com os pedidos em aberto (webhook que não chegou). */
+export const reconcileOrdersNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertTeam(context.userId);
+    const { reconcilePendingOrders } = await import("@/lib/payments/settle.server");
+    return reconcilePendingOrders({ limit: 40 });
   });
 
 const trackingSchema = z.object({

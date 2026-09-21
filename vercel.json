@@ -5,6 +5,7 @@
       "NITRO_PRESET": "vercel"
     }
   },
+  "crons": [{ "path": "/api/cron/daily", "schedule": "0 12 * * *" }],
   "headers": [
     {
       "source": "/assets/(.*)",

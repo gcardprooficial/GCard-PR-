@@ -25,6 +25,23 @@ function mapStatus(mp: string): PaymentStatus {
   }
 }
 
+type MpPayment = {
+  id: number;
+  status: string;
+  external_reference?: string | null;
+  payment_method_id?: string | null;
+  payment_type_id?: string | null;
+};
+
+function toResult(p: MpPayment): PaymentResult {
+  return {
+    status: mapStatus(p.status),
+    externalReference: p.external_reference ?? null,
+    providerPaymentId: String(p.id),
+    method: p.payment_type_id ?? p.payment_method_id ?? null,
+  };
+}
+
 /** Constant-time compare of two hex strings. */
 function safeEqualHex(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -66,12 +83,13 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
               currency_id: "BRL",
             },
           ],
-          payer: { name: order.customer_name, email: order.customer_email },
+          // Sem `payer`: mandar o e-mail do cliente faz o MP exigir login quando ele já
+          // tem conta lá. Sem isso o checkout abre como convidado (pede e-mail na hora).
           external_reference: order.id,
           back_urls: {
-            success: `${origin}/comprar?status=sucesso`,
-            failure: `${origin}/comprar?status=erro`,
-            pending: `${origin}/comprar?status=pendente`,
+            success: `${origin}/pagamento/retorno`,
+            failure: `${origin}/pagamento/retorno`,
+            pending: `${origin}/pagamento/retorno`,
           },
           auto_return: "approved",
           notification_url: `${origin}/api/webhooks/mercadopago`,
@@ -118,24 +136,23 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
     },
 
     async getPayment(paymentId: string): Promise<PaymentResult | null> {
-      const res = await fetch(`${API}/v1/payments/${paymentId}`, { headers: auth });
+      const res = await fetch(`${API}/v1/payments/${encodeURIComponent(paymentId)}`, { headers: auth });
       if (!res.ok) {
         console.error(`Mercado Pago getPayment [${res.status}] ${paymentId}`);
         return null;
       }
-      const p = (await res.json()) as {
-        id: number;
-        status: string;
-        external_reference?: string | null;
-        payment_method_id?: string | null;
-        payment_type_id?: string | null;
-      };
-      return {
-        status: mapStatus(p.status),
-        externalReference: p.external_reference ?? null,
-        providerPaymentId: String(p.id),
-        method: p.payment_type_id ?? p.payment_method_id ?? null,
-      };
+      return toResult((await res.json()) as MpPayment);
+    },
+
+    async findPaymentsByReference(reference: string): Promise<PaymentResult[]> {
+      const url = `${API}/v1/payments/search?external_reference=${encodeURIComponent(reference)}&sort=date_created&criteria=desc&limit=10`;
+      const res = await fetch(url, { headers: auth });
+      if (!res.ok) {
+        console.error(`Mercado Pago search [${res.status}] ${reference}`);
+        return [];
+      }
+      const json = (await res.json()) as { results?: MpPayment[] };
+      return (json.results ?? []).map(toResult);
     },
   };
 }

@@ -41,6 +41,12 @@ export const createCheckoutPreference = createServerFn({ method: "POST" })
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const pref = await provider.createPreference({ order: orderForCheckout as any, origin });
+        // Marca "link gerado": o painel usa isso pra separar quem só não pagou de quem nem recebeu link.
+        await supabaseAdmin
+          .from("orders")
+          .update({ payment_provider: provider.name, external_reference: order.id } as never)
+          .eq("id", order.id)
+          .eq("payment_status", "pendente");
         return { ok: true as const, url: pref.url, reference: pref.reference };
       } catch (error) {
         lastError = error;

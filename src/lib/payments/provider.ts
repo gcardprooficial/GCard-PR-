@@ -42,4 +42,6 @@ export interface PaymentProvider {
   verifyWebhook(request: Request, rawBody: string): Promise<VerifiedEvent | null>;
   /** Reconsult the provider API for the authoritative payment state. */
   getPayment(paymentId: string): Promise<PaymentResult | null>;
+  /** Payments tied to an order (external_reference), newest first. Used to reconcile when the webhook never arrived. */
+  findPaymentsByReference(reference: string): Promise<PaymentResult[]>;
 }
