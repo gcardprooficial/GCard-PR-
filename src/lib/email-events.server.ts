@@ -382,6 +382,32 @@ export async function notifyAdminPaymentFailure(order: {
   }
 }
 
+export async function sendPaymentLinkEmail(
+  order: {
+    order_number: number;
+    customer_name: string;
+    customer_email: string;
+    total_cents: number;
+  },
+  paymentUrl: string,
+) {
+  const html = emailShell({
+    title: "Finalize seu pagamento",
+    bodyHtml:
+      `<p>Olá, ${escapeHtml(order.customer_name)}.</p>` +
+      `<p>Seu pedido <strong>#${escapeHtml(order.order_number)}</strong> está reservado e aguardando pagamento.</p>` +
+      `<p style="margin:16px 0;padding:12px 16px;background:#F4F3F0;border-radius:12px;font-weight:700;">Total: R$ ${(Number(order.total_cents ?? 0) / 100).toFixed(2).replace(".", ",")}</p>` +
+      `<p><a href="${escapeHtml(paymentUrl)}" style="display:inline-block;background:#F5B800;color:#1A1A1A;padding:14px 22px;border-radius:12px;font-weight:800;text-decoration:none;">Pagar agora</a></p>` +
+      `<p>Se o botão não abrir, copie este link:</p><p style="word-break:break-all;font-size:12px;color:#666;">${escapeHtml(paymentUrl)}</p>` +
+      `<p>Se você já realizou o pagamento, pode desconsiderar esta mensagem.</p>`,
+  });
+  return sendWithResend({
+    to: order.customer_email,
+    subject: `Finalize o pagamento do pedido #${order.order_number}`,
+    html,
+  });
+}
+
 export async function upsertCustomerConsent(input: {
   email: string;
   name: string;

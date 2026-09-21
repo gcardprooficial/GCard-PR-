@@ -83,6 +83,33 @@ export const reconcileOrdersNow = createServerFn({ method: "POST" })
     return reconcilePendingOrders({ limit: 40 });
   });
 
+/** Gera uma nova preferência e envia o link do Mercado Pago por e-mail. */
+export const sendPaymentLinkEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => orderIdSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeam(context.userId);
+    const { getPaymentProvider } = await import("@/lib/payments");
+    const provider = getPaymentProvider();
+    if (!provider) throw new Error("Mercado Pago não está configurado.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order, error } = await supabaseAdmin
+      .from("orders")
+      .select("id, order_number, total_cents, quantity, customer_email, customer_name")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!order) throw new Error("Pedido não encontrado.");
+
+    const origin = process.env["PUBLIC_APP_URL"] ?? "https://gcardpro.com.br";
+    const preference = await provider.createPreference({ order: order as any, origin });
+    const { sendPaymentLinkEmail: sendEmail } = await import("@/lib/email-events.server");
+    const result = await sendEmail(order, preference.url);
+    if (!result.sent) throw new Error("RESEND_API_KEY não está configurada para enviar e-mails.");
+    return { ok: true as const };
+  });
+
 const trackingSchema = z.object({
   orderId: z.string().uuid(),
   trackingCode: z.string().trim().max(120).nullable(),

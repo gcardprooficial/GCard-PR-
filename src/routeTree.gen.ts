@@ -24,6 +24,7 @@ import { Route as GuiaMelhorCartaoDigitalParaEmpresaRouteImport } from './routes
 import { Route as PagamentoRetornoRouteImport } from './routes/pagamento.retorno'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculadora'
+import { Route as PainelChatRouteImport } from './routes/painel.chat'
 import { Route as PainelClientesRouteImport } from './routes/painel.clientes'
 import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
 import { Route as PainelLotesRouteImport } from './routes/painel.lotes'
@@ -112,6 +113,11 @@ const PainelCalculadoraRoute = PainelCalculadoraRouteImport.update({
   path: '/calculadora',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelChatRoute = PainelChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelClientesRoute = PainelClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
+  '/painel/chat': typeof PainelChatRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
@@ -196,6 +203,7 @@ export interface FileRoutesByTo {
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
+  '/painel/chat': typeof PainelChatRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
+  '/painel/chat': typeof PainelChatRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/lotes': typeof PainelLotesRoute
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/pagamento/retorno'
     | '/painel/calculadora'
+    | '/painel/chat'
     | '/painel/clientes'
     | '/painel/financeiro'
     | '/painel/lotes'
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/pagamento/retorno'
     | '/painel/calculadora'
+    | '/painel/chat'
     | '/painel/clientes'
     | '/painel/financeiro'
     | '/painel/lotes'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/pagamento/retorno'
     | '/painel/calculadora'
+    | '/painel/chat'
     | '/painel/clientes'
     | '/painel/financeiro'
     | '/painel/lotes'
@@ -436,6 +448,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelCalculadoraRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/chat': {
+      id: '/painel/chat'
+      path: '/chat'
+      fullPath: '/painel/chat'
+      preLoaderRoute: typeof PainelChatRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/clientes': {
       id: '/painel/clientes'
       path: '/clientes'
@@ -521,6 +540,7 @@ const GuiaRouteWithChildren = GuiaRoute._addFileChildren(GuiaRouteChildren)
 
 interface PainelRouteChildren {
   PainelCalculadoraRoute: typeof PainelCalculadoraRoute
+  PainelChatRoute: typeof PainelChatRoute
   PainelClientesRoute: typeof PainelClientesRoute
   PainelFinanceiroRoute: typeof PainelFinanceiroRoute
   PainelLotesRoute: typeof PainelLotesRoute
@@ -532,6 +552,7 @@ interface PainelRouteChildren {
 
 const PainelRouteChildren: PainelRouteChildren = {
   PainelCalculadoraRoute: PainelCalculadoraRoute,
+  PainelChatRoute: PainelChatRoute,
   PainelClientesRoute: PainelClientesRoute,
   PainelFinanceiroRoute: PainelFinanceiroRoute,
   PainelLotesRoute: PainelLotesRoute,

@@ -184,18 +184,24 @@ export const createPendingOrder = createServerFn({ method: "POST" })
 
     let businessId: string | null = null;
     if (data.business && parsedLink) {
-      const { data: business, error: businessError } = await supabaseAdmin
-        .from("businesses")
-        .insert({
-          name: data.business.name,
-          review_url: parsedLink.reviewUrl,
-          google_place_id: parsedLink.placeId,
-          address: data.business.address ?? null,
-        })
-        .select("id")
-        .single();
-      if (businessError) throw businessError;
-      businessId = business.id;
+      try {
+        const { data: business, error: businessError } = await supabaseAdmin
+          .from("businesses")
+          .insert({
+            name: data.business.name,
+            review_url: parsedLink.reviewUrl,
+            google_place_id: parsedLink.placeId,
+            address: data.business.address ?? null,
+          })
+          .select("id")
+          .single();
+        if (businessError) throw businessError;
+        businessId = business.id;
+      } catch (error) {
+        // O cadastro do negócio é auxiliar. Não bloqueie o pedido/pagamento se
+        // houver uma constraint ou divergência de migração nessa tabela.
+        console.error("createPendingOrder: falha ao salvar negócio", { error });
+      }
     }
 
     const { data: order, error: orderError } = await supabaseAdmin
@@ -237,14 +243,31 @@ export const createPendingOrder = createServerFn({ method: "POST" })
     });
     if (itemError) throw itemError;
 
-    const { upsertCustomerConsent, dispatchOrderEmailEvent } =
-      await import("@/lib/email-events.server");
-    await upsertCustomerConsent({
-      email: data.customer.email,
-      name: `${data.customer.firstName} ${data.customer.lastName}`.trim(),
-      consent: data.marketingConsent,
-    });
-    await dispatchOrderEmailEvent(order.id, "pedido_recebido");
+    // Consentimento e e-mail são efeitos secundários. Uma falha neles não pode
+    // desfazer nem mascarar um pedido já gravado.
+    try {
+      const { upsertCustomerConsent } = await import("@/lib/email-events.server");
+      await upsertCustomerConsent({
+        email: data.customer.email,
+        name: `${data.customer.firstName} ${data.customer.lastName}`.trim(),
+        consent: data.marketingConsent,
+      });
+    } catch (error) {
+      console.error("createPendingOrder: falha ao salvar consentimento", {
+        orderId: order.id,
+        error,
+      });
+    }
+
+    try {
+      const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
+      await dispatchOrderEmailEvent(order.id, "pedido_recebido");
+    } catch (error) {
+      console.error("createPendingOrder: falha ao registrar e-mail do pedido", {
+        orderId: order.id,
+        error,
+      });
+    }
 
     return {
       orderNumber: order.order_number,

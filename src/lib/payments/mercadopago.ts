@@ -70,6 +70,17 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
 
     async createPreference({ order, origin }): Promise<CheckoutPreference> {
       const unitPrice = Math.round(order.total_cents / order.quantity) / 100;
+      // CPF/CNPJ ajuda a MP a registrar o pagamento (cartão/pix costumam exigir
+      // identificação do comprador). Sem isso alguns pedidos ficam travados na
+      // tela de pagamento com "Não conseguimos registrar o pedido".
+      const docDigits = (order.customer_document ?? "").replace(/\D/g, "");
+      const identification =
+        docDigits.length === 11
+          ? { type: "CPF", number: docDigits }
+          : docDigits.length === 14
+            ? { type: "CNPJ", number: docDigits }
+            : null;
+      const [firstName, ...rest] = order.customer_name.trim().split(/\s+/);
       const res = await fetch(`${API}/checkout/preferences`, {
         method: "POST",
         headers: { ...auth, "Content-Type": "application/json" },
@@ -83,8 +94,13 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
               currency_id: "BRL",
             },
           ],
-          // Sem `payer`: mandar o e-mail do cliente faz o MP exigir login quando ele já
-          // tem conta lá. Sem isso o checkout abre como convidado (pede e-mail na hora).
+          // Nome e CPF ajudam a MP a registrar o pagamento. O e-mail fica de fora de
+          // propósito: com e-mail de quem já tem conta no MP, o checkout exige login.
+          payer: {
+            name: firstName || order.customer_name,
+            surname: rest.join(" ") || undefined,
+            ...(identification ? { identification } : {}),
+          },
           external_reference: order.id,
           back_urls: {
             success: `${origin}/pagamento/retorno`,

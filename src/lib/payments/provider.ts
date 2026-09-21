@@ -10,6 +10,8 @@ export type OrderForCheckout = {
   quantity: number;
   customer_email: string;
   customer_name: string;
+  /** CPF/CNPJ (somente dígitos). Alguns métodos de pagamento na MP exigem para registrar. */
+  customer_document: string | null;
 };
 
 export type CheckoutPreference = {

@@ -11,6 +11,7 @@ import {
   Calculator,
   CreditCard,
   ScanLine,
+  MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
@@ -34,6 +35,7 @@ const TABS = [
   { to: "/painel/calculadora", label: "Calculadora", icon: Calculator },
   { to: "/painel/placas", label: "Placas", icon: CreditCard },
   { to: "/painel/scans", label: "Scans", icon: ScanLine },
+  { to: "/painel/chat", label: "Conversas", icon: MessageCircle },
 ] as const;
 
 function PanelLayout() {
@@ -80,7 +82,12 @@ function PanelLayout() {
     <div className="flex min-h-screen bg-surface">
       <aside className="flex w-60 shrink-0 flex-col bg-foreground text-white">
         <div className="flex items-center gap-2.5 border-b border-white/10 px-5 py-[22px]">
-          <img src={logoIconBranco} alt="GCard-PRÓ" className="size-7 object-contain" draggable={false} />
+          <img
+            src={logoIconBranco}
+            alt="GCard-PRÓ"
+            className="size-7 object-contain"
+            draggable={false}
+          />
           <span className="text-sm font-bold text-white/70">/ painel</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3">
@@ -92,7 +99,9 @@ function PanelLayout() {
                 key={t.to}
                 to={t.to}
                 className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-                  active ? "bg-primary/15 text-primary" : "text-white/70 hover:bg-white/5 hover:text-white"
+                  active
+                    ? "bg-primary/15 text-primary"
+                    : "text-white/70 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon className="size-[18px] shrink-0" />
