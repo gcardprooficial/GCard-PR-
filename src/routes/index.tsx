@@ -4,6 +4,8 @@ import { getCatalog } from "@/lib/catalog.functions";
 import { money } from "@/lib/pricing";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { ReviewLinkGenerator } from "@/components/ReviewLinkGenerator";
+import { Menu } from "lucide-react";
+import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -189,6 +191,46 @@ function Header() {
           >
             Gerar link grátis
           </a>
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Abrir menu"
+                className="flex size-10 items-center justify-center rounded-xl hover:bg-muted sm:hidden"
+              >
+                <Menu className="size-6" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-72">
+              <SheetTitle className="sr-only">Menu</SheetTitle>
+              <nav className="mt-8 flex flex-col gap-1">
+                {[
+                  ["#gerar-link", "Gerar link grátis"],
+                  ["#caminhos", "Preços"],
+                  ["#modelos", "Modelos"],
+                  ["#o-que-e", "Quem somos"],
+                ].map(([href, label]) => (
+                  <SheetClose asChild key={href}>
+                    <a
+                      href={href}
+                      className="rounded-xl px-3 py-3 text-base font-semibold hover:bg-muted"
+                    >
+                      {label}
+                    </a>
+                  </SheetClose>
+                ))}
+                <SheetClose asChild>
+                  <Link
+                    to="/comprar"
+                    search={{}}
+                    className="mt-3 rounded-2xl bg-primary px-4 py-3 text-center font-bold text-primary-foreground"
+                  >
+                    Comprar agora →
+                  </Link>
+                </SheetClose>
+              </nav>
+            </SheetContent>
+          </Sheet>
           <Button
             asChild
             size="sm"
@@ -375,7 +417,7 @@ function Home() {
           </div>
 
           {/* Card flutuante "funciona com Google" */}
-          <div className="absolute -bottom-5 -left-5 animate-float shadow-2xl !animate-rise delay-6 sm:-left-8">
+          <div className="absolute -bottom-5 left-2 animate-float shadow-2xl !animate-rise delay-6 sm:-left-8">
             <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/95 px-4 py-3 backdrop-blur shadow-2xl shadow-foreground/10">
               <div className="flex -space-x-1.5">
                 <span className="inline-flex size-6 items-center justify-center rounded-full bg-g-blue text-[10px] font-black text-white">
@@ -399,7 +441,7 @@ function Home() {
           </div>
 
           {/* Card flutuante "+ 287 avaliações" */}
-          <div className="absolute -right-4 top-10 animate-bounce-subtle sm:-right-6 sm:top-14">
+          <div className="absolute right-2 top-4 animate-bounce-subtle sm:-right-6 sm:top-14">
             <div className="rounded-2xl border border-border bg-card/95 px-4 py-3 backdrop-blur shadow-2xl shadow-foreground/10">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Cartão NFC

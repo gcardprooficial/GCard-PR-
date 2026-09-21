@@ -112,7 +112,7 @@ function Scans() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar placa, negócio, produto…"
-          className="h-9 w-64"
+          className="h-9 w-full sm:w-64"
         />
       </div>
       {plates && plates.length >= 500 && (

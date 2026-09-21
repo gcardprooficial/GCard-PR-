@@ -10,11 +10,14 @@ export function WhatsAppButton() {
   if (pathname.startsWith("/painel")) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
+    <div className={`fixed right-4 z-50 flex flex-col items-end gap-3 sm:bottom-5 sm:right-5 ${
+        // No checkout o botão "Continuar" fica no rodapé: sobe o balão pra não cobrir no celular.
+        pathname.startsWith("/comprar") ? "bottom-24" : "bottom-4"
+      }`}>
       {open && (
         <div
           role="menu"
-          className="w-64 rounded-2xl border border-border bg-card p-3 shadow-xl shadow-foreground/10"
+          className="w-[min(16rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-3 shadow-xl shadow-foreground/10"
         >
           <p className="px-2 pb-2 text-sm font-semibold">Falar no WhatsApp</p>
           {WHATSAPP_CONTACTS.map((c) => (
@@ -39,7 +42,7 @@ export function WhatsAppButton() {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Fechar contatos de WhatsApp" : "Falar no WhatsApp"}
         aria-expanded={open}
-        className="flex size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/20 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]"
+        className="flex size-12 items-center justify-center rounded-full sm:size-14 bg-[#25D366] text-white shadow-lg shadow-black/20 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366]"
       >
         {open ? <X className="size-6" /> : <MessageCircle className="size-7" />}
       </button>

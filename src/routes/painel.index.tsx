@@ -495,7 +495,7 @@ function Orders() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar nome / e-mail / número"
-            className="h-9 w-64"
+            className="h-9 w-full sm:w-64"
           />
           <Button
             size="sm"
@@ -820,7 +820,7 @@ function Orders() {
                     ))}
                   </select>
                 </div>
-                <div className="flex-1">
+                <div className="min-w-[14rem] flex-1">
                   <Label className="text-xs">Rastreio</Label>
                   <div className="mt-1 flex gap-2">
                     <Input

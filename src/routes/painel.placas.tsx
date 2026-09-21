@@ -181,7 +181,7 @@ function CardStock({ userId }: { userId: string }) {
           return (
             <div key={prod.id} className="rounded-xl border border-border p-4">
               <p className="font-semibold">{prod.name}</p>
-              <dl className="mt-3 grid grid-cols-4 gap-2 text-center">
+              <dl className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                 {stats.map(([label, value]) => {
                   const highlight = label === "Em estoque";
                   return (
@@ -249,7 +249,7 @@ function CardStock({ userId }: { userId: string }) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Observação (opcional)"
-          className="h-10 w-56"
+          className="h-10 w-full sm:w-56"
         />
         <Button size="sm" onClick={() => void add()} disabled={saving}>
           {saving ? "Salvando…" : "Registrar"}
@@ -514,7 +514,7 @@ function Placas() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar token, código, negócio, lote…"
-          className="h-10 w-64"
+          className="h-10 w-full sm:w-64"
         />
       </div>
 

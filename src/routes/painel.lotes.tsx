@@ -622,7 +622,7 @@ function Lotes() {
                     <Input
                       value={renameDraft}
                       onChange={(e) => setRenameDraft(e.target.value)}
-                      className="h-8 w-48 text-xs"
+                      className="h-8 w-full text-xs sm:w-48"
                     />
                     <Button
                       size="sm"
@@ -643,7 +643,7 @@ function Lotes() {
                       value={groupNameDraft}
                       onChange={(e) => setGroupNameDraft(e.target.value)}
                       placeholder="Nome do grupo (ex.: Estoque 1)"
-                      className="h-8 w-48 text-xs"
+                      className="h-8 w-full text-xs sm:w-48"
                     />
                     <Button
                       size="sm"

@@ -11,12 +11,14 @@ import {
   Calculator,
   CreditCard,
   ScanLine,
+  Menu,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import logoIconBranco from "@/assets/logo/Icone_G_Logo_512x512_Branco.png";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
@@ -41,6 +43,11 @@ function PanelLayout() {
   const [ready, setReady] = useState(false);
   const [isTeam, setIsTeam] = useState<boolean | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -76,53 +83,80 @@ function PanelLayout() {
       </Shell>
     );
 
+  const sidebar = (
+    <>
+      <div className="flex items-center gap-2.5 border-b border-white/10 px-5 py-[22px]">
+        <img src={logoIconBranco} alt="GCard-PRÓ" className="size-7 object-contain" draggable={false} />
+        <span className="text-sm font-bold text-white/70">/ painel</span>
+      </div>
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+        {TABS.map((t) => {
+          const active = "exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to);
+          const Icon = t.icon;
+          return (
+            <Link
+              key={t.to}
+              to={t.to}
+              className={`flex items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold transition-colors md:py-2.5 ${
+                active
+                  ? "bg-primary/15 text-primary"
+                  : "text-white/70 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <Icon className="size-[18px] shrink-0" />
+              {t.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="border-t border-white/10 px-5 py-4">
+        <p className="break-all text-xs text-white/50">{session.user.email}</p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2.5 h-9 w-full border-white/15 bg-white/[0.08] text-white hover:bg-white/15 hover:text-white"
+          onClick={() => supabase.auth.signOut()}
+        >
+          Sair
+        </Button>
+      </div>
+    </>
+  );
+
+  const current = TABS.find((t) => ("exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to)));
+
   return (
-    <div className="flex min-h-screen bg-surface">
-      <aside className="flex w-60 shrink-0 flex-col bg-foreground text-white">
-        <div className="flex items-center gap-2.5 border-b border-white/10 px-5 py-[22px]">
-          <img
-            src={logoIconBranco}
-            alt="GCard-PRÓ"
-            className="size-7 object-contain"
-            draggable={false}
-          />
-          <span className="text-sm font-bold text-white/70">/ painel</span>
+    <div className="flex min-h-screen flex-col bg-surface md:flex-row">
+      {/* Celular: barra no topo + menu lateral deslizante */}
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between bg-foreground px-4 text-white md:hidden">
+        <div className="flex items-center gap-2.5">
+          <img src={logoIconBranco} alt="GCard-PRÓ" className="size-6 object-contain" draggable={false} />
+          <span className="text-sm font-bold">{current?.label ?? "Painel"}</span>
         </div>
-        <nav className="flex flex-1 flex-col gap-1 p-3">
-          {TABS.map((t) => {
-            const active = "exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to);
-            const Icon = t.icon;
-            return (
-              <Link
-                key={t.to}
-                to={t.to}
-                className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-                  active
-                    ? "bg-primary/15 text-primary"
-                    : "text-white/70 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                <Icon className="size-[18px] shrink-0" />
-                {t.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="border-t border-white/10 px-5 py-4">
-          <p className="text-xs text-white/50">{session.user.email}</p>
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-2.5 h-9 w-full border-white/15 bg-white/[0.08] text-white hover:bg-white/15 hover:text-white"
-            onClick={() => supabase.auth.signOut()}
-          >
-            Sair
-          </Button>
-        </div>
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              aria-label="Abrir menu"
+              className="flex size-10 items-center justify-center rounded-xl hover:bg-white/10"
+            >
+              <Menu className="size-6" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="flex w-72 flex-col border-0 bg-foreground p-0 text-white">
+            <SheetTitle className="sr-only">Menu do painel</SheetTitle>
+            {sidebar}
+          </SheetContent>
+        </Sheet>
+      </header>
+
+      {/* Desktop: sidebar fixa */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-foreground text-white md:flex">
+        {sidebar}
       </aside>
 
       <PanelCtx.Provider value={{ userId: session.user.id, email: session.user.email ?? "" }}>
-        <main className="min-w-0 flex-1 px-9 pb-16 pt-8">
+        <main className="min-w-0 flex-1 px-4 pb-24 pt-5 sm:px-6 md:px-9 md:pb-16 md:pt-8">
           <Outlet />
         </main>
       </PanelCtx.Provider>
