@@ -87,7 +87,7 @@ type OrderRow = {
   order_items: {
     product_name: string;
     quantity: number;
-    products: { image_url: string | null; is_blank: boolean } | null;
+    products: { image_url: string | null; is_blank: boolean; has_qr: boolean } | null;
   }[];
 };
 
@@ -110,6 +110,11 @@ function stageOf(r: { payment_status: string; fulfillment_status: string }): Sta
   if (r.fulfillment_status === "enviado") return "enviados";
   if (r.fulfillment_status === "em_producao") return "em_producao";
   return "a_produzir";
+}
+
+/** Pedido sem placas com código: acrílico puro e cartão de PVC (só NFC) não têm lote. */
+function hasNoCodes(r: OrderRow): boolean {
+  return r.order_items.some((it) => it.products?.is_blank || it.products?.has_qr === false);
 }
 
 function timeAgo(iso: string): string {
@@ -168,7 +173,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank))",
+        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr))",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -590,7 +595,9 @@ function Orders() {
               >
                 {r.order_items.some((it) => it.products?.is_blank)
                   ? "ACRÍLICO SEM ARTE — só separar cor e quantidade (sem QR/NFC, sem lote)"
-                  : r.kind === "individual"
+                  : r.order_items.some((it) => it.products?.has_qr === false)
+                    ? "CARTÃO PVC (só NFC) — sem lote e sem código; desconta sozinho do Estoque de cartões (aba Placas)"
+                    : r.kind === "individual"
                     ? "LOJA PRÓPRIA — vai configurada com o negócio abaixo"
                     : "REVENDA — enviar em branco, sem configuração (códigos na aba Lotes)"}
               </div>
@@ -653,7 +660,7 @@ function Orders() {
                   {r.kind === "revenda" &&
                     r.payment_status === "pago" &&
                     !batchesByOrder[r.id] &&
-                    !r.order_items.some((it) => it.products?.is_blank) && (
+                    !hasNoCodes(r) && (
                     <div className="mt-2 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm text-amber-800">Pago, mas ainda sem lote.</p>

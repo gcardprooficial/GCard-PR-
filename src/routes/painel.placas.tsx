@@ -46,6 +46,234 @@ type BatchGroup = {
   scans: number;
 };
 
+type CardProduct = { id: string; name: string };
+type StockEntry = { id: string; product_id: string; quantity: number; note: string | null; created_at: string };
+type SoldRow = {
+  quantity: number;
+  product_id: string;
+  orders: { fulfillment_status: string } | null;
+};
+
+/**
+ * Estoque de cartões de PVC (só NFC, sem QR): não têm código, então não entram em lote.
+ * Produzidos = entradas manuais; vendidos = pedidos pagos (soma sozinha, nunca defasa).
+ */
+function CardStock({ userId }: { userId: string }) {
+  const [products, setProducts] = useState<CardProduct[]>([]);
+  const [entries, setEntries] = useState<StockEntry[]>([]);
+  const [sold, setSold] = useState<SoldRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [productId, setProductId] = useState("");
+  const [mode, setMode] = useState<"producao" | "baixa">("producao");
+  const [qty, setQty] = useState("");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Os tipos gerados do Supabase não conhecem a tabela nova; o cast fica só aqui.
+  const db = supabase as unknown as {
+    from: (t: string) => {
+      select: (c: string) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      insert: (v: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+      delete: () => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> };
+    };
+  };
+
+  const load = useCallback(async () => {
+    const { data: prods } = await db
+      .from("products")
+      .select("id, name")
+      .eq("has_qr", false)
+      .eq("is_blank", false)
+      .neq("status", "oculto");
+    const list = (prods ?? []) as CardProduct[];
+    setProducts(list);
+    setProductId((cur) => cur || list[0]?.id || "");
+    if (list.length === 0) {
+      setLoaded(true);
+      return;
+    }
+    const ids = list.map((x) => x.id);
+    const [{ data: ent }, { data: soldRows }] = await Promise.all([
+      db
+        .from("card_stock_entries")
+        .select("id, product_id, quantity, note, created_at")
+        .in("product_id", ids)
+        .order("created_at", { ascending: false })
+        .limit(200),
+      db
+        .from("order_items")
+        .select("quantity, product_id, orders!inner(payment_status, fulfillment_status)")
+        .in("product_id", ids)
+        .eq("orders.payment_status", "pago")
+        .neq("orders.fulfillment_status", "cancelado"),
+    ]);
+    setEntries((ent ?? []) as StockEntry[]);
+    setSold((soldRows ?? []) as SoldRow[]);
+    setLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function add() {
+    const n = Math.abs(Math.trunc(Number(qty)));
+    if (!productId || !n) {
+      toast.error("Informe a quantidade.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await db.from("card_stock_entries").insert({
+      product_id: productId,
+      quantity: mode === "producao" ? n : -n,
+      note: note.trim() || null,
+      created_by: userId,
+    });
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setQty("");
+    setNote("");
+    toast.success(mode === "producao" ? `${n} cartões adicionados ao estoque.` : `Baixa de ${n} registrada.`);
+    void load();
+  }
+
+  async function remove(id: string) {
+    if (!window.confirm("Apagar este lançamento de estoque?")) return;
+    const { error } = await db.from("card_stock_entries").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    void load();
+  }
+
+  if (!loaded || products.length === 0) return null;
+
+  return (
+    <section className="mt-4 rounded-2xl border border-border bg-card p-5 card-soft">
+      <h2 className="text-lg font-bold">Estoque de cartões de PVC</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Sem QR e sem código: não usam lote. Registre quantos você produziu; os vendidos entram sozinhos
+        dos pedidos pagos.
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {products.map((prod) => {
+          const mine = entries.filter((e) => e.product_id === prod.id);
+          const produced = mine.filter((e) => e.quantity > 0).reduce((n, e) => n + e.quantity, 0);
+          const adjusts = mine.filter((e) => e.quantity < 0).reduce((n, e) => n + e.quantity, 0);
+          const soldRows = sold.filter((r) => r.product_id === prod.id);
+          const soldTotal = soldRows.reduce((n, r) => n + r.quantity, 0);
+          const toShip = soldRows
+            .filter((r) => ["recebido", "em_producao"].includes(r.orders?.fulfillment_status ?? ""))
+            .reduce((n, r) => n + r.quantity, 0);
+          const inStock = produced + adjusts - soldTotal;
+          const stats: [string, number][] = [
+            ["Produzidos", produced],
+            ["Vendidos", soldTotal],
+            ["A enviar", toShip],
+            ["Em estoque", inStock],
+          ];
+          return (
+            <div key={prod.id} className="rounded-xl border border-border p-4">
+              <p className="font-semibold">{prod.name}</p>
+              <dl className="mt-3 grid grid-cols-4 gap-2 text-center">
+                {stats.map(([label, value]) => (
+                  <div key={label} className="rounded-lg bg-secondary/60 px-1 py-2">
+                    <dd className={`font-display text-xl ${label === "Em estoque" && value < 0 ? "text-red-700" : ""}`}>
+                      {value}
+                    </dd>
+                    <dt className="text-[11px] text-muted-foreground">{label}</dt>
+                  </div>
+                ))}
+              </dl>
+              {adjusts !== 0 && (
+                <p className="mt-2 text-xs text-muted-foreground">Baixas/ajustes: {adjusts}</p>
+              )}
+              {inStock < 0 && (
+                <p className="mt-2 text-xs font-semibold text-red-700">
+                  Vendeu mais do que foi registrado como produzido — lance a produção que faltou.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-end gap-2">
+        {products.length > 1 && (
+          <select
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            {products.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value as "producao" | "baixa")}
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+        >
+          <option value="producao">Produzi (+)</option>
+          <option value="baixa">Baixa / perda (−)</option>
+        </select>
+        <Input
+          value={qty}
+          onChange={(e) => setQty(e.target.value)}
+          inputMode="numeric"
+          placeholder="Quantidade"
+          className="h-10 w-32"
+        />
+        <Input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Observação (opcional)"
+          className="h-10 w-56"
+        />
+        <Button size="sm" onClick={() => void add()} disabled={saving}>
+          {saving ? "Salvando…" : "Registrar"}
+        </Button>
+      </div>
+
+      {entries.length > 0 && (
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm font-semibold">Histórico ({entries.length})</summary>
+          <ul className="mt-2 space-y-1 text-sm">
+            {entries.slice(0, 20).map((e) => (
+              <li key={e.id} className="flex items-center justify-between gap-3 border-b border-border/60 py-1">
+                <span>
+                  <strong className={e.quantity > 0 ? "text-green-700" : "text-red-700"}>
+                    {e.quantity > 0 ? "+" : ""}
+                    {e.quantity}
+                  </strong>{" "}
+                  · {new Date(e.created_at).toLocaleDateString("pt-BR")}
+                  {e.note ? ` · ${e.note}` : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void remove(e.id)}
+                  className="text-xs text-red-700 hover:underline"
+                >
+                  apagar
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
+  );
+}
+
 function Placas() {
   const { userId, email } = usePanel();
   const [rows, setRows] = useState<Plate[] | null>(null);
@@ -277,6 +505,8 @@ function Placas() {
           className="h-10 w-64"
         />
       </div>
+
+      <CardStock userId={userId} />
 
       <div className="mt-3 flex flex-wrap gap-2">
         {VIEWS.map(([k, l]) => (

@@ -100,7 +100,7 @@ type ItemRow = {
   product_name: string;
   quantity: number;
   unit_price_cents: number;
-  products?: { is_blank?: boolean } | null;
+  products?: { is_blank?: boolean; has_qr?: boolean } | null;
 };
 
 function orderSummary(order: OrderRow, items: ItemRow[]) {
@@ -128,6 +128,14 @@ function activationTutorial() {
     `<li>Informe o nome do negócio e cole o link de avaliação do Google dele.</li>` +
     `<li>Pronto: o QR e o NFC já apontam pra essa avaliação. Dá pra trocar o link quando quiser, no mesmo painel.</li>` +
     `</ol>`
+  );
+}
+
+/** Uso do cartão de PVC (só NFC). Sem código, então sem texto de /ativar. */
+function cardUsageTips() {
+  return (
+    `<p style="margin:16px 0 6px;font-weight:700;">Como usar</p>` +
+    `<p style="margin:0;">Seu cliente aproxima o celular do cartão (NFC por aproximação) e a avaliação do Google abre.</p>`
   );
 }
 
@@ -233,10 +241,13 @@ export async function dispatchOrderEmailEvent(
   try {
     const { data: itemRows } = await db
       .from("order_items")
-      .select("product_name, quantity, unit_price_cents, products(is_blank)")
+      .select("product_name, quantity, unit_price_cents, products(is_blank, has_qr)")
       .eq("order_id", orderId);
     const items = (itemRows ?? []) as ItemRow[];
     const isBlank = items.some((i) => i.products?.is_blank);
+    // Cartão de PVC: só NFC, sem QR e sem código -- não tem lote nem /ativar.
+    const cardOnly =
+      items.length > 0 && items.every((i) => i.products?.has_qr === false && !i.products?.is_blank);
     const isRevenda = order.kind === "revenda";
     const first = escapeHtml(String(order.customer_name ?? "").split(" ")[0] || "cliente");
 
@@ -269,6 +280,9 @@ export async function dispatchOrderEmailEvent(
           body +=
             `<p>Seu pedido é de <strong>acrílico puro</strong>, sem impressão, QR Code ou NFC: é o material cortado pra você aplicar a sua própria arte. ` +
             `Vamos separar as cores escolhidas e te avisamos quando entrar em produção e quando for enviado.</p>`;
+        } else if (cardOnly && isRevenda) {
+          body +=
+            `<p>Estamos separando os seus cartões de PVC com NFC. Avisamos quando entrar em produção e quando forem enviados, com o código de rastreio.</p>`;
         } else if (isRevenda) {
           body +=
             `<p>As plaquinhas do kit de revenda chegam <strong>sem link de avaliação configurado</strong> — é o modelo de revenda: você ativa cada uma pro negócio do seu cliente.</p>` +
@@ -301,7 +315,9 @@ export async function dispatchOrderEmailEvent(
 
       case "pedido_enviado": {
         body += `<p>Seu pedido foi <strong>enviado</strong>! O frete é por nossa conta.</p>${summary}${tracking}`;
-        if (isRevenda && !isBlank) {
+        if (cardOnly) {
+          body += cardUsageTips();
+        } else if (isRevenda && !isBlank) {
           const manifest = await plateManifest(db, orderId);
           body +=
             `<p>As plaquinhas chegam em branco (sem link configurado). Cada uma tem um código escrito — guarde esta lista de referência:</p>` +
@@ -317,6 +333,8 @@ export async function dispatchOrderEmailEvent(
         body += `<p>O seu pedido consta como <strong>entregue</strong>. Esperamos que chegue tudo certo!</p>${summary}`;
         if (isBlank) {
           body += `<p>Qualquer problema com o material, é só chamar no WhatsApp.</p>`;
+        } else if (cardOnly) {
+          body += cardUsageTips();
         } else if (isRevenda) {
           body += activationTutorial();
         } else {

@@ -102,14 +102,16 @@ export async function emitPlatesForOrder(orderId: string): Promise<{ created: nu
 
   const productId = await firstProductId(orderId);
 
-  // Acrílico puro (sem QR/NFC) é só o material: não tem código pra emitir.
+  // Sem código pra emitir: acrílico puro (sem QR/NFC) e cartão de PVC (só NFC, sem QR).
+  // O cartão é controlado por estoque simples no painel, não por placa/lote.
   if (productId) {
     const { data: product } = await supabaseAdmin
       .from("products")
-      .select("is_blank")
+      .select("is_blank, has_qr")
       .eq("id", productId)
       .maybeSingle();
-    if ((product as { is_blank?: boolean } | null)?.is_blank) return { created: 0, total: 0 };
+    const p = product as { is_blank?: boolean; has_qr?: boolean } | null;
+    if (p?.is_blank || p?.has_qr === false) return { created: 0, total: 0 };
   }
 
   // individual
