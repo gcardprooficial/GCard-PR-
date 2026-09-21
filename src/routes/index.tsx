@@ -4,6 +4,7 @@ import { getCatalog } from "@/lib/catalog.functions";
 import { money } from "@/lib/pricing";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { ReviewLinkGenerator } from "@/components/ReviewLinkGenerator";
+import { VideoTutorialCard } from "@/components/VideoTutorialCard";
 import { Menu } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -401,7 +402,8 @@ function Home() {
           </div>
         </div>
 
-        {/* ===== HERO IMAGEM ===== */}
+        {/* ===== HERO IMAGEM + VÍDEO ===== */}
+        <div className="flex flex-col gap-9">
         <div className="relative animate-pop delay-2">
           <div className="absolute -inset-3 rounded-[2.25rem] bg-gradient-to-br from-primary/25 via-transparent to-foreground/5 blur-xl" />
           <div className="relative overflow-hidden rounded-[2rem] border border-border card-soft lift shine-border aspect-[4/3] h-64 sm:h-80 md:h-[480px]">
@@ -454,6 +456,8 @@ function Home() {
               </p>
             </div>
           </div>
+        </div>
+        <VideoTutorialCard />
         </div>
       </section>
 
