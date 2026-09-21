@@ -11,7 +11,6 @@ import {
   Calculator,
   CreditCard,
   ScanLine,
-  MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
@@ -35,7 +34,6 @@ const TABS = [
   { to: "/painel/calculadora", label: "Calculadora", icon: Calculator },
   { to: "/painel/placas", label: "Placas", icon: CreditCard },
   { to: "/painel/scans", label: "Scans", icon: ScanLine },
-  { to: "/painel/chat", label: "Conversas", icon: MessageCircle },
 ] as const;
 
 function PanelLayout() {
