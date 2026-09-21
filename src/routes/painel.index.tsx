@@ -140,6 +140,13 @@ type AuditRow = {
   created_at: string;
 };
 
+/** Aceita links /r/<token>, tokens de 32 hex e os códigos curtos GCARD-00001 escritos nas placas. */
+function parseScanned(text: string) {
+  const hex = new Set((text.match(/[0-9a-f]{32}/gi) ?? []).map((t) => t.toLowerCase()));
+  const shorts = new Set((text.match(/GCARD-\d{5}/gi) ?? []).map((t) => t.toUpperCase()));
+  return { hex, shorts };
+}
+
 function Orders() {
   const { userId, email } = usePanel();
   const search = Route.useSearch();
@@ -288,12 +295,35 @@ function Orders() {
 
   // Monta o lote com as placas que foram escaneadas de verdade (cole os links /r/... ou os tokens).
   async function assignScannedPlates(row: OrderRow) {
-    const tokens = Array.from(new Set(scanText.match(/[0-9a-f]{32}/gi) ?? [])).map((t) => t.toLowerCase());
-    if (tokens.length !== row.quantity) {
-      toast.error(`Encontrei ${tokens.length} código(s), mas o pedido tem ${row.quantity} un.`);
+    const { hex, shorts } = parseScanned(scanText);
+    if (hex.size + shorts.size !== row.quantity) {
+      toast.error(`Encontrei ${hex.size + shorts.size} código(s), mas o pedido tem ${row.quantity} un.`);
       return;
     }
     setGeneratingFor(row.id);
+    const tokens = new Set(hex);
+    if (shorts.size > 0) {
+      const { data: found, error: lookupError } = await supabase
+        .from("plates")
+        .select("token, short_code")
+        .in("short_code", [...shorts]);
+      const foundPlates = (found ?? []) as unknown as { token: string; short_code: string }[];
+      const foundCodes = new Set(foundPlates.map((f) => f.short_code));
+      const missing = [...shorts].filter((c) => !foundCodes.has(c));
+      if (lookupError || missing.length > 0) {
+        setGeneratingFor(null);
+        toast.error(
+          lookupError ? "Não consegui consultar as placas." : `Código(s) não encontrado(s): ${missing.join(", ")}`,
+        );
+        return;
+      }
+      for (const f of foundPlates) tokens.add(f.token);
+    }
+    if (tokens.size !== row.quantity) {
+      setGeneratingFor(null);
+      toast.error("Um mesmo código foi informado duas vezes (link e código curto da mesma placa).");
+      return;
+    }
     const { data: items } = await supabase
       .from("order_items")
       .select("product_id")
@@ -315,7 +345,7 @@ function Orders() {
     const { data: batchId, error } = await rpc.call(supabase, "allocate_batch_from_tokens", {
       _label: `Pedido #${row.order_number}`,
       _product_id: productId,
-      _tokens: tokens,
+      _tokens: [...tokens],
       _owner_email: row.customer_email,
       _owner_order_id: row.id,
     });
@@ -330,7 +360,7 @@ function Orders() {
       action: "allocate_batch_from_tokens",
       entity: "batches",
       entity_id: String(batchId),
-      details: { order_id: row.id, quantity: tokens.length },
+      details: { order_id: row.id, quantity: tokens.size },
     });
     try {
       await runSendOrderEmail({ data: { orderId: row.id, event: "lote_criado" } });
@@ -341,7 +371,7 @@ function Orders() {
     setGeneratingFor(null);
     setScanOpenFor(null);
     setScanText("");
-    toast.success(`Lote do pedido #${row.order_number} montado com ${tokens.length} placas.`);
+    toast.success(`Lote do pedido #${row.order_number} montado com ${tokens.size} placas.`);
     void load();
   }
 
@@ -651,15 +681,15 @@ function Orders() {
                       {scanOpenFor === r.id && (
                         <div className="rounded-xl border border-border bg-secondary/40 p-3">
                           <p className="text-xs text-muted-foreground">
-                            Cole os {r.quantity} links escaneados (gcardpro.com.br/r/…) ou os códigos, um por
-                            linha. As placas precisam estar livres no estoque.
+                            Cole os {r.quantity} códigos das placas (GCARD-00001) ou os links escaneados
+                            (gcardpro.com.br/r/…), um por linha. As placas precisam estar livres no estoque.
                           </p>
                           <textarea
                             value={scanText}
                             onChange={(e) => setScanText(e.target.value)}
                             rows={Math.min(12, Math.max(4, r.quantity))}
                             className="mt-2 w-full rounded-lg border border-input bg-background p-2 font-mono text-xs"
-                            placeholder="https://www.gcardpro.com.br/r/6d12a6a8d91e4e978f4ad129e31f98ba"
+                            placeholder="Um código por linha, ex.: GCARD-00007"
                           />
                           <div className="mt-2 flex items-center gap-3">
                             <Button
@@ -671,7 +701,7 @@ function Orders() {
                               {generatingFor === r.id ? "Montando…" : "Montar lote"}
                             </Button>
                             <span className="text-xs text-muted-foreground">
-                              {new Set(scanText.match(/[0-9a-f]{32}/gi) ?? []).size} / {r.quantity} códigos
+                              {parseScanned(scanText).hex.size + parseScanned(scanText).shorts.size} / {r.quantity} códigos
                             </span>
                           </div>
                         </div>
