@@ -79,7 +79,7 @@ export const Route = createFileRoute("/")({
               name: "Preciso configurar algo?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "Não. Você informa o seu negócio durante a compra e nós entregamos o cartão já configurado.",
+                text: "Na loja própria, não: você informa o seu negócio durante a compra e nós gravamos o link antes de enviar. Na revenda, as placas chegam com o QR/NFC em branco e você ativa cada uma, com o link do seu cliente, em gcardpro.com.br/ativar.",
               },
             },
             {
@@ -95,7 +95,7 @@ export const Route = createFileRoute("/")({
               name: "Posso trocar o link da placa depois?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "Claro. É só mandar uma mensagem pro nosso Instagram @gcardpro.oficial que a gente atualiza. Não precisa reimprimir nada, é só o link dinâmico do painel.",
+                text: "Sim, a qualquer momento. O QR Code e o NFC guardam um código, não o link, então não precisa reimprimir nada. Entre em gcardpro.com.br/ativar com o e-mail da compra, ache a placa pelo código dela e edite o link, ou chame a gente no WhatsApp.",
               },
             },
           ],
@@ -125,8 +125,6 @@ const IMAGES: Record<string, string> = {
   "acrilico-15x10-l-sem-arte": acrilicoLCristal,
 };
 
-/** Loja no Mercado Livre — preencher quando o link estiver pronto. */
-const MERCADO_LIVRE_URL = "";
 
 const FALLBACK_PRODUCTS = [
   {
@@ -926,30 +924,13 @@ function Home() {
           )}
 
           {/* ===== SOB MEDIDA + MERCADO LIVRE ===== */}
-          <div className="mt-12 grid gap-5 md:grid-cols-2">
+          <div className="mt-12">
             <div className="rounded-3xl border border-dashed border-foreground/20 bg-card p-6 sm:p-7">
               <h3 className="text-lg font-bold">Precisa de outra medida?</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Cortamos acrílico em outros tamanhos e formatos sob encomenda. Fala com a gente pelo
                 WhatsApp (botão verde no canto inferior direito) que a gente monta seu orçamento.
               </p>
-            </div>
-            <div className="rounded-3xl border border-border bg-card p-6 sm:p-7">
-              <h3 className="text-lg font-bold">Prefere comprar pelo Mercado Livre?</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Também vendemos por lá, com a proteção e o frete do Mercado Envios.
-              </p>
-              {MERCADO_LIVRE_URL ? (
-                <Button asChild size="sm" variant="outline" className="mt-4 rounded-xl">
-                  <a href={MERCADO_LIVRE_URL} target="_blank" rel="noopener noreferrer">
-                    Ver nossa loja no Mercado Livre ↗
-                  </a>
-                </Button>
-              ) : (
-                <p className="mt-4 text-xs font-semibold text-muted-foreground">
-                  Link da loja em breve.
-                </p>
-              )}
             </div>
           </div>
         </div>
