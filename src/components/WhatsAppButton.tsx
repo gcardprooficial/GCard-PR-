@@ -26,7 +26,7 @@ export function WhatsAppButton() {
               rel="noopener noreferrer"
               data-analytics-event="whatsapp_click"
               data-analytics-label={c.name}
-              className="flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-sm transition-colors hover:bg-secondary"
+              className="flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-sm transition-colors hover:bg-muted"
             >
               <span className="font-semibold">{c.name}</span>
               <span className="text-muted-foreground">{c.display}</span>

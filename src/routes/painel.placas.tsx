@@ -182,14 +182,26 @@ function CardStock({ userId }: { userId: string }) {
             <div key={prod.id} className="rounded-xl border border-border p-4">
               <p className="font-semibold">{prod.name}</p>
               <dl className="mt-3 grid grid-cols-4 gap-2 text-center">
-                {stats.map(([label, value]) => (
-                  <div key={label} className="rounded-lg bg-secondary/60 px-1 py-2">
-                    <dd className={`font-display text-xl ${label === "Em estoque" && value < 0 ? "text-red-700" : ""}`}>
-                      {value}
-                    </dd>
-                    <dt className="text-[11px] text-muted-foreground">{label}</dt>
-                  </div>
-                ))}
+                {stats.map(([label, value]) => {
+                  const highlight = label === "Em estoque";
+                  return (
+                    <div
+                      key={label}
+                      className={`rounded-xl px-1 py-3 ${
+                        highlight ? "border border-primary/40 bg-primary/15" : "bg-muted"
+                      }`}
+                    >
+                      <dd
+                        className={`font-display text-2xl leading-none ${
+                          highlight && value < 0 ? "text-red-700" : "text-foreground"
+                        }`}
+                      >
+                        {value}
+                      </dd>
+                      <dt className="mt-1.5 text-[11px] font-semibold text-muted-foreground">{label}</dt>
+                    </div>
+                  );
+                })}
               </dl>
               {adjusts !== 0 && (
                 <p className="mt-2 text-xs text-muted-foreground">Baixas/ajustes: {adjusts}</p>
@@ -538,7 +550,7 @@ function Placas() {
             type="button"
             onClick={() => setStatusFilter(k)}
             className={`rounded-full px-3 py-1 transition-colors ${
-              statusFilter === k ? "bg-secondary text-foreground" : "hover:text-foreground"
+              statusFilter === k ? "bg-muted font-bold text-foreground ring-1 ring-border" : "hover:text-foreground"
             }`}
           >
             {l}

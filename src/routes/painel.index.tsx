@@ -530,7 +530,7 @@ function Orders() {
                     ? "bg-black/10"
                     : urgent
                       ? "bg-amber-100 text-amber-800"
-                      : "bg-secondary"
+                      : "bg-muted"
                 }`}
               >
                 {stageCounts[s.key]}
@@ -565,7 +565,7 @@ function Orders() {
             type="button"
             onClick={() => setKindFilter(k)}
             className={`rounded-full px-3 py-1 transition-colors ${
-              kindFilter === k ? "bg-secondary text-foreground" : "hover:text-foreground"
+              kindFilter === k ? "bg-muted font-bold text-foreground ring-1 ring-border" : "hover:text-foreground"
             }`}
           >
             {label}
@@ -686,7 +686,7 @@ function Orders() {
                         </Button>
                       </div>
                       {scanOpenFor === r.id && (
-                        <div className="rounded-xl border border-border bg-secondary/40 p-3">
+                        <div className="rounded-xl border border-border bg-muted/60 p-3">
                           <p className="text-xs text-muted-foreground">
                             Cole os {r.quantity} códigos das placas (GCARD-00001) ou os links escaneados
                             (gcardpro.com.br/r/…), um por linha. As placas precisam estar livres no estoque.

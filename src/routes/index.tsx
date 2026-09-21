@@ -456,7 +456,7 @@ function Home() {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-border bg-secondary/50 p-4">
+              <div className="mt-6 rounded-2xl border border-border bg-muted/70 p-4">
                 <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">
                   Preço por unidade · frete grátis
                 </p>
@@ -556,7 +556,7 @@ function Home() {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-border bg-secondary/50 p-4">
+              <div className="mt-6 rounded-2xl border border-border bg-muted/70 p-4">
                 <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">
                   A partir de {revenda.tiers[0]?.min_quantity ?? 10} unidades · frete grátis
                 </p>
