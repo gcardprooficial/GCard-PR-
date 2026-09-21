@@ -136,6 +136,7 @@ const FALLBACK_PRODUCTS = [
     has_nfc: true,
     has_qr: false,
     is_blank: false,
+    price_delta_cents: 0,
   },
 ] as const;
 
