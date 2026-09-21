@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { rateLimit } from "@/lib/rateLimit";
+import { getRequest } from "@tanstack/react-start/server";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 const PLACES_ENDPOINT = "https://places.googleapis.com/v1/places:searchText";
 
@@ -23,6 +24,10 @@ export const searchBusinesses = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!rateLimit(`places:${data.query.slice(0, 40)}`, 20, 60_000)) {
       return { ok: false as const, error: "Muitas buscas seguidas. Aguarde alguns segundos." };
+    }
+    // Cada busca custa na API do Google e agora há uma ferramenta pública na home: limita por IP.
+    if (!rateLimit(`places-ip:${clientKey(getRequest())}`, 15, 300_000)) {
+      return { ok: false as const, error: "Muitas buscas seguidas. Aguarde alguns minutos." };
     }
 
     const key = process.env["GOOGLE_MAPS_API_KEY"];

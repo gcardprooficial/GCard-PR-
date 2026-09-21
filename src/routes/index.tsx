@@ -3,6 +3,7 @@ import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { getCatalog } from "@/lib/catalog.functions";
 import { money } from "@/lib/pricing";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
+import { ReviewLinkGenerator } from "@/components/ReviewLinkGenerator";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -180,6 +181,13 @@ function Header() {
             className="hidden text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:block"
           >
             Modelos
+          </a>
+          <a
+            href="#gerar-link"
+            data-analytics-event="menu_gerar_link"
+            className="hidden text-sm font-bold text-foreground transition-colors hover:text-primary sm:block"
+          >
+            Gerar link grátis
           </a>
           <Button
             asChild
@@ -406,6 +414,8 @@ function Home() {
           </div>
         </div>
       </section>
+
+      <ReviewLinkGenerator />
 
       {/* ===== DOIS CAMINHOS (sem preço aqui — só a decisão) ===== */}
       <section id="caminhos" className="relative border-y border-border bg-surface/60">
