@@ -397,12 +397,12 @@ function Comprar() {
         // ou erro). Sem isso o comprador fica preso achando que já pagou.
         console.error("create preference sem url", pref);
         toast.error(
-          "Pedido registrado, mas não conseguimos abrir o pagamento agora. Chama no chat que a gente resolve.",
+          "Pedido registrado, mas não conseguimos abrir o pagamento agora. Chama no WhatsApp (botão verde na tela) que a gente resolve.",
         );
       } catch (e) {
         console.error("create preference failed", e);
         toast.error(
-          "Pedido registrado, mas não conseguimos abrir o pagamento agora. Chama no chat que a gente resolve.",
+          "Pedido registrado, mas não conseguimos abrir o pagamento agora. Chama no WhatsApp (botão verde na tela) que a gente resolve.",
         );
       }
     } catch (error) {

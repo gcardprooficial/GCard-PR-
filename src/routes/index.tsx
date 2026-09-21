@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { useState } from "react";
 import { getCatalog } from "@/lib/catalog.functions";
 import { money } from "@/lib/pricing";
+import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -174,7 +174,7 @@ function Header() {
             href="#caminhos"
             className="hidden text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground sm:block"
           >
-            Como funciona
+            Preços
           </a>
           <a
             href="#modelos"
@@ -208,64 +208,6 @@ function HeroBadge() {
         Fornecedor direto · NFC · Sem mensalidade
       </span>
     </div>
-  );
-}
-
-function ImpactCalculator() {
-  const [ticket, setTicket] = useState(80);
-  const [customers, setCustomers] = useState(150);
-  const potential = Math.round(ticket * customers * 0.14);
-
-  return (
-    <section className="border-y border-border bg-secondary text-secondary-foreground">
-      <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 md:grid-cols-[0.9fr_1.1fr] md:items-center md:py-20">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
-            Calculadora de impacto
-          </p>
-          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">
-            Quanto uma boa reputação vale?
-          </h2>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-white/65 sm:text-base">
-            Uma experiência simples no balcão ajuda mais clientes satisfeitos a encontrarem a tela
-            de avaliação.
-          </p>
-        </div>
-        <div className="grid gap-5 rounded-[1.75rem] border border-white/10 bg-white/5 p-6 sm:grid-cols-2 sm:p-8">
-          <label className="text-sm font-semibold text-white/75">
-            Ticket médio (R$)
-            <input
-              type="number"
-              min={1}
-              value={ticket}
-              onChange={(event) => setTicket(Number(event.target.value) || 0)}
-              className="mt-2 h-12 w-full rounded-xl border border-white/15 bg-white/10 px-4 text-lg font-bold text-white outline-none focus:border-primary"
-            />
-          </label>
-          <label className="text-sm font-semibold text-white/75">
-            Clientes por mês
-            <input
-              type="number"
-              min={1}
-              value={customers}
-              onChange={(event) => setCustomers(Number(event.target.value) || 0)}
-              className="mt-2 h-12 w-full rounded-xl border border-white/15 bg-white/10 px-4 text-lg font-bold text-white outline-none focus:border-primary"
-            />
-          </label>
-          <div className="sm:col-span-2">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
-              Potencial mensal estimado
-            </p>
-            <p className="mt-1 font-display text-4xl text-primary sm:text-5xl">
-              {money(potential * 100)}
-            </p>
-            <p className="mt-2 text-xs text-white/50">
-              Simulação ilustrativa com 14% de potencial adicional.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -326,9 +268,11 @@ function Home() {
           </h1>
 
           <p className="mt-6 animate-rise delay-2 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            O <strong className="text-foreground/90">cartão de bolso</strong> usa aproximação NFC e
-            chega pronto para o seu negócio. Você informa a empresa na compra; nós gravamos o chip e
-            enviamos pronto para usar.
+            Somos <strong className="text-foreground/90">fornecedores</strong> de{" "}
+            <strong className="text-foreground/90">cartão de bolso NFC (PVC)</strong> e{" "}
+            <strong className="text-foreground/90">placa de acrílico 10×10 com QR Code e NFC</strong>,
+            já com a arte “Avaliação do Google” pronta. O link é dinâmico: você troca quando quiser,
+            sem reimprimir.
           </p>
 
           <div className="mt-8 flex animate-rise delay-3 flex-wrap gap-3 sm:gap-4">
@@ -475,8 +419,8 @@ function Home() {
               É pra usar no seu negócio ou pra revender?
             </h2>
             <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Os modelos e os preços aparecem no próximo passo, depois que você escolhe um caminho.
-              Frete grátis para todo o Brasil nos dois casos.
+              Lojista paga um preço fixo por unidade. Revenda compra a partir de 10 unidades e o
+              preço vai caindo com a quantidade. Frete grátis para todo o Brasil nos dois casos.
             </p>
           </div>
 
@@ -513,7 +457,36 @@ function Home() {
                 </div>
               </div>
 
-              <ul className="mt-6 space-y-3 text-sm sm:text-base">
+              <div className="mt-6 rounded-2xl border border-border bg-secondary/50 p-4">
+                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                  Preço por unidade · frete grátis
+                </p>
+                <p className="mt-1 font-display text-3xl leading-none">
+                  {money(lojista.unit_price_cents)}
+                  <span className="ml-2 text-sm font-sans font-semibold text-muted-foreground">
+                    cartão de bolso
+                  </span>
+                </p>
+                {(() => {
+                  const plaquinha = products.find(
+                    (p) => p.slug === "plaquinha-10x10" && p.status === "ativo",
+                  );
+                  return plaquinha ? (
+                    <p className="mt-1 text-sm font-semibold">
+                      {money(lojista.unit_price_cents + plaquinha.price_delta_cents)}
+                      <span className="ml-2 font-normal text-muted-foreground">placa 10×10</span>
+                    </p>
+                  ) : null;
+                })()}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Preço fixo, sem letras miúdas.
+                  {lojista.tiers.length > 1
+                    ? ` Pedindo ${lojista.tiers[lojista.tiers.length - 1]!.min_quantity} de uma vez, sai ${money(lojista.tiers[lojista.tiers.length - 1]!.unit_price_cents)} cada.`
+                    : ""}
+                </p>
+              </div>
+
+              <ul className="mt-5 space-y-3 text-sm sm:text-base">
                 {[
                   "Você escolhe o modelo no próximo passo",
                   "Chega pronto, apontando pra avaliação do seu Google",
@@ -561,7 +534,7 @@ function Home() {
                   </div>
                   <h3 className="mt-4 text-2xl sm:text-3xl">Pra revender</h3>
                   <p className="mt-1 text-muted-foreground text-sm sm:text-base">
-                    Cartões e plaquinhas em lote, com QR e NFC já impressos de fábrica
+                    Cartões e placas em lote, com a arte pronta e QR/NFC em branco pra você configurar
                   </p>
                 </div>
                 <div className="rounded-2xl bg-foreground/5 p-3 text-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-foreground group-hover:text-white group-hover:shadow-lg">
@@ -584,10 +557,28 @@ function Home() {
                 </div>
               </div>
 
-              <ul className="mt-6 space-y-3 text-sm sm:text-base">
+              <div className="mt-6 rounded-2xl border border-border bg-secondary/50 p-4">
+                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+                  A partir de {revenda.tiers[0]?.min_quantity ?? 10} unidades · frete grátis
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {revenda.tiers.map((t) => (
+                    <li key={t.min_quantity} className="flex items-baseline justify-between gap-3">
+                      <span className="text-muted-foreground">{t.label ?? `${t.min_quantity}+ un.`}</span>
+                      <span className="font-display text-lg">{money(t.unit_price_cents)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Cartão de bolso. Quanto mais unidades, menor o preço por peça.
+                </p>
+              </div>
+
+              <ul className="mt-5 space-y-3 text-sm sm:text-base">
                 {[
-                  "Mínimo de 10 unidades por pedido",
-                  "Quanto mais unidades, menor o preço por peça",
+                  "Mínimo de 10 unidades por pedido, frete grátis",
+                  "Preço cai conforme a quantidade",
+                  "Inclui acrílico sem arte (cristal, branco e preto)",
                   "Você ativa cada código no seu painel de revendedor",
                 ].map((f, i) => (
                   <li key={i} className="flex items-start gap-3 text-foreground/80">
@@ -625,111 +616,151 @@ function Home() {
         </div>
       </section>
 
-      {/* ===== COMO FUNCIONA ===== */}
-      <section className="mx-auto max-w-6xl px-5 py-16 md:py-20">
-        <div className="text-center max-w-2xl mx-auto">
+      {/* ===== O QUE SOMOS + O QUE É CADA PRODUTO ===== */}
+      <section id="o-que-e" className="mx-auto max-w-6xl px-5 py-16 md:py-20">
+        <div className="mx-auto max-w-3xl text-center">
           <p className="animate-rise text-xs font-black uppercase tracking-[0.2em] text-primary">
-            Simples assim
+            Quem somos
           </p>
           <h2 className="mt-3 animate-rise delay-1 text-3xl leading-tight sm:text-4xl md:text-5xl">
-            Como funciona do <span className="highlight-yellow">nosso lado</span>.
+            Somos <span className="highlight-yellow">fornecedores</span> de cartões e placas de
+            avaliação do Google.
           </h2>
           <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Pedido, produção, envio. Depois é só colar no balcão.
+            Você compra direto de quem fabrica: pra usar no seu balcão, ou em quantidade pra revender
+            pros seus clientes. Sem mensalidade, sem intermediário.
           </p>
         </div>
 
-        <div className="relative mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Linha conectora (desktop) */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute left-1/2 right-0 top-[58px] hidden h-0.5 w-2/3 -translate-x-1/2 rounded-full sm:block"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-foreground) 15%, transparent) 50%, transparent)",
-            }}
-          />
-
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
           {[
             {
-              n: "01",
-              t: "Você compra",
-              d: "Escolhe o modelo, informa o negócio do Google e paga pelo site. 2 minutos.",
-              icon: (
-                <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4M4 6v12c0 1.1.9 2 2 2h14v-4" />
-              ),
+              tag: "Cartão de bolso",
+              title: "PVC · NFC por aproximação",
+              specs: ["8,5 × 5,4 cm, em PVC", "Funciona só por aproximação NFC (sem QR Code)"],
+              art: "Já vai com a arte “Avaliação do Google” pronta.",
+              blank:
+                "O chip NFC é de fábrica em branco: recebe o link de avaliação que você quiser.",
             },
             {
-              n: "02",
-              t: "Nós produzimos",
-              d: "Imprimimos com a sua arte, gravamos o chip NFC e configuramos o QR dinâmico.",
-              icon: (
-                <>
-                  <path d="m7.5 4.27 9 5.15" />
-                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-                  <path d="m3.3 7 8.7 5 8.7-5" />
-                  <path d="M12 22V12" />
-                </>
-              ),
+              tag: "Placa 10×10",
+              title: "Acrílico puro · QR Code + NFC",
+              specs: ["10 × 10 cm, em acrílico puro", "QR Code e NFC na mesma placa"],
+              art: "Já vai com a arte “Avaliação do Google” pronta (adesivo retroverso, aplicado por trás do acrílico).",
+              blank: "O QR Code e o NFC são de fábrica em branco: recebem o link que você quiser.",
             },
             {
-              n: "03",
-              t: "Aproxime",
-              d: "O cliente aproxima o celular ou escaneia o QR e chega à avaliação em segundos.",
-              icon: (
-                <>
-                  <circle cx="8" cy="18" r="2" />
-                  <circle cx="18" cy="18" r="2" />
-                  <path d="M10 18h4M4 18V6a2 2 0 0 1 2-2h11l5 5v9" />
-                  <path d="M14 4v6h6" />
-                </>
-              ),
+              tag: "Acrílico sem arte",
+              title: "Só o material, pra você personalizar",
+              specs: [
+                "Sem impressão, sem QR Code, sem NFC",
+                "Cores: cristal (transparente), branco e preto",
+              ],
+              art: "Para quem já tem a própria arte ou quer aplicar adesivo.",
+              blank: "Vendido em kit a partir de 10 unidades, com frete grátis (revenda).",
             },
-            {
-              n: "04",
-              t: "Cresça",
-              d: "Mais avaliações positivas, mais confiança e mais oportunidades para o seu negócio.",
-              icon: (
-                <>
-                  <path d="m4 19 6-6 4 4 6-8" />
-                  <path d="M14 9h6v6" />
-                </>
-              ),
-            },
-          ].map((step, i) => (
+          ].map((item, i) => (
             <div
-              key={step.n}
-              className={`animate-rise delay-${i + 1} relative rounded-3xl border border-border bg-card p-7 sm:p-8 card-soft card-soft-hover`}
+              key={item.tag}
+              className={`animate-rise delay-${i + 1} rounded-3xl border border-border bg-card p-7 card-soft card-soft-hover`}
             >
-              <div className="flex items-center gap-3">
-                <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary font-display text-lg font-black text-primary-foreground shadow-sm transition-transform duration-500 hover:scale-110">
-                  {step.n}
-                </span>
-                <div className="rounded-2xl bg-muted p-2.5 text-foreground">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    {step.icon}
-                  </svg>
-                </div>
-              </div>
-              <h3 className="mt-5 text-xl sm:text-2xl">{step.t}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                {step.d}
+              <span className="inline-flex rounded-full bg-primary/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-primary-foreground">
+                {item.tag}
+              </span>
+              <h3 className="mt-4 text-xl leading-snug sm:text-2xl">{item.title}</h3>
+              <ul className="mt-4 space-y-2 text-sm text-foreground/80 sm:text-base">
+                {item.specs.map((s) => (
+                  <li key={s} className="flex gap-2">
+                    <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                    <span className="font-medium">{s}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{item.art}</p>
+              <p className="mt-2 text-sm font-semibold leading-relaxed text-foreground/90">
+                {item.blank}
               </p>
             </div>
           ))}
         </div>
       </section>
 
-      <ImpactCalculator />
+      {/* ===== QR DINÂMICO ===== */}
+      <section id="qr-dinamico" className="border-y border-border bg-secondary text-secondary-foreground">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 md:grid-cols-[0.9fr_1.1fr] md:items-center md:py-20">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
+              QR Code dinâmico
+            </p>
+            <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">
+              O link não fica gravado na placa. Dá pra trocar quando quiser.
+            </h2>
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70 sm:text-base">
+              O QR Code e o NFC guardam um código, não o endereço. Por isso o destino muda sem
+              reimprimir nada.
+            </p>
+          </div>
+          <ul className="grid gap-4 sm:grid-cols-1">
+            {[
+              [
+                "Um código por placa",
+                "Cada placa e cada cartão tem o seu código (ex.: GCARD-00001), pra você saber qual é qual.",
+              ],
+              [
+                "Ative e troque no seu painel",
+                "Em gcardpro.com.br/ativar, com o e-mail da compra, você escolhe o link de cada placa e altera a qualquer momento.",
+              ],
+              [
+                "Serve pra qualquer negócio",
+                "Na revenda, cada placa vai pro cliente que você quiser. Na loja própria, já vai gravada com a avaliação do seu negócio.",
+              ],
+            ].map(([t, d]) => (
+              <li key={t} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <p className="font-bold">{t}</p>
+                <p className="mt-1 text-sm leading-relaxed text-white/65">{d}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ===== COMPRA SEGURA ===== */}
+      <section className="mx-auto max-w-6xl px-5 py-10">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Compra segura", "Pagamento processado pelo Mercado Pago (Pix, cartão e boleto)"],
+            ["Sem precisar de conta", "Pague como convidado, sem criar conta no Mercado Pago"],
+            ["Dados protegidos", "Conexão criptografada (HTTPS) e tratamento conforme a LGPD"],
+            ["Suporte de verdade", "Atendimento direto pelo WhatsApp, com quem fabrica"],
+          ].map(([t, d]) => (
+            <li
+              key={t}
+              className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 card-soft"
+            >
+              <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-g-green/15 text-g-green">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z" />
+                  <polyline points="9 12 11 14 15 10" />
+                </svg>
+              </span>
+              <div>
+                <p className="text-sm font-bold">{t}</p>
+                <p className="text-xs leading-relaxed text-muted-foreground">{d}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       {/* ===== MODELOS ===== */}
       <section id="modelos" className="relative border-y border-border bg-surface/60">
@@ -742,8 +773,9 @@ function Home() {
               Pronto pra usar, ou acrílico puro pra sua arte.
             </h2>
             <p className="mt-4 animate-rise delay-2 text-base leading-relaxed text-muted-foreground">
-              Duas linhas: a <strong className="text-foreground">configurada</strong>, que chega
-              com a arte impressa e o link da sua avaliação já gravado — é só colocar no balcão. E o{" "}
+              Duas linhas: a <strong className="text-foreground">com arte</strong>, que chega com a
+              arte “Avaliação do Google” impressa e o QR/NFC prontos pra receber o seu link (na loja
+              própria, já gravamos o do seu negócio). E o{" "}
               <strong className="text-foreground">acrílico sem impressão</strong>, pra quem já tem
               a própria arte e quer só o material cortado.
             </p>
@@ -852,7 +884,7 @@ function Home() {
                   Sem arte · acrílico puro pra você personalizar
                 </p>
                 <span className="badge-pill bg-g-green/15 text-foreground">
-                  Frete grátis · kit a partir de 10 un.
+                  Revenda · frete grátis · kit a partir de 10 un.
                 </span>
               </div>
 
@@ -882,8 +914,8 @@ function Home() {
                           aplica a sua arte ou adesivo.
                         </p>
                         <Button asChild size="sm" className="mt-4 w-full rounded-xl" variant="outline">
-                          <Link to="/comprar" search={{ caminho: "lojista" }}>
-                            Ver preços e cores
+                          <Link to="/comprar" search={{ caminho: "revenda" }}>
+                            Ver preços e cores (revenda)
                           </Link>
                         </Button>
                       </div>
@@ -899,7 +931,7 @@ function Home() {
               <h3 className="text-lg font-bold">Precisa de outra medida?</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Cortamos acrílico em outros tamanhos e formatos sob encomenda. Fala com a gente pelo
-                chat aqui do site (canto inferior direito) que a gente monta seu orçamento.
+                WhatsApp (botão verde no canto inferior direito) que a gente monta seu orçamento.
               </p>
             </div>
             <div className="rounded-3xl border border-border bg-card p-6 sm:p-7">
@@ -964,8 +996,9 @@ function Home() {
               Preciso configurar algo?
             </AccordionTrigger>
             <AccordionContent className="!px-5 sm:!px-6 !pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Não. Você informa o seu negócio durante a compra e nós entregamos o cartão já
-              configurado.
+              Na loja própria, não: você informa o seu negócio durante a compra e nós gravamos o
+              link antes de enviar. Na revenda, as placas chegam com o QR/NFC em branco e você
+              ativa cada uma, com o link do seu cliente, em gcardpro.com.br/ativar.
             </AccordionContent>
           </AccordionItem>
 
@@ -984,7 +1017,11 @@ function Home() {
               Posso trocar o link da placa depois?
             </AccordionTrigger>
             <AccordionContent className="!px-5 sm:!px-6 !pb-5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Claro. É só mandar uma mensagem pro nosso Instagram{" "}
+              Sim, a qualquer momento. O QR Code e o NFC guardam um código, não o link, então não
+              precisa reimprimir nada. Entre em{" "}
+              <strong className="text-foreground">gcardpro.com.br/ativar</strong> com o e-mail da
+              compra, ache a placa pelo código dela (ex.: GCARD-00001) e edite o link. Se preferir,
+              é só chamar a gente no WhatsApp (botão verde na tela) ou no Instagram{" "}
               <a
                 href="https://instagram.com/gcardpro.oficial"
                 target="_blank"
@@ -992,9 +1029,8 @@ function Home() {
                 className="font-bold text-foreground underline underline-offset-2 hover:text-primary decoration-primary decoration-2"
               >
                 @gcardpro.oficial
-              </a>{" "}
-              que a gente atualiza. Não precisa reimprimir nada, é só o link dinâmico do nosso
-              painel.
+              </a>
+              .
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -1087,7 +1123,8 @@ function Home() {
                 />
               </Link>
               <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                Cartões NFC para levar seus clientes direto à avaliação do Google.
+                Fornecedor de cartões NFC e placas QR Code/NFC que levam seus clientes direto à
+                avaliação do Google.
               </p>
               <p className="mt-3 text-xs text-muted-foreground/70">
                 © {new Date().getFullYear()} GCard-PRÓ · CNPJ sob consulta
@@ -1152,16 +1189,18 @@ function Home() {
                       Instagram
                     </a>
                   </li>
-                  <li>
-                    <a
-                      href="https://chat.whatsapp.com/EBYX68zzqOICn9mIlqHwQ5"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="transition-colors hover:text-foreground hover:underline underline-offset-4"
-                    >
-                      WhatsApp
-                    </a>
-                  </li>
+                  {WHATSAPP_CONTACTS.map((c) => (
+                    <li key={c.number}>
+                      <a
+                        href={whatsappLink(c.number)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="transition-colors hover:text-foreground hover:underline underline-offset-4"
+                      >
+                        WhatsApp {c.name} · {c.display}
+                      </a>
+                    </li>
+                  ))}
                 </ul>
               </div>
 
@@ -1198,6 +1237,34 @@ function Home() {
               </div>
             </div>
           </div>
+
+          <ul className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-6 text-xs font-semibold text-muted-foreground">
+            {[
+              "Compra segura pelo Mercado Pago",
+              "Site protegido por HTTPS",
+              "Seus dados protegidos (LGPD)",
+              "Frete grátis para todo o Brasil",
+            ].map((t) => (
+              <li key={t} className="flex items-center gap-1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-g-green"
+                  aria-hidden
+                >
+                  <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z" />
+                  <polyline points="9 12 11 14 15 10" />
+                </svg>
+                {t}
+              </li>
+            ))}
+          </ul>
         </div>
       </footer>
     </div>

@@ -138,7 +138,8 @@ function usageTips() {
     `<ul style="margin:0;padding-left:20px;">` +
     `<li><strong>Cartão de bolso (PVC):</strong> o cliente aproxima o celular do cartão (NFC por aproximação) e a avaliação abre.</li>` +
     `<li><strong>Placa de acrílico:</strong> o cliente aponta a câmera pro QR Code (e também pode aproximar o celular, se a placa tiver NFC).</li>` +
-    `</ul>`
+    `</ul>` +
+    `<p style="margin:12px 0 0;">Precisa trocar o link de avaliação depois? Entre em <a href="${siteUrl()}/ativar" style="color:#1A1A1A;font-weight:600;">gcardpro.com.br/ativar</a> com o e-mail da compra (crie a conta com ele se for a primeira vez) e edite o link da sua placa. O QR é dinâmico: não precisa reimprimir nada.</p>`
   );
 }
 

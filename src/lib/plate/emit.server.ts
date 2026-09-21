@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { generatePlateToken } from "./tokens";
 
@@ -37,6 +38,45 @@ async function insertPlates(
     }
   }
   return created;
+}
+
+/**
+ * Todo pedido de loja própria ganha um lote (dono = e-mail da compra). É isso que faz
+ * o comprador ver as próprias placas em /ativar e trocar o link quando quiser.
+ */
+async function ensureOrderBatch(
+  order: { id: string; order_number: number; quantity: number; customer_email: string },
+  productId: string | null,
+): Promise<string | null> {
+  if (!productId) return null;
+  const { data: existing } = await supabaseAdmin
+    .from("batches")
+    .select("id")
+    .eq("owner_order_id", order.id)
+    .maybeSingle();
+  if (existing) return existing.id;
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const day = new Date().toISOString().slice(2, 10).replaceAll("-", "");
+    const suffix = (randomUUID() + randomUUID()).replaceAll("-", "").slice(0, 16).toUpperCase();
+    const { data, error } = await supabaseAdmin
+      .from("batches")
+      .insert({
+        code: `L-${day}-${suffix}`,
+        label: `Pedido #${order.order_number}`,
+        product_id: productId,
+        quantity: order.quantity,
+        owner_email: order.customer_email.trim().toLowerCase(),
+        unit_cost_cents: 0,
+        status: "vendido",
+        owner_order_id: order.id,
+      } as never)
+      .select("id")
+      .single();
+    if (!error) return data.id;
+    if (error.code !== "23505") throw error;
+  }
+  throw new Error("Não foi possível gerar código único de lote.");
 }
 
 /**
@@ -89,7 +129,18 @@ export async function emitPlatesForOrder(orderId: string): Promise<{ created: nu
   }
   const activated = Boolean(order.business_id && destinationUrl);
 
+  const batchId = await ensureOrderBatch(
+    {
+      id: order.id,
+      order_number: order.order_number,
+      quantity: order.quantity,
+      customer_email: order.customer_email,
+    },
+    productId,
+  );
+
   const created = await insertPlates(missing, {
+    ...(batchId ? { batch_id: batchId } : {}),
     order_id: orderId,
     product_id: productId,
     business_id: order.business_id,
