@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { SecurityBadges } from "@/components/SecurityBadges";
+import { PixFallback } from "@/components/PixFallback";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-mockup.jpg";
 import produtoPlaquinhaL from "@/assets/gcard-pro-plaquinha-l-provisorio.jpg";
@@ -688,6 +689,8 @@ function Comprar() {
                 O pagamento pelo Mercado Pago entra no ar em breve. Vamos te chamar no WhatsApp para
                 concluir e enviar o código de rastreio.
               </p>
+
+              <PixFallback orderNumber={orderNumber} totalLabel={money(total)} />
 
               <div className="relative mt-8 grid gap-3">
                 <Button

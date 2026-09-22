@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { verifyReturnedPayment } from "@/lib/payments/reconcile.functions";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
+import { PixFallback } from "@/components/PixFallback";
 
 // O Mercado Pago volta com payment_id (ou collection_id) na URL. Só usamos isso pra
 // perguntar ao próprio MP o que aconteceu -- o status da URL nunca é confiado.
@@ -92,6 +93,8 @@ function PagamentoRetorno() {
         <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
           {content.body}
         </p>
+
+        {view.kind === "falhou" && orderNumber ? <PixFallback orderNumber={orderNumber} /> : null}
 
         <div className="mt-8 grid gap-3">
           {view.kind === "falhou" ? (

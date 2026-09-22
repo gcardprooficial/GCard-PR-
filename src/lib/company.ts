@@ -13,3 +13,6 @@ export const COMPANY_ID_LINE = `${COMPANY.legalName} · CNPJ ${COMPANY.cnpj}`;
 
 /** "Romeu Ferigatti, Indaiatuba/SP" */
 export const COMPANY_ADDRESS = `${COMPANY.street}, ${COMPANY.city}/${COMPANY.state}`;
+
+/** Chave Pix (CNPJ, só dígitos) para o pagamento alternativo quando o Mercado Pago falha pro cliente. */
+export const PIX_KEY = COMPANY.cnpj.replace(/\D/g, "");
