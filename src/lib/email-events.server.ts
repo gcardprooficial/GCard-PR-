@@ -404,6 +404,26 @@ export async function notifyAdminPaymentFailure(order: {
   }
 }
 
+/** Avisa o dono quando alguém deixa o WhatsApp na ferramenta grátis, pra ele seguir manualmente. */
+export async function notifyAdminNewLead(lead: { businessName: string; whatsapp: string | null }) {
+  const to = process.env["ADMIN_NOTIFY_EMAIL"];
+  if (!to) return { skipped: true, reason: "ADMIN_NOTIFY_EMAIL ausente" };
+  const html = emailShell({
+    title: "Novo lead da ferramenta grátis",
+    bodyHtml:
+      `<p><strong>${escapeHtml(lead.businessName)}</strong> usou o gerador de link e pediu contato.</p>` +
+      (lead.whatsapp
+        ? `<p><a href="${whatsappLink(lead.whatsapp, `Oi! Vi que você gerou o link de avaliação do ${lead.businessName} no nosso site.`)}" style="color:#1A1A1A;font-weight:700;">Chamar no WhatsApp (${escapeHtml(lead.whatsapp)}) →</a></p>`
+        : `<p>Não deixou WhatsApp.</p>`),
+  });
+  try {
+    return await sendWithResend({ to, subject: `🎯 Novo lead: ${lead.businessName}`, html });
+  } catch (error) {
+    console.error("Falha ao notificar admin sobre lead", error);
+    return { sent: false };
+  }
+}
+
 export async function sendPaymentLinkEmail(
   order: {
     order_number: number;
