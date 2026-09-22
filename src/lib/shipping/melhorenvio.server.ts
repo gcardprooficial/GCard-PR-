@@ -53,13 +53,10 @@ async function verifyState(state: string): Promise<boolean> {
 
 const USER_AGENT = "GCard-PRO (contato@gcardpro.com.br)";
 
-/** A doc do Melhor Envio manda client_id como número no corpo do /oauth/token -- string dá invalid_client. */
-function clientId(): number {
+function clientId(): string {
   const id = process.env["MELHORENVIO_CLIENT_ID"];
   if (!id) throw new Error("MELHORENVIO_CLIENT_ID ausente.");
-  const n = Number(id);
-  if (!Number.isFinite(n)) throw new Error("MELHORENVIO_CLIENT_ID precisa ser numérico.");
-  return n;
+  return id;
 }
 function clientSecret() {
   const secret = process.env["MELHORENVIO_CLIENT_SECRET"];
@@ -70,7 +67,7 @@ function clientSecret() {
 export async function getConnectUrl(): Promise<string> {
   const state = await signState();
   const params = new URLSearchParams({
-    client_id: String(clientId()),
+    client_id: clientId(),
     redirect_uri: redirectUri(),
     response_type: "code",
     scope: SCOPES,
@@ -104,13 +101,20 @@ async function loadTokens(): Promise<TokenSet | null> {
   return (data?.value as TokenSet | undefined) ?? null;
 }
 
+/** O endpoint de token quer multipart/form-data, não JSON -- confirmado contra o SDK oficial (não a doc). */
+function tokenForm(fields: Record<string, string>): FormData {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(fields)) form.append(k, v);
+  return form;
+}
+
 /** Troca o `code` do redirect pelo primeiro par de tokens. Verifica o state antes de tudo. */
 export async function exchangeCodeForTokens(code: string, state: string) {
   if (!(await verifyState(state))) throw new Error("state inválido ou expirado -- inicie a conexão de novo.");
   const res = await fetch(`${baseUrl()}/oauth/token`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": USER_AGENT },
-    body: JSON.stringify({
+    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+    body: tokenForm({
       grant_type: "authorization_code",
       client_id: clientId(),
       client_secret: clientSecret(),
@@ -126,8 +130,8 @@ export async function exchangeCodeForTokens(code: string, state: string) {
 async function refreshTokens(refreshToken: string) {
   const res = await fetch(`${baseUrl()}/oauth/token`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": USER_AGENT },
-    body: JSON.stringify({
+    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+    body: tokenForm({
       grant_type: "refresh_token",
       client_id: clientId(),
       client_secret: clientSecret(),
