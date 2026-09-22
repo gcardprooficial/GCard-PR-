@@ -39,6 +39,13 @@ Eventos em `src/lib/email-events.server.ts` (idempotentes por pedido; envio “f
 - Antes de qualquer `DELETE` em dado físico/estoque, `select *` da linha e mostrar.
 - Venda feita fora do site entra por SQL com `payment_provider = 'manual'`, sem lançar entrada (já está no Financeiro).
 
+## Envio
+
+- Painel: seletor de transportadora (`tracking_carrier`) junto do código de rastreio. E-mail de "enviado" mostra a transportadora certa e, quando existe (Correios/Jadlog/Loggi), o link direto de rastreio (`src/lib/shipping.ts`).
+- **Melhor Envio (fase 1 — conectado e testado em 22/09/2026):** OAuth2 em `src/lib/shipping/melhorenvio.server.ts`. Painel → Integrações → Conectar/Testar conexão. Tokens só no servidor (`app_settings`, via service_role). App em **produção** (client_id 30285), não sandbox — o app foi cadastrado no painel de produção do Melhor Envio, que é uma conta/login separada do sandbox.
+  - Erros reais encontrados e corrigidos, na ordem: (1) endpoint `/oauth/token` quer `multipart/form-data`, não JSON, apesar da doc oficial resumida dizer o contrário — confirmado no código-fonte do SDK `talissonf/melhor-envio-sdk`; (2) `PUBLIC_APP_URL` no Vercel estava sem `www`, mas o app foi cadastrado com `www.gcardpro.com.br` — mismatch de `redirect_uri` derruba com `invalid_client` **no /oauth/authorize**, antes até de gerar `code` (por isso nenhum log do nosso lado aparecia); (3) `GET /api/v2/me` exige escopo `users-read`, que não estava pedido.
+  - Fase 2 (cotação de frete no checkout, compra de etiqueta) ainda não implementada — combinado explicitamente adiar até a conexão estar provada, porque compra de etiqueta mexe com saldo real.
+
 ## Design system
 
 `--secondary` é o **azul-marinho** (`#0F172A`, sidebar). Para fundo claro use `bg-muted` (`#F1F5F9`) ou `bg-surface` (`#F8FAFC`); nunca `bg-secondary` com texto escuro.
