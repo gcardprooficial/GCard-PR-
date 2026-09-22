@@ -20,6 +20,7 @@ const SCOPES = [
   "shipping-print",
   "shipping-tracking",
   "ecommerce-shipping",
+  "users-read", // GET /me (usado no "Testar conexão")
 ].join(" ");
 
 async function hmac(message: string): Promise<string> {
