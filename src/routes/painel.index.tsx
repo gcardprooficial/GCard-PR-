@@ -13,6 +13,8 @@ import {
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { usePanel } from "@/lib/panelContext";
 import { CARRIERS } from "@/lib/shipping";
+import { getOrderFreightQuotes } from "@/lib/shipping/melhorenvio.functions";
+import type { FreightQuote } from "@/lib/shipping/melhorenvio.server";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -232,6 +234,28 @@ function Orders() {
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
   const [scanOpenFor, setScanOpenFor] = useState<string | null>(null);
   const [scanText, setScanText] = useState("");
+  const runGetFreightQuotes = useServerFn(getOrderFreightQuotes);
+  const [quotingFor, setQuotingFor] = useState<string | null>(null);
+  const [quotes, setQuotes] = useState<Record<string, FreightQuote[] | "erro">>({});
+
+  async function quoteFreight(row: OrderRow) {
+    setQuotingFor(row.id);
+    try {
+      const res = await runGetFreightQuotes({ data: { orderId: row.id } });
+      if (res.ok) {
+        setQuotes((prev) => ({ ...prev, [row.id]: res.quotes }));
+        if (res.quotes.length === 0) toast.message("Nenhuma transportadora disponível pra esse CEP.");
+      } else {
+        setQuotes((prev) => ({ ...prev, [row.id]: "erro" }));
+        toast.error(res.error);
+      }
+    } catch {
+      setQuotes((prev) => ({ ...prev, [row.id]: "erro" }));
+      toast.error("Não consegui cotar agora.");
+    } finally {
+      setQuotingFor(null);
+    }
+  }
   const [historyOpenId, setHistoryOpenId] = useState<string | null>(null);
   const [historyByOrder, setHistoryByOrder] = useState<Record<string, AuditRow[]>>({});
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -869,6 +893,33 @@ function Orders() {
                       Salvar
                     </Button>
                   </div>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      disabled={quotingFor === r.id}
+                      onClick={() => void quoteFreight(r)}
+                    >
+                      {quotingFor === r.id ? "Cotando…" : "Cotar frete (Melhor Envio)"}
+                    </Button>
+                  </div>
+                  {quotes[r.id] === "erro" && (
+                    <p className="mt-1 text-xs text-red-700">Falhou. Confere se o Melhor Envio está conectado.</p>
+                  )}
+                  {Array.isArray(quotes[r.id]) && (
+                    <ul className="mt-2 space-y-1 rounded-lg bg-muted p-2 text-xs">
+                      {(quotes[r.id] as FreightQuote[]).map((q) => (
+                        <li key={q.id} className="flex items-center justify-between gap-2">
+                          <span>
+                            {q.company} — {q.name}
+                            {q.deliveryDays ? ` · ${q.deliveryDays}d` : ""}
+                          </span>
+                          <span className="font-semibold">{money(q.priceCents)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <div className="mt-3 w-full">

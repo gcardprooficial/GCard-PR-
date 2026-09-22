@@ -164,7 +164,7 @@ async function refreshTokens(refreshToken: string) {
 }
 
 /** Token válido pra usar agora -- renova sozinho se estiver perto de expirar. */
-async function getValidAccessToken(): Promise<string | null> {
+export async function getValidAccessToken(): Promise<string | null> {
   const tokens = await loadTokens();
   if (!tokens) return null;
   if (tokens.expires_at - Date.now() > 5 * 60_000) return tokens.access_token;
@@ -193,4 +193,90 @@ export async function testConnection() {
     ok: true as const,
     name: [json.firstname, json.lastname].filter(Boolean).join(" ") || json.email || "Conta conectada",
   };
+}
+
+// ---- Cotação de frete (fase 2a) -----------------------------------------------------
+// Só lê preço, não gasta saldo nem compra etiqueta. Só pra você comparar transportadoras
+// antes de decidir. O preço aqui NUNCA aparece pro comprador -- o site já cobra o frete
+// diluído no preço do produto.
+
+const ORIGIN_POSTAL_CODE = "13344652";
+
+/** Peso/medidas de um kit fechado de 10 unidades. Ajuste aqui se a embalagem mudar. */
+const PACKAGE_PROFILES = {
+  acrilico: { heightCm: 4, widthCm: 4, lengthCm: 10, weightKg: 0.5, perUnits: 10 },
+  pvc: { heightCm: 2, widthCm: 2, lengthCm: 8, weightKg: 0.3, perUnits: 10 },
+} as const;
+export type PackageProfileKey = keyof typeof PACKAGE_PROFILES;
+
+export type FreightQuote = {
+  id: number;
+  name: string;
+  company: string;
+  priceCents: number;
+  deliveryDays: number | null;
+};
+
+/**
+ * Cotação pra N unidades de um perfil de embalagem. Kits fechados de 10 são empilháveis
+ * (placa/cartão são planos), então N unidades viram ceil(N/10) caixas do mesmo tamanho
+ * base, empilhadas (altura escala com a quantidade de kits; largura/comprimento ficam
+ * fixos -- é a área da própria peça).
+ * ponytail: aproximação de empacotamento, não é cubagem exata. Você vê o preço final do
+ * Melhor Envio antes de comprar qualquer etiqueta -- se destoar muito, ajuste o perfil.
+ */
+export async function calculateFreight(input: {
+  destinationCep: string;
+  profile: PackageProfileKey;
+  quantity: number;
+}): Promise<{ ok: true; quotes: FreightQuote[] } | { ok: false; error: string }> {
+  const token = await getValidAccessToken();
+  if (!token) return { ok: false, error: "Melhor Envio não está conectado." };
+
+  const p = PACKAGE_PROFILES[input.profile];
+  const kits = Math.max(1, Math.ceil(input.quantity / p.perUnits));
+  const destCep = input.destinationCep.replace(/\D/g, "");
+
+  const res = await fetch(`${baseUrl()}/api/v2/me/shipment/calculate`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+    },
+    body: JSON.stringify({
+      from: { postal_code: ORIGIN_POSTAL_CODE },
+      to: { postal_code: destCep },
+      package: {
+        height: p.heightCm * kits,
+        width: p.widthCm,
+        length: p.lengthCm,
+        weight: p.weightKg * kits,
+      },
+    }),
+  });
+  if (!res.ok) return { ok: false, error: `Melhor Envio recusou a cotação [${res.status}]: ${await res.text()}` };
+
+  const json = (await res.json()) as {
+    id: number;
+    name: string;
+    price?: string;
+    delivery_time?: number;
+    company?: { name?: string };
+    error?: string;
+  }[];
+
+  const quotes: FreightQuote[] = json
+    .filter((r) => !r.error && r.price)
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      company: r.company?.name ?? r.name,
+      priceCents: Math.round(Number(r.price) * 100),
+      deliveryDays: r.delivery_time ?? null,
+    }))
+    .sort((a, b) => a.priceCents - b.priceCents);
+
+  return { ok: true, quotes };
 }
