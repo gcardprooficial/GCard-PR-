@@ -108,6 +108,20 @@ function tokenForm(fields: Record<string, string>): FormData {
   return form;
 }
 
+/** Só pra depurar 'invalid_client' sem vazar o secret: id/redirect mascarados, mas visíveis. */
+function debugContext() {
+  const id = process.env["MELHORENVIO_CLIENT_ID"] ?? "(ausente)";
+  const secret = process.env["MELHORENVIO_CLIENT_SECRET"] ?? "";
+  return {
+    env: process.env["MELHORENVIO_ENV"] ?? "(ausente, default=sandbox)",
+    baseUrl: baseUrl(),
+    clientId: id,
+    clientSecretLen: secret.length,
+    clientSecretEdges: secret ? `${secret.slice(0, 3)}…${secret.slice(-3)}` : "(ausente)",
+    redirectUri: redirectUri(),
+  };
+}
+
 /** Troca o `code` do redirect pelo primeiro par de tokens. Verifica o state antes de tudo. */
 export async function exchangeCodeForTokens(code: string, state: string) {
   if (!(await verifyState(state))) throw new Error("state inválido ou expirado -- inicie a conexão de novo.");
@@ -122,7 +136,11 @@ export async function exchangeCodeForTokens(code: string, state: string) {
       code,
     }),
   });
-  if (!res.ok) throw new Error(`Melhor Envio token exchange falhou [${res.status}]: ${await res.text()}`);
+  if (!res.ok) {
+    throw new Error(
+      `Melhor Envio token exchange falhou [${res.status}]: ${await res.text()} | debug: ${JSON.stringify(debugContext())}`,
+    );
+  }
   const json = (await res.json()) as { access_token: string; refresh_token: string; expires_in: number };
   await saveTokens(json);
 }
