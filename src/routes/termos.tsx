@@ -60,7 +60,7 @@ function Termos() {
             </p>
             <p>
               A GCard-PRÓ é operada por <strong>Marusso Produções</strong>, CNPJ 68.194.199/0001-70,
-              com sede em Romeu Ferigatti, Indaiatuba/SP.
+              com sede em Romeu Ferigati, Indaiatuba/SP.
             </p>
           </Section>
 

@@ -56,7 +56,7 @@ function Privacidade() {
             </p>
             <p>
               O controlador dos dados é <strong>Marusso Produções</strong>, CNPJ 68.194.199/0001-70,
-              Romeu Ferigatti, Indaiatuba/SP.
+              Romeu Ferigati, Indaiatuba/SP.
             </p>
           </Section>
 
