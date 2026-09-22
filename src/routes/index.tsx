@@ -6,6 +6,7 @@ import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { ReviewLinkGenerator } from "@/components/ReviewLinkGenerator";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
 import { VideoTutorialCard } from "@/components/VideoTutorialCard";
+import { Testimonials } from "@/components/Testimonials";
 import { Menu } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Cartão de bolso NFC para avaliações no Google, entregue configurado para o seu negócio.",
+          "Gerador de link de avaliação do Google grátis, cartão de bolso NFC e placa com QR Code para avaliações no Google, entregues configurados para o seu negócio.",
       },
       {
         property: "og:title",
@@ -1004,6 +1005,8 @@ function Home() {
           </div>
         </div>
       </section>
+
+      <Testimonials />
 
       {/* ===== FAQ ===== */}
       <section className="mx-auto max-w-3xl px-5 py-16 md:py-20">

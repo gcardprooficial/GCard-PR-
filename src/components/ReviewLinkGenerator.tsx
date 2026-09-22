@@ -100,11 +100,11 @@ export function ReviewLinkGenerator() {
       <div className="rounded-[2rem] border border-border bg-card p-6 card-soft sm:p-10">
         <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Ferramenta grátis</p>
         <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">
-          Gere o <span className="highlight-yellow">link de avaliação</span> do seu negócio.
+          Gerador de <span className="highlight-yellow">Link de Avaliação do Google</span> (Grátis)
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Digite o nome da empresa como aparece no Google, escolha o resultado e copie o link que abre
-          direto a tela de avaliação. Sem cadastro.
+          Digite o nome da empresa como aparece no Google, escolha o resultado e copie o link de
+          avaliação Google grátis que abre direto a tela de avaliação. Sem cadastro.
         </p>
 
         <form onSubmit={submit} className="mt-6 flex flex-col gap-3 sm:flex-row">

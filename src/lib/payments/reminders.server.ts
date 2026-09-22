@@ -1,8 +1,8 @@
 /**
- * Pedido criado mas não pago há mais de 2h: gera um link novo do Mercado Pago e manda
+ * Pedido criado mas não pago há mais de 30min: gera um link novo do Mercado Pago e manda
  * por e-mail (1 lembrete por pedido -- o idempotency do e-mail garante).
  */
-export async function sendPaymentReminders(opts?: { minAgeHours?: number; maxAgeDays?: number; limit?: number }) {
+export async function sendPaymentReminders(opts?: { minAgeMinutes?: number; maxAgeDays?: number; limit?: number }) {
   const { getPaymentProvider } = await import("./index");
   const provider = getPaymentProvider();
   if (!provider) return { candidates: 0, sent: 0, skipped: "provider_not_configured" as const };
@@ -11,8 +11,8 @@ export async function sendPaymentReminders(opts?: { minAgeHours?: number; maxAge
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabaseAdmin as any;
   const now = Date.now();
-  const olderThan = new Date(now - (opts?.minAgeHours ?? 2) * 3_600_000).toISOString();
-  const newerThan = new Date(now - (opts?.maxAgeDays ?? 7) * 86_400_000).toISOString();
+  const olderThan = new Date(now - (opts?.minAgeMinutes ?? 30) * 60_000).toISOString();
+  const newerThan = new Date(now - (opts?.maxAgeDays ?? 3) * 86_400_000).toISOString();
 
   const { data: orders } = await db
     .from("orders")
