@@ -280,3 +280,115 @@ export async function calculateFreight(input: {
 
   return { ok: true, quotes };
 }
+
+// ---- Compra de etiqueta (fase 2b) ---------------------------------------------------
+// Gasta saldo real da carteira Melhor Envio. Preço mostrado ao comprador NUNCA muda --
+// isso é só pra Leonardo comprar a etiqueta mais barata e ter rastreio automático.
+
+/** Remetente (Leonardo/Marusso Produções) -- dado real, confirmado por ele em 22/09/2026. */
+const ORIGIN_ADDRESS = {
+  name: "Leonardo Marusso",
+  document: "68194199000170", // CNPJ, só dígitos
+  company_document: "68194199000170",
+  phone: "19997051919",
+  email: "gcardpro.oficial@gmail.com",
+  address: "Romeu Ferigati",
+  number: "330",
+  complement: "Apartamento 01",
+  district: "Jardim Belo Horizonte",
+  city: "Indaiatuba",
+  state_abbr: "SP",
+  postal_code: ORIGIN_POSTAL_CODE,
+  country_id: "BR",
+};
+
+export type LabelPurchaseInput = {
+  quoteId: number;
+  profile: PackageProfileKey;
+  quantity: number;
+  destination: {
+    name: string;
+    document: string | null;
+    phone: string | null;
+    email: string;
+    street: string;
+    number: string | null;
+    complement: string | null;
+    district: string | null;
+    city: string;
+    stateAbbr: string;
+    postalCode: string;
+  };
+};
+
+async function meFetch(path: string, token: string, body: unknown) {
+  const res = await fetch(`${baseUrl()}/api/v2/me${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+    },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(`Melhor Envio [${path}] falhou [${res.status}]: ${JSON.stringify(json)}`);
+  return json;
+}
+
+/**
+ * Compra a etiqueta de uma cotação já mostrada (id de `calculateFreight`): adiciona ao
+ * carrinho, paga com saldo da carteira e gera a etiqueta. Retorna o código de rastreio.
+ * ponytail: sem função de cancelamento aqui -- se pagar errado, cancelar direto no painel
+ * do Melhor Envio (eles reembolsam pra carteira). Adicionar se virar rotina.
+ */
+export async function buyShippingLabel(
+  input: LabelPurchaseInput,
+): Promise<{ ok: true; trackingCode: string; carrier: string } | { ok: false; error: string }> {
+  const token = await getValidAccessToken();
+  if (!token) return { ok: false, error: "Melhor Envio não está conectado." };
+
+  const p = PACKAGE_PROFILES[input.profile];
+  const kits = Math.max(1, Math.ceil(input.quantity / p.perUnits));
+  const d = input.destination;
+
+  try {
+    const cartItem = (await meFetch("/cart", token, {
+      service: input.quoteId,
+      from: ORIGIN_ADDRESS,
+      to: {
+        name: d.name,
+        document: (d.document ?? "").replace(/\D/g, "") || undefined,
+        phone: (d.phone ?? "").replace(/\D/g, "") || undefined,
+        email: d.email,
+        address: d.street,
+        number: d.number || "S/N",
+        complement: d.complement || undefined,
+        district: d.district || undefined,
+        city: d.city,
+        state_abbr: d.stateAbbr,
+        postal_code: d.postalCode.replace(/\D/g, ""),
+        country_id: "BR",
+      },
+      products: [{ name: "Placa GCard-PRÓ", quantity: input.quantity, unitary_value: 0 }],
+      volumes: [
+        { height: p.heightCm * kits, width: p.widthCm, length: p.lengthCm, weight: p.weightKg * kits },
+      ],
+      options: { insurance_value: 0, receipt: false, own_hand: false, non_commercial: false },
+    })) as { id: string };
+
+    await meFetch("/shipment/checkout", token, { orders: [cartItem.id] });
+    const generated = (await meFetch("/shipment/generete", token, { orders: [cartItem.id] })) as {
+      id?: string;
+      tracking?: string;
+    }[];
+
+    const trackingCode = generated?.[0]?.tracking;
+    if (!trackingCode) return { ok: false, error: "Etiqueta gerada mas sem código de rastreio ainda -- confira no painel do Melhor Envio." };
+
+    return { ok: true, trackingCode, carrier: "melhor-envio" };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido na compra." };
+  }
+}

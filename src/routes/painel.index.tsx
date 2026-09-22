@@ -13,7 +13,7 @@ import {
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { usePanel } from "@/lib/panelContext";
 import { CARRIERS } from "@/lib/shipping";
-import { getOrderFreightQuotes } from "@/lib/shipping/melhorenvio.functions";
+import { buyOrderShippingLabel, getOrderFreightQuotes } from "@/lib/shipping/melhorenvio.functions";
 import type { FreightQuote } from "@/lib/shipping/melhorenvio.server";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -235,8 +235,28 @@ function Orders() {
   const [scanOpenFor, setScanOpenFor] = useState<string | null>(null);
   const [scanText, setScanText] = useState("");
   const runGetFreightQuotes = useServerFn(getOrderFreightQuotes);
+  const runBuyLabel = useServerFn(buyOrderShippingLabel);
   const [quotingFor, setQuotingFor] = useState<string | null>(null);
+  const [buyingFor, setBuyingFor] = useState<string | null>(null);
   const [quotes, setQuotes] = useState<Record<string, FreightQuote[] | "erro">>({});
+
+  async function buyLabel(row: OrderRow, quoteId: number) {
+    if (!window.confirm("Comprar essa etiqueta agora? Isso gasta saldo real da carteira Melhor Envio.")) return;
+    setBuyingFor(row.id);
+    try {
+      const res = await runBuyLabel({ data: { orderId: row.id, quoteId } });
+      if (res.ok) {
+        toast.success(`Etiqueta comprada. Rastreio: ${res.trackingCode}`);
+        void load();
+      } else {
+        toast.error(res.error);
+      }
+    } catch {
+      toast.error("Não consegui comprar a etiqueta agora.");
+    } finally {
+      setBuyingFor(null);
+    }
+  }
 
   async function quoteFreight(row: OrderRow) {
     setQuotingFor(row.id);
@@ -915,7 +935,18 @@ function Orders() {
                             {q.company} — {q.name}
                             {q.deliveryDays ? ` · ${q.deliveryDays}d` : ""}
                           </span>
-                          <span className="font-semibold">{money(q.priceCents)}</span>
+                          <span className="flex items-center gap-2">
+                            <span className="font-semibold">{money(q.priceCents)}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 px-2 text-xs"
+                              disabled={buyingFor === r.id}
+                              onClick={() => void buyLabel(r, q.id)}
+                            >
+                              {buyingFor === r.id ? "Comprando…" : "Comprar etiqueta"}
+                            </Button>
+                          </span>
                         </li>
                       ))}
                     </ul>
