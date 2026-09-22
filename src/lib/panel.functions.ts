@@ -113,6 +113,7 @@ export const sendPaymentLinkEmail = createServerFn({ method: "POST" })
 const trackingSchema = z.object({
   orderId: z.string().uuid(),
   trackingCode: z.string().trim().max(120).nullable(),
+  trackingCarrier: z.string().trim().max(40).nullable().optional(),
 });
 
 export const saveOrderTracking = createServerFn({ method: "POST" })
@@ -135,6 +136,7 @@ export const saveOrderTracking = createServerFn({ method: "POST" })
       .from("orders")
       .update({
         tracking_code: trackingCode,
+        tracking_carrier: trackingCode ? data.trackingCarrier || null : null,
         ...(trackingCode
           ? { fulfillment_status: "enviado", shipped_at: new Date().toISOString() }
           : {}),

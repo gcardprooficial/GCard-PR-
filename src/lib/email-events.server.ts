@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY_ADDRESS, COMPANY_ID_LINE } from "@/lib/company";
+import { carrierLabel, trackingUrl } from "@/lib/shipping";
 
 export type OrderEmailEvent =
   | "pedido_recebido"
@@ -97,6 +98,7 @@ type OrderRow = {
   customer_name: string;
   customer_email: string;
   tracking_code: string | null;
+  tracking_carrier: string | null;
   total_cents: number;
   kind: string;
 };
@@ -206,7 +208,9 @@ export async function dispatchOrderEmailEvent(
   const db = supabaseAdmin as any;
   const { data: order, error: orderError } = await db
     .from("orders")
-    .select("id, order_number, customer_name, customer_email, tracking_code, total_cents, kind")
+    .select(
+      "id, order_number, customer_name, customer_email, tracking_code, tracking_carrier, total_cents, kind",
+    )
     .eq("id", orderId)
     .maybeSingle();
   if (orderError) throw orderError;
@@ -258,7 +262,13 @@ export async function dispatchOrderEmailEvent(
     let body = `<p>Olá, ${first}.</p>`;
     const summary = orderSummary(order as OrderRow, items);
     const tracking = order.tracking_code
-      ? box(`<strong>Código de rastreio:</strong> ${escapeHtml(order.tracking_code)}`)
+      ? box(
+          `<strong>Transportadora:</strong> ${escapeHtml(carrierLabel(order.tracking_carrier))}<br/>` +
+            `<strong>Código de rastreio:</strong> ${escapeHtml(order.tracking_code)}` +
+            (trackingUrl(order.tracking_carrier, order.tracking_code)
+              ? ` — <a href="${trackingUrl(order.tracking_carrier, order.tracking_code)}" style="color:#1A1A1A;font-weight:700;">rastrear →</a>`
+              : ""),
+        )
       : "";
 
     switch (event) {

@@ -12,6 +12,7 @@ import {
 } from "@/lib/panel.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { usePanel } from "@/lib/panelContext";
+import { CARRIERS } from "@/lib/shipping";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,6 +77,7 @@ type OrderRow = {
   payment_provider: string | null;
   fulfillment_status: string;
   tracking_code: string | null;
+  tracking_carrier: string | null;
   ship_street: string | null;
   ship_number: string | null;
   ship_district: string | null;
@@ -173,7 +175,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr))",
+        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr))",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -823,6 +825,18 @@ function Orders() {
                 <div className="min-w-[14rem] flex-1">
                   <Label className="text-xs">Rastreio</Label>
                   <div className="mt-1 flex gap-2">
+                    <select
+                      defaultValue={r.tracking_carrier ?? ""}
+                      id={`c-${r.id}`}
+                      className="h-10 w-36 shrink-0 rounded-md border border-input bg-background px-2 text-sm"
+                    >
+                      <option value="">Transportadora</option>
+                      {CARRIERS.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
                     <Input
                       defaultValue={r.tracking_code ?? ""}
                       placeholder="Código de rastreio"
@@ -834,10 +848,15 @@ function Orders() {
                       variant="outline"
                       onClick={() => {
                         const el = document.getElementById(`t-${r.id}`) as HTMLInputElement | null;
+                        const carrierEl = document.getElementById(`c-${r.id}`) as HTMLSelectElement | null;
                         void (async () => {
                           try {
                             await runSaveTracking({
-                              data: { orderId: r.id, trackingCode: el?.value.trim() || null },
+                              data: {
+                                orderId: r.id,
+                                trackingCode: el?.value.trim() || null,
+                                trackingCarrier: carrierEl?.value || null,
+                              },
                             });
                             await load();
                             toast.success(`Rastreio do pedido #${r.order_number} salvo.`);
