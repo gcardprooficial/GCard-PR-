@@ -51,10 +51,15 @@ async function verifyState(state: string): Promise<boolean> {
   return expected === sig;
 }
 
-function clientId() {
+const USER_AGENT = "GCard-PRO (contato@gcardpro.com.br)";
+
+/** A doc do Melhor Envio manda client_id como número no corpo do /oauth/token -- string dá invalid_client. */
+function clientId(): number {
   const id = process.env["MELHORENVIO_CLIENT_ID"];
   if (!id) throw new Error("MELHORENVIO_CLIENT_ID ausente.");
-  return id;
+  const n = Number(id);
+  if (!Number.isFinite(n)) throw new Error("MELHORENVIO_CLIENT_ID precisa ser numérico.");
+  return n;
 }
 function clientSecret() {
   const secret = process.env["MELHORENVIO_CLIENT_SECRET"];
@@ -65,7 +70,7 @@ function clientSecret() {
 export async function getConnectUrl(): Promise<string> {
   const state = await signState();
   const params = new URLSearchParams({
-    client_id: clientId(),
+    client_id: String(clientId()),
     redirect_uri: redirectUri(),
     response_type: "code",
     scope: SCOPES,
@@ -104,7 +109,7 @@ export async function exchangeCodeForTokens(code: string, state: string) {
   if (!(await verifyState(state))) throw new Error("state inválido ou expirado -- inicie a conexão de novo.");
   const res = await fetch(`${baseUrl()}/oauth/token`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": USER_AGENT },
     body: JSON.stringify({
       grant_type: "authorization_code",
       client_id: clientId(),
@@ -121,7 +126,7 @@ export async function exchangeCodeForTokens(code: string, state: string) {
 async function refreshTokens(refreshToken: string) {
   const res = await fetch(`${baseUrl()}/oauth/token`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json", "User-Agent": USER_AGENT },
     body: JSON.stringify({
       grant_type: "refresh_token",
       client_id: clientId(),
@@ -156,8 +161,7 @@ export async function testConnection() {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
-      // Melhor Envio exige um User-Agent identificando a aplicação + contato.
-      "User-Agent": "GCard-PRO (contato@gcardpro.com.br)",
+      "User-Agent": USER_AGENT,
     },
   });
   if (!res.ok) return { ok: false as const, error: `http_${res.status}` as const };
