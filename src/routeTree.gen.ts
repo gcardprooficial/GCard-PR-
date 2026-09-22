@@ -26,12 +26,14 @@ import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculadora'
 import { Route as PainelClientesRouteImport } from './routes/painel.clientes'
 import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
+import { Route as PainelIntegracoesRouteImport } from './routes/painel.integracoes'
 import { Route as PainelLotesRouteImport } from './routes/painel.lotes'
 import { Route as PainelPlacasRouteImport } from './routes/painel.placas'
 import { Route as PainelScansRouteImport } from './routes/painel.scans'
 import { Route as PainelVisaoGeralRouteImport } from './routes/painel.visao-geral'
 import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as ApiCronDailyRouteImport } from './routes/api/cron/daily'
+import { Route as ApiMelhorenvioCallbackRouteImport } from './routes/api/melhorenvio/callback'
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 
 const IndexRoute = IndexRouteImport.update({
@@ -122,6 +124,11 @@ const PainelFinanceiroRoute = PainelFinanceiroRouteImport.update({
   path: '/financeiro',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelIntegracoesRoute = PainelIntegracoesRouteImport.update({
+  id: '/integracoes',
+  path: '/integracoes',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelLotesRoute = PainelLotesRouteImport.update({
   id: '/lotes',
   path: '/lotes',
@@ -152,6 +159,11 @@ const ApiCronDailyRoute = ApiCronDailyRouteImport.update({
   path: '/api/cron/daily',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMelhorenvioCallbackRoute = ApiMelhorenvioCallbackRouteImport.update({
+  id: '/api/melhorenvio/callback',
+  path: '/api/melhorenvio/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWebhooksMercadopagoRoute = ApiWebhooksMercadopagoRouteImport.update({
   id: '/api/webhooks/mercadopago',
   path: '/api/webhooks/mercadopago',
@@ -174,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
+  '/painel/integracoes': typeof PainelIntegracoesRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/scans': typeof PainelScansRoute
@@ -182,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
+  '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
 export interface FileRoutesByTo {
@@ -198,6 +212,7 @@ export interface FileRoutesByTo {
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
+  '/painel/integracoes': typeof PainelIntegracoesRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/scans': typeof PainelScansRoute
@@ -206,6 +221,7 @@ export interface FileRoutesByTo {
   '/guia': typeof GuiaIndexRoute
   '/painel': typeof PainelIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
+  '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
 export interface FileRoutesById {
@@ -225,6 +241,7 @@ export interface FileRoutesById {
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
+  '/painel/integracoes': typeof PainelIntegracoesRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/scans': typeof PainelScansRoute
@@ -233,6 +250,7 @@ export interface FileRoutesById {
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
+  '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
 }
 export interface FileRouteTypes {
@@ -253,6 +271,7 @@ export interface FileRouteTypes {
     | '/painel/calculadora'
     | '/painel/clientes'
     | '/painel/financeiro'
+    | '/painel/integracoes'
     | '/painel/lotes'
     | '/painel/placas'
     | '/painel/scans'
@@ -261,6 +280,7 @@ export interface FileRouteTypes {
     | '/guia/'
     | '/painel/'
     | '/api/cron/daily'
+    | '/api/melhorenvio/callback'
     | '/api/webhooks/mercadopago'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -277,6 +297,7 @@ export interface FileRouteTypes {
     | '/painel/calculadora'
     | '/painel/clientes'
     | '/painel/financeiro'
+    | '/painel/integracoes'
     | '/painel/lotes'
     | '/painel/placas'
     | '/painel/scans'
@@ -285,6 +306,7 @@ export interface FileRouteTypes {
     | '/guia'
     | '/painel'
     | '/api/cron/daily'
+    | '/api/melhorenvio/callback'
     | '/api/webhooks/mercadopago'
   id:
     | '__root__'
@@ -303,6 +325,7 @@ export interface FileRouteTypes {
     | '/painel/calculadora'
     | '/painel/clientes'
     | '/painel/financeiro'
+    | '/painel/integracoes'
     | '/painel/lotes'
     | '/painel/placas'
     | '/painel/scans'
@@ -311,6 +334,7 @@ export interface FileRouteTypes {
     | '/guia/'
     | '/painel/'
     | '/api/cron/daily'
+    | '/api/melhorenvio/callback'
     | '/api/webhooks/mercadopago'
   fileRoutesById: FileRoutesById
 }
@@ -326,6 +350,7 @@ export interface RootRouteChildren {
   PagamentoRetornoRoute: typeof PagamentoRetornoRoute
   RTokenRoute: typeof RTokenRoute
   ApiCronDailyRoute: typeof ApiCronDailyRoute
+  ApiMelhorenvioCallbackRoute: typeof ApiMelhorenvioCallbackRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
 }
 
@@ -450,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelFinanceiroRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/integracoes': {
+      id: '/painel/integracoes'
+      path: '/integracoes'
+      fullPath: '/painel/integracoes'
+      preLoaderRoute: typeof PainelIntegracoesRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/lotes': {
       id: '/painel/lotes'
       path: '/lotes'
@@ -492,6 +524,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronDailyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/melhorenvio/callback': {
+      id: '/api/melhorenvio/callback'
+      path: '/api/melhorenvio/callback'
+      fullPath: '/api/melhorenvio/callback'
+      preLoaderRoute: typeof ApiMelhorenvioCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/webhooks/mercadopago': {
       id: '/api/webhooks/mercadopago'
       path: '/api/webhooks/mercadopago'
@@ -523,6 +562,7 @@ interface PainelRouteChildren {
   PainelCalculadoraRoute: typeof PainelCalculadoraRoute
   PainelClientesRoute: typeof PainelClientesRoute
   PainelFinanceiroRoute: typeof PainelFinanceiroRoute
+  PainelIntegracoesRoute: typeof PainelIntegracoesRoute
   PainelLotesRoute: typeof PainelLotesRoute
   PainelPlacasRoute: typeof PainelPlacasRoute
   PainelScansRoute: typeof PainelScansRoute
@@ -534,6 +574,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelCalculadoraRoute: PainelCalculadoraRoute,
   PainelClientesRoute: PainelClientesRoute,
   PainelFinanceiroRoute: PainelFinanceiroRoute,
+  PainelIntegracoesRoute: PainelIntegracoesRoute,
   PainelLotesRoute: PainelLotesRoute,
   PainelPlacasRoute: PainelPlacasRoute,
   PainelScansRoute: PainelScansRoute,
@@ -556,6 +597,7 @@ const rootRouteChildren: RootRouteChildren = {
   PagamentoRetornoRoute: PagamentoRetornoRoute,
   RTokenRoute: RTokenRoute,
   ApiCronDailyRoute: ApiCronDailyRoute,
+  ApiMelhorenvioCallbackRoute: ApiMelhorenvioCallbackRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
 }
 export const routeTree = rootRouteImport
