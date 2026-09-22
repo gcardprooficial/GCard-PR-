@@ -1,6 +1,9 @@
 /**
- * Pedido criado mas não pago há mais de 30min: gera um link novo do Mercado Pago e manda
- * por e-mail (1 lembrete por pedido -- o idempotency do e-mail garante).
+ * Pedido sem pagamento aprovado há mais de 30min -- nunca tentou (pendente) ou tentou e
+ * o cartão caiu (recusado, ex.: sem limite) -- gera um link novo do Mercado Pago e manda
+ * por e-mail (1 lembrete por pedido -- o idempotency do e-mail garante). "recusado" entra
+ * aqui porque senão o cliente que teve o cartão negado fica esquecido, sem alternativa
+ * automática -- só o botão manual do painel.
  */
 export async function sendPaymentReminders(opts?: { minAgeMinutes?: number; maxAgeDays?: number; limit?: number }) {
   const { getPaymentProvider } = await import("./index");
@@ -17,7 +20,7 @@ export async function sendPaymentReminders(opts?: { minAgeMinutes?: number; maxA
   const { data: orders } = await db
     .from("orders")
     .select("id, order_number, total_cents, quantity, customer_email, customer_name")
-    .eq("payment_status", "pendente")
+    .in("payment_status", ["pendente", "recusado"])
     .neq("fulfillment_status", "cancelado")
     .lt("created_at", olderThan)
     .gt("created_at", newerThan)
