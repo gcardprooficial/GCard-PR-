@@ -400,16 +400,41 @@ function Lotes() {
     URL.revokeObjectURL(url);
   }
 
-  /** Baixa um .zip com um PNG de QR por placa — pronto pra mandar pra gráfica. */
+  /**
+   * Baixa um .zip com um PNG de QR por placa — pronto pra mandar pra gráfica.
+   * Desenha o short_code pequeno no centro do QR (erro nível H aguenta até ~30%
+   * coberto) só pra identificar a placa fisicamente, sem precisar de etiqueta separada.
+   */
   async function downloadQrZip(plates: { token: string; short_code: string }[], filename: string) {
     toast.info(`Gerando ${plates.length} QR codes...`);
     const [{ default: JSZip }, QRCode] = await Promise.all([import("jszip"), import("qrcode")]);
     const zip = new JSZip();
     for (const p of plates) {
       const url = `${location.origin}/r/${p.token}`;
-      const dataUrl = await QRCode.toDataURL(url, { width: 1000, margin: 2, errorCorrectionLevel: "H" });
-      const base64 = dataUrl.split(",")[1];
-      zip.file(`${p.short_code}.png`, base64, { base64: true });
+      const canvas = document.createElement("canvas");
+      await QRCode.toCanvas(canvas, url, { width: 1000, margin: 2, errorCorrectionLevel: "H" });
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const size = canvas.width;
+        const fontSize = Math.round(size * 0.032); // pequeno, quase imperceptível
+        ctx.font = `${fontSize}px monospace`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const textWidth = ctx.measureText(p.short_code).width;
+        const padX = fontSize * 0.5;
+        const padY = fontSize * 0.25;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(
+          size / 2 - textWidth / 2 - padX,
+          size / 2 - fontSize / 2 - padY,
+          textWidth + padX * 2,
+          fontSize + padY * 2,
+        );
+        ctx.fillStyle = "#000000";
+        ctx.fillText(p.short_code, size / 2, size / 2 + 1);
+      }
+      const pngBlob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (pngBlob) zip.file(`${p.short_code}.png`, pngBlob);
     }
     const blob = await zip.generateAsync({ type: "blob" });
     const zipUrl = URL.createObjectURL(blob);
