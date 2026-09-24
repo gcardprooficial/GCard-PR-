@@ -105,6 +105,13 @@ export const Route = createFileRoute("/comprar")({
                     "@type": "OfferShippingDetails",
                     shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "BRL" },
                     shippingDestination: { "@type": "DefinedRegion", addressCountry: "BR" },
+                    // Produção 2 dias + postagem 1 dia (real, confirmado 2026-09-24). Trânsito
+                    // varia muito por distância/transportadora — faixa larga e honesta.
+                    deliveryTime: {
+                      "@type": "ShippingDeliveryTime",
+                      handlingTime: { "@type": "QuantitativeValue", minValue: 2, maxValue: 4, unitCode: "DAY" },
+                      transitTime: { "@type": "QuantitativeValue", minValue: 2, maxValue: 10, unitCode: "DAY" },
+                    },
                   },
                   hasMerchantReturnPolicy: {
                     "@type": "MerchantReturnPolicy",
@@ -112,6 +119,8 @@ export const Route = createFileRoute("/comprar")({
                     returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
                     merchantReturnDays: 7,
                     returnMethod: "https://schema.org/ReturnByMail",
+                    // CDC art. 49 (arrependimento): comprador não paga o frete de volta.
+                    returnFees: "https://schema.org/FreeReturn",
                   },
                 },
               }),
