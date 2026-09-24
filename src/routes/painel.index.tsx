@@ -49,7 +49,10 @@ const PAYMENT_LABEL: Record<string, string> = {
   pago: "Pago",
   recusado: "Recusado",
   estornado: "Estornado",
-  cancelado: "Cancelado",
+  // "cancelado" no banco = Mercado Pago fechou a tentativa sem pagamento (Pix expirado,
+  // checkout abandonado) -- nunca chegou a ser cobrado. "Cancelado" soa como algo que
+  // alguém desfez de propósito; "Não pago" é o que realmente aconteceu.
+  cancelado: "Não pago",
 };
 
 function formatCpf(doc: string | null): string {
@@ -103,7 +106,7 @@ const STAGES: { key: Stage; label: string }[] = [
   { key: "a_produzir", label: "Pagos · a produzir" },
   { key: "em_producao", label: "Em produção" },
   { key: "enviados", label: "Enviados" },
-  { key: "concluidos", label: "Entregues / cancelados" },
+  { key: "concluidos", label: "Entregues / não pagos" },
 ];
 
 function stageOf(r: { payment_status: string; fulfillment_status: string }): Stage {
@@ -865,7 +868,7 @@ function Orders() {
                   <Label className="text-xs">Produção</Label>
                   {r.payment_status === "cancelado" || r.payment_status === "estornado" ? (
                     <p className="mt-1 flex h-10 items-center rounded-md bg-muted px-3 text-sm text-muted-foreground">
-                      Cancelado
+                      {r.payment_status === "estornado" ? "Estornado" : "Não pago"}
                     </p>
                   ) : (
                   <select
