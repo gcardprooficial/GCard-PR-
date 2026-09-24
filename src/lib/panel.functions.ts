@@ -126,24 +126,28 @@ export const saveOrderTracking = createServerFn({ method: "POST" })
     const db = supabaseAdmin as any;
     const { data: order, error: fetchError } = await db
       .from("orders")
-      .select("tracking_code")
+      .select("tracking_code, fulfillment_status")
       .eq("id", data.orderId)
       .maybeSingle();
     if (fetchError) throw fetchError;
     if (!order) throw new Error("Pedido não encontrado.");
     const trackingCode = data.trackingCode || null;
+    // Nunca rebaixa um pedido já entregue de volta pra "enviado" só por reeditar o rastreio.
+    const alreadyDelivered = order.fulfillment_status === "entregue";
     const { error } = await db
       .from("orders")
       .update({
         tracking_code: trackingCode,
         tracking_carrier: trackingCode ? data.trackingCarrier || null : null,
-        ...(trackingCode
+        ...(trackingCode && !alreadyDelivered
           ? { fulfillment_status: "enviado", shipped_at: new Date().toISOString() }
           : {}),
       })
       .eq("id", data.orderId);
     if (error) throw error;
-    if (trackingCode && order.tracking_code !== trackingCode) {
+    // Tenta sempre que houver código salvo -- dispatchOrderEmailEvent já é idempotente
+    // por (order_id, event_type), então reenviar aqui é seguro e não duplica e-mail.
+    if (trackingCode) {
       const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
       await dispatchOrderEmailEvent(data.orderId, "pedido_enviado");
     }

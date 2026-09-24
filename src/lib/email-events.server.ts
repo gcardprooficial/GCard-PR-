@@ -218,15 +218,19 @@ export async function dispatchOrderEmailEvent(
 
   const { data: existing, error: existingError } = await db
     .from("email_events")
-    .select("id, status")
+    .select("id, status, created_at")
     .eq("order_id", orderId)
     .eq("event_type", event)
     .maybeSingle();
   if (existingError) throw existingError;
-  if (existing && existing.status !== "failed") {
+  // "processing" preso há mais de 10min = tentativa anterior travou (crash/timeout) --
+  // sem isso, um envio que nunca resolveu bloqueia o reenvio pra sempre, igual "failed".
+  const stuck =
+    existing?.status === "processing" &&
+    Date.now() - new Date(existing.created_at).getTime() > 10 * 60_000;
+  if (existing && existing.status !== "failed" && !stuck) {
     return { skipped: true, reason: "idempotente", status: existing.status };
   }
-  // Envio que falhou antes não pode travar o reenvio pra sempre.
   if (existing) await db.from("email_events").delete().eq("id", existing.id);
 
   const { data: inserted, error: insertError } = await db
