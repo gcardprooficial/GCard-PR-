@@ -383,7 +383,13 @@ export async function buyShippingLabel(
       volumes: [
         { height: p.heightCm * kits, width: p.widthCm, length: p.lengthCm, weight: p.weightKg * kits },
       ],
-      options: { insurance_value: 0, receipt: false, own_hand: false, non_commercial: false },
+      // Precisa bater com o valor declarado dos produtos (unitary_value x quantidade) e ser >= R$1.
+      options: {
+        insurance_value: Math.max(1, Number((input.unitaryValue * input.quantity).toFixed(2))),
+        receipt: false,
+        own_hand: false,
+        non_commercial: false,
+      },
     })) as { id: string };
 
     await meFetch("/shipment/checkout", token, { orders: [cartItem.id] });
