@@ -10,7 +10,7 @@ import { getCatalog, type CatalogProduct, type ColorVariant } from "@/lib/catalo
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createPendingOrder } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
-import { unitPriceForQuantity, money } from "@/lib/pricing";
+import { unitPriceForQuantity, money, resolveUnitPrice as resolveUnitPriceShared } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,19 +48,7 @@ function resolveUnitPrice(
   isResale: boolean,
   color?: ColorVariant | null,
 ): number {
-  const colorDelta = color?.delta_cents ?? 0;
-  // Acrílico puro tem preço próprio por faixa (frete já diluído), não usa plano.
-  if (product?.is_blank && product.resale_tiers?.length) {
-    return (
-      unitPriceForQuantity(product.resale_tiers, quantity, product.resale_tiers[0].unit_price_cents) +
-      colorDelta
-    );
-  }
-  if (isResale && product?.resale_tiers?.length) {
-    return unitPriceForQuantity(product.resale_tiers, quantity, product.resale_tiers[0].unit_price_cents);
-  }
-  const delta = isResale ? (product?.resale_delta_cents ?? 0) : (product?.price_delta_cents ?? 0);
-  return unitPriceForQuantity(plan.tiers, quantity, plan.unit_price_cents) + delta + colorDelta;
+  return resolveUnitPriceShared(plan, product, quantity, isResale, color?.delta_cents ?? 0);
 }
 
 const searchSchema = z.object({

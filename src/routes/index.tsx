@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { getCatalog } from "@/lib/catalog.functions";
-import { money } from "@/lib/pricing";
+import { money, resolveTiersForProduct } from "@/lib/pricing";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { ReviewLinkGenerator } from "@/components/ReviewLinkGenerator";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
@@ -303,6 +303,21 @@ function Home() {
   // com o overlay "Em breve". Isso travava em só cartão-bolso antes.
   const catalogProducts = data.products.filter((product) => product.status !== "oculto");
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
+
+  // Preço de revenda POR PRODUTO — nunca misturar cartão com placa/acrílico num preço só,
+  // cada um tem sua própria tabela real (plano + delta, ou faixa própria pro acrílico sem arte).
+  const revendaLines = [
+    { slug: "cartao-bolso", label: "Cartão de bolso", note: "PVC, só NFC" },
+    { slug: "plaquinha-10x10", label: "Placa 10×10", note: "Acrílico, QR Code + NFC" },
+    { slug: "acrilico-10x10-sem-arte", label: "Acrílico sem arte 10×10", note: "Só o material, sem QR/NFC" },
+  ]
+    .map((line) => {
+      const product = data.products.find((p) => p.slug === line.slug);
+      if (!product || product.status === "oculto") return null;
+      const tiers = resolveTiersForProduct(revenda, product, true);
+      return { ...line, tiers, comingSoon: product.status === "em_breve" };
+    })
+    .filter((l): l is NonNullable<typeof l> => l !== null && l.tiers.length > 0);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
@@ -623,28 +638,39 @@ function Home() {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-border bg-muted/70 p-4">
-                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                  A partir de {revenda.tiers[0]?.min_quantity ?? 10} unidades · frete grátis
-                </p>
-                <ul className="mt-2 space-y-1 text-sm">
-                  {revenda.tiers.map((t) => (
-                    <li key={t.min_quantity} className="flex items-baseline justify-between gap-3">
-                      <span className="text-muted-foreground">{t.label ?? `${t.min_quantity}+ un.`}</span>
-                      <span className="font-display text-lg">{money(t.unit_price_cents)}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Cartão de bolso. Quanto mais unidades, menor o preço por peça.
-                </p>
+              <p className="mt-6 text-xs font-black uppercase tracking-wider text-muted-foreground">
+                A partir de {revenda.tiers[0]?.min_quantity ?? 10} unidades · frete grátis · preço por produto
+              </p>
+              <div className="mt-2 space-y-3">
+                {revendaLines.map((line) => (
+                  <div key={line.slug} className="rounded-2xl border border-border bg-muted/70 p-4">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-sm font-bold">{line.label}</span>
+                      <span className="text-xs text-muted-foreground">{line.note}</span>
+                    </div>
+                    {line.comingSoon ? (
+                      <p className="mt-2 text-sm text-muted-foreground">Em breve</p>
+                    ) : (
+                      <ul className="mt-2 space-y-1 text-sm">
+                        {line.tiers.map((t) => (
+                          <li key={t.min_quantity} className="flex items-baseline justify-between gap-3">
+                            <span className="text-muted-foreground">
+                              {t.label ?? `${t.min_quantity}+ un.`}
+                            </span>
+                            <span className="font-display text-lg">{money(t.unit_price_cents)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
               </div>
 
               <ul className="mt-5 space-y-3 text-sm sm:text-base">
                 {[
                   "Mínimo de 10 unidades por pedido, frete grátis",
-                  "Preço cai conforme a quantidade",
-                  "Inclui acrílico sem arte (cristal, branco e preto)",
+                  "Preço cai conforme a quantidade — cada produto tem sua própria tabela",
+                  "Acrílico sem arte disponível nas cores cristal, branco e preto",
                   "Você ativa cada código no seu painel de revendedor",
                 ].map((f, i) => (
                   <li key={i} className="flex items-start gap-3 text-foreground/80">

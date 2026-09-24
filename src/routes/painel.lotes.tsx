@@ -256,7 +256,13 @@ function Lotes() {
     }
     setCounts(map);
 
-    const pr = await supabase.from("products").select("id, slug, name").order("sort_order");
+    // Só produto com QR Code entra em lote/estoque de placas — o resto usa o estoque
+    // simples (Placas > Estoque sem QR Code).
+    const pr = await supabase
+      .from("products")
+      .select("id, slug, name")
+      .eq("has_qr", true)
+      .order("sort_order");
     setProducts((pr.data ?? []) as Product[]);
     if (!productId && pr.data?.[0]) setProductId(pr.data[0].id);
     if (!stockProductId && pr.data?.[0]) setStockProductId(pr.data[0].id);

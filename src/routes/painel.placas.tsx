@@ -55,8 +55,9 @@ type SoldRow = {
 };
 
 /**
- * Estoque de cartões de PVC (só NFC, sem QR): não têm código, então não entram em lote.
- * Produzidos = entradas manuais; vendidos = pedidos pagos (soma sozinha, nunca defasa).
+ * Estoque simples pra tudo que não gera QR Code (cartão PVC e acrílico sem arte):
+ * não têm código, não entram em lote. Produzidos = entradas manuais; vendidos = pedidos
+ * pagos (soma sozinha, nunca defasa).
  */
 function CardStock({ userId }: { userId: string }) {
   const [products, setProducts] = useState<CardProduct[]>([]);
@@ -83,7 +84,6 @@ function CardStock({ userId }: { userId: string }) {
       .from("products")
       .select("id, name")
       .eq("has_qr", false)
-      .eq("is_blank", false)
       .neq("status", "oculto");
     const list = (prods ?? []) as CardProduct[];
     setProducts(list);
@@ -155,10 +155,10 @@ function CardStock({ userId }: { userId: string }) {
 
   return (
     <section className="mt-4 rounded-2xl border border-border bg-card p-5 card-soft">
-      <h2 className="text-lg font-bold">Estoque de cartões de PVC</h2>
+      <h2 className="text-lg font-bold">Estoque sem QR Code</h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Sem QR e sem código: não usam lote. Registre quantos você produziu; os vendidos entram sozinhos
-        dos pedidos pagos.
+        Cartão PVC e acrílico sem arte: sem código, não usam lote. Registre quantos você produziu; os
+        vendidos entram sozinhos dos pedidos pagos.
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
