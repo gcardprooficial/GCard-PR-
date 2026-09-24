@@ -3,7 +3,7 @@ import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 const ALLOWED_HOSTS = ["search.google.com", "www.google.com", "google.com", "maps.google.com", "g.page"];
 
-function page(title: string, message: string, status: number) {
+function page(title: string, message: string, status: number, code?: string) {
   return new Response(
     `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} | GCard-PRÓ</title>
 <style>
@@ -12,10 +12,11 @@ function page(title: string, message: string, status: number) {
   .badge { display: inline-block; background: #FEF3C7; color: #92400E; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem; }
   h1 { font-size: 1.5rem; margin: 0 0 0.75rem; color: #0F172A; font-weight: 800; }
   p { color: #64748B; line-height: 1.6; margin: 0 0 1.5rem; font-size: 0.95rem; }
+  .code { font-family: ui-monospace, monospace; font-size: 1.25rem; font-weight: 800; letter-spacing: 0.02em; background: #F1F5F9; border-radius: 0.75rem; padding: 0.5rem 1rem; display: inline-block; margin: 0 0 1.5rem; }
   .btn { display: inline-block; background: #F59E0B; color: #0F172A; font-weight: 700; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 0.875rem; font-size: 0.95rem; transition: background 0.2s; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35); }
   .btn:hover { background: #D97706; }
 </style>
-</head><body><div class="box"><span class="badge">GCard-PRÓ</span><h1>${title}</h1><p>${message}</p><a href="/" class="btn">Voltar ao início →</a></div></body></html>`,
+</head><body><div class="box"><span class="badge">GCard-PRÓ</span><h1>${title}</h1><p>${message}</p>${code ? `<p class="code">${code}</p>` : ""}<a href="/" class="btn">Voltar ao início →</a></div></body></html>`,
     { status, headers: { "content-type": "text/html; charset=utf-8" } },
   );
 }
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/r/$token")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: plate } = await supabaseAdmin
           .from("plates")
-          .select("id, status, destination_url, business_id, scan_count")
+          .select("id, status, destination_url, business_id, scan_count, short_code")
           .eq("token", token)
           .maybeSingle();
 
@@ -63,6 +64,7 @@ export const Route = createFileRoute("/r/$token")({
             "Placa ainda não ativada",
             "Essa placa GCard-PRÓ ainda não está apontando para um negócio. Se ela é sua, fale com a gente para ativar.",
             200,
+            plate.short_code,
           );
         }
 
