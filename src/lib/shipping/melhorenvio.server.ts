@@ -16,6 +16,7 @@ function redirectUri() {
 const SCOPES = [
   "cart-write",
   "shipping-calculate",
+  "shipping-checkout", // POST /shipment/checkout -- faltava, dava 403 "unauthorized"
   "shipping-generate",
   "shipping-print",
   "shipping-tracking",
