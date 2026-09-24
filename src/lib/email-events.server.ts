@@ -201,7 +201,7 @@ async function plateManifest(db: any, orderId: string) {
 export async function dispatchOrderEmailEvent(
   orderId: string,
   event: OrderEmailEvent,
-  extra?: { paymentUrl?: string },
+  extra?: { paymentUrl?: string; force?: boolean },
 ) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -228,7 +228,9 @@ export async function dispatchOrderEmailEvent(
   const stuck =
     existing?.status === "processing" &&
     Date.now() - new Date(existing.created_at).getTime() > 10 * 60_000;
-  if (existing && existing.status !== "failed" && !stuck) {
+  // force = ação manual explícita (ex: staff corrigiu o rastreio e clicou Salvar de novo) --
+  // aí reenviar é o esperado, não duplicata. Sem force, continua só 1x por evento.
+  if (existing && existing.status !== "failed" && !stuck && !extra?.force) {
     return { skipped: true, reason: "idempotente", status: existing.status };
   }
   if (existing) await db.from("email_events").delete().eq("id", existing.id);

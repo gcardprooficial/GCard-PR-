@@ -145,11 +145,11 @@ export const saveOrderTracking = createServerFn({ method: "POST" })
       })
       .eq("id", data.orderId);
     if (error) throw error;
-    // Tenta sempre que houver código salvo -- dispatchOrderEmailEvent já é idempotente
-    // por (order_id, event_type), então reenviar aqui é seguro e não duplica e-mail.
+    // force: true -- "Salvar" é clique manual e deliberado do staff, então sempre manda
+    // (inclusive se um envio anterior já foi feito com código errado/desatualizado).
     if (trackingCode) {
       const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
-      await dispatchOrderEmailEvent(data.orderId, "pedido_enviado");
+      await dispatchOrderEmailEvent(data.orderId, "pedido_enviado", { force: true });
     }
     return { ok: true as const };
   });
