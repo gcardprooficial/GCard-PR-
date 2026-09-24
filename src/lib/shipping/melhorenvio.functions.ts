@@ -77,7 +77,7 @@ export const buyOrderShippingLabel = createServerFn({ method: "POST" })
     const { data: order } = await db
       .from("orders")
       .select(
-        "customer_name, customer_email, customer_phone, customer_document, quantity, ship_zip, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, order_items(quantity, products(has_qr, is_blank))",
+        "customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, ship_zip, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, order_items(quantity, products(has_qr, is_blank))",
       )
       .eq("id", data.orderId)
       .maybeSingle();
@@ -88,10 +88,13 @@ export const buyOrderShippingLabel = createServerFn({ method: "POST" })
     const profile: "pvc" | "acrilico" = isPvc ? "pvc" : "acrilico";
 
     const { buyShippingLabel } = await import("./melhorenvio.server");
+    // Valor declarado pra alfândega/seguro -- preço real médio por unidade do pedido.
+    const unitaryValue = order.quantity > 0 ? order.total_cents / order.quantity / 100 : 0.01;
     const result = await buyShippingLabel({
       quoteId: data.quoteId,
       profile,
       quantity: order.quantity,
+      unitaryValue,
       destination: {
         name: order.customer_name,
         document: order.customer_document,
