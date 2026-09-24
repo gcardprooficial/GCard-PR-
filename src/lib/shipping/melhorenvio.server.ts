@@ -285,15 +285,11 @@ export async function calculateFreight(input: {
 // Gasta saldo real da carteira Melhor Envio. Preço mostrado ao comprador NUNCA muda --
 // isso é só pra Leonardo comprar a etiqueta mais barata e ter rastreio automático.
 
-/**
- * Remetente (Leonardo/Marusso Produções) -- endereço real, confirmado 22/09/2026.
- * TODO: `document` precisa ser o CPF de Leonardo (conta Melhor Envio é pessoa física) --
- * ainda não informado. Sem isso a compra de etiqueta falha com "CPF inválido".
- */
+/** Remetente (Leonardo/Marusso Produções) -- dado real, confirmado 24/09/2026. */
 const ORIGIN_ADDRESS = {
   name: "Leonardo Marusso",
-  document: "00000000000", // TODO: CPF real de Leonardo, só dígitos
-  company_document: "68194199000170", // CNPJ Marusso Produções (correto, mantém)
+  document: "47350379854", // CPF (conta Melhor Envio é pessoa física)
+  company_document: "68194199000170", // CNPJ Marusso Produções
   phone: "19997051919",
   email: "gcardpro.oficial@gmail.com",
   address: "Romeu Ferigati",
