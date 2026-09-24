@@ -800,7 +800,16 @@ function Orders() {
                   <Label className="text-xs">Pagamento</Label>
                   <select
                     value={r.payment_status}
-                    onChange={(e) => void patch(r, { payment_status: e.target.value })}
+                    onChange={(e) => {
+                      const status = e.target.value;
+                      // Cancelado/estornado nunca deve deixar resíduo de "Em produção"/"Enviado"
+                      // confundindo a aba de produção -- some junto com o pagamento.
+                      const clearsFulfillment = status === "cancelado" || status === "estornado";
+                      void patch(r, {
+                        payment_status: status,
+                        ...(clearsFulfillment ? { fulfillment_status: "cancelado" } : {}),
+                      });
+                    }}
                     className="mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
                   >
                     {Object.entries(PAYMENT_LABEL).map(([s, label]) => (
@@ -854,17 +863,23 @@ function Orders() {
                 )}
                 <div>
                   <Label className="text-xs">Produção</Label>
+                  {r.payment_status === "cancelado" || r.payment_status === "estornado" ? (
+                    <p className="mt-1 flex h-10 items-center rounded-md bg-muted px-3 text-sm text-muted-foreground">
+                      Cancelado
+                    </p>
+                  ) : (
                   <select
                     value={r.fulfillment_status}
                     onChange={(e) => void patch(r, { fulfillment_status: e.target.value })}
                     className="mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
                   >
-                    {FULFILLMENT.map((s) => (
+                    {FULFILLMENT.filter((s) => s !== "cancelado").map((s) => (
                       <option key={s} value={s}>
                         {FULFILLMENT_LABEL[s]}
                       </option>
                     ))}
                   </select>
+                  )}
                 </div>
                 <div className="min-w-[14rem] flex-1">
                   <Label className="text-xs">Rastreio</Label>
