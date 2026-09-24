@@ -16,13 +16,17 @@ export const Route = createFileRoute("/api/cron/daily")({
         try {
           const { reconcilePendingOrders } = await import("@/lib/payments/settle.server");
           const { sendPaymentReminders } = await import("@/lib/payments/reminders.server");
-          const { expireStalePendingOrders } = await import("@/lib/payments/expire.server");
-          // Ordem importa: reconcilia (quem pagou e o webhook perdeu) antes de lembrar ou
-          // expirar, senão um pedido que já foi pago pode ser apagado por engano.
+          const { autoCancelStalePending, expireStalePendingOrders } = await import(
+            "@/lib/payments/expire.server"
+          );
+          // Ordem importa: reconcilia (quem pagou e o webhook perdeu) antes de lembrar,
+          // cancelar (24h sem pagar) ou expirar (2 dias sem pagar) -- senão um pedido que
+          // já foi pago pode ser cancelado/apagado por engano.
           const reconcile = await reconcilePendingOrders({ limit: 100 });
           const reminders = await sendPaymentReminders();
+          const autoCancelled = await autoCancelStalePending();
           const expired = await expireStalePendingOrders();
-          return Response.json({ ok: true, reconcile, reminders, expired });
+          return Response.json({ ok: true, reconcile, reminders, autoCancelled, expired });
         } catch (error) {
           console.error("Cron diário falhou", error);
           return Response.json({ ok: false }, { status: 500 });

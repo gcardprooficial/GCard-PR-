@@ -20,7 +20,7 @@ Guia de como o sistema funciona hoje, o que depende de configuração manual e o
 - Único ponto que grava pagamento: `src/lib/payments/settle.server.ts` → `applyPaymentToOrder`. Chamado por: webhook, `/pagamento/retorno`, painel (ao abrir e no botão “Atualizar e conferir pagamentos”) e cron diário. Ao virar PAGO: emite placas (se o produto tiver código), manda e-mail e lança **entrada “Vendas”** no Financeiro (1 por pedido, índice único).
 - Pedido pago à mão no painel também lança no Financeiro.
 - `createPreference` tenta 3× e, se falhar, avisa `ADMIN_NOTIFY_EMAIL`. Painel tem “Gerar e copiar link” e “Enviar por e-mail” (link de pagamento).
-- Cron `/api/cron/daily` (Vercel, 12:00 UTC = 9h BRT): reconcilia pendentes e envia 1 lembrete de pagamento (link novo) para pendentes há > 2h. **Protegido por `CRON_SECRET`** (sem ela, retorna 401).
+- Cron `/api/cron/daily` (Vercel, 12:00 UTC = 9h BRT), nesta ordem: reconcilia pendentes (MP) → lembrete de pagamento (pendentes há > 2h) → **auto-cancela pendente há > 24h** (`payment_status='cancelado'`, cai em "Não pagos" no painel) → **apaga pedido não pago há > 2 dias** (`expireStalePendingOrders`, nunca mexe em pago/estornado/com placa vinculada). **Protegido por `CRON_SECRET`** (sem ela, retorna 401).
 
 ## E-mails (Resend)
 
