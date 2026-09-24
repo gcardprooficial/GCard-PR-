@@ -152,6 +152,39 @@ const FALLBACK_PRODUCTS = [
     has_qr: false,
     is_blank: false,
     price_delta_cents: 0,
+    resale_delta_cents: 0,
+    resale_tiers: [],
+  },
+  {
+    id: "fallback-plaquinha",
+    slug: "plaquinha-10x10",
+    name: "Plaquinha GCard-PRÓ 10x10",
+    format: "Acrílico 10 x 10 cm",
+    status: "ativo",
+    has_nfc: true,
+    has_qr: true,
+    is_blank: false,
+    price_delta_cents: 2000,
+    resale_delta_cents: 2000,
+    resale_tiers: [],
+  },
+  {
+    id: "fallback-acrilico-sem-arte",
+    slug: "acrilico-10x10-sem-arte",
+    name: "Acrílico 10x10 sem arte",
+    format: "Acrílico 2mm 10 x 10 cm",
+    status: "ativo",
+    has_nfc: false,
+    has_qr: false,
+    is_blank: true,
+    price_delta_cents: 0,
+    resale_delta_cents: 0,
+    // Última tabela real conhecida (migração 20260916160000) — só usada se o catálogo não carregar.
+    resale_tiers: [
+      { min_quantity: 10, unit_price_cents: 1050, label: "10 a 19 unidades" },
+      { min_quantity: 20, unit_price_cents: 920, label: "20 a 49 unidades" },
+      { min_quantity: 50, unit_price_cents: 850, label: "50 unidades ou mais" },
+    ],
   },
 ] as const;
 
@@ -312,7 +345,7 @@ function Home() {
     { slug: "acrilico-10x10-sem-arte", label: "Acrílico sem arte 10×10", note: "Só o material, sem QR/NFC" },
   ]
     .map((line) => {
-      const product = data.products.find((p) => p.slug === line.slug);
+      const product = products.find((p) => p.slug === line.slug);
       if (!product || product.status === "oculto") return null;
       const tiers = resolveTiersForProduct(revenda, product, true);
       return { ...line, tiers, comingSoon: product.status === "em_breve" };

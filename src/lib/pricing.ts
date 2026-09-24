@@ -5,7 +5,7 @@ export type PriceTier = {
 };
 
 /** Preço unitário da faixa aplicável à quantidade escolhida. */
-export function unitPriceForQuantity(tiers: PriceTier[], quantity: number, fallback: number): number {
+export function unitPriceForQuantity(tiers: readonly PriceTier[], quantity: number, fallback: number): number {
   const applicable = [...tiers]
     .filter((tier) => quantity >= tier.min_quantity)
     .sort((a, b) => b.min_quantity - a.min_quantity)[0];
@@ -17,7 +17,7 @@ export const money = (cents: number) =>
 
 type PricedProduct = {
   is_blank: boolean;
-  resale_tiers: PriceTier[];
+  resale_tiers: readonly PriceTier[];
   resale_delta_cents: number;
   price_delta_cents: number;
 };
@@ -55,7 +55,7 @@ export function resolveTiersForProduct(
   plan: { tiers: PriceTier[]; unit_price_cents: number },
   product: PricedProduct | null,
   isResale: boolean,
-): PriceTier[] {
+): readonly PriceTier[] {
   if (product?.is_blank && product.resale_tiers?.length) return product.resale_tiers;
   if (isResale && product?.resale_tiers?.length) return product.resale_tiers;
   const delta = isResale ? (product?.resale_delta_cents ?? 0) : (product?.price_delta_cents ?? 0);
