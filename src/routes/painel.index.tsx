@@ -100,20 +100,30 @@ type OrderRow = {
 
 // Etapa do pedido no funil -- cada aba do painel é uma etapa, pra não misturar
 // "não pagou" com "falta produzir".
-type Stage = "aguardando" | "a_produzir" | "em_producao" | "enviados" | "concluidos";
+type Stage =
+  | "aguardando"
+  | "a_produzir"
+  | "em_producao"
+  | "enviados"
+  | "entregues"
+  | "nao_pagos"
+  | "estornados";
 const STAGES: { key: Stage; label: string }[] = [
   { key: "aguardando", label: "Aguardando pagamento" },
   { key: "a_produzir", label: "Pagos · a produzir" },
   { key: "em_producao", label: "Em produção" },
   { key: "enviados", label: "Enviados" },
-  { key: "concluidos", label: "Entregues / não pagos" },
+  { key: "entregues", label: "Entregues" },
+  { key: "nao_pagos", label: "Não pagos" },
+  { key: "estornados", label: "Estornados" },
 ];
 
 function stageOf(r: { payment_status: string; fulfillment_status: string }): Stage {
-  if (r.fulfillment_status === "cancelado") return "concluidos";
-  if (r.payment_status === "estornado" || r.payment_status === "cancelado") return "concluidos";
+  // Nunca foi cobrado (Pix expirado, checkout abandonado) -- separado de quem pagou e voltou.
+  if (r.payment_status === "cancelado") return "nao_pagos";
+  if (r.payment_status === "estornado") return "estornados";
   if (r.payment_status !== "pago") return "aguardando";
-  if (r.fulfillment_status === "entregue") return "concluidos";
+  if (r.fulfillment_status === "entregue") return "entregues";
   if (r.fulfillment_status === "enviado") return "enviados";
   if (r.fulfillment_status === "em_producao") return "em_producao";
   return "a_produzir";
@@ -512,7 +522,9 @@ function Orders() {
     a_produzir: 0,
     em_producao: 0,
     enviados: 0,
-    concluidos: 0,
+    entregues: 0,
+    nao_pagos: 0,
+    estornados: 0,
   };
   for (const r of rows ?? []) {
     if (kindFilter === "all" || r.kind === kindFilter) stageCounts[stageOf(r)]++;
