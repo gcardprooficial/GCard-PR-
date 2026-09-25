@@ -203,13 +203,35 @@ function CameraScanner({
   already: Set<string>;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const scannerRef = useRef<import("qr-scanner").default | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastCode, setLastCode] = useState<string | null>(null);
+  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
+  const [cameraIdx, setCameraIdx] = useState(0);
+
+  // Celular com várias lentes traseiras (normal/ultra-wide/macro) -- o navegador escolhe
+  // uma sozinha via facingMode e nem sempre é a que foca perto (câmera nativa troca de
+  // lente sozinha pra foto de perto, a API de câmera do navegador não faz isso). Deixa
+  // trocar manualmente até achar a que fecha o foco.
+  function switchCamera() {
+    if (cameras.length < 2 || !scannerRef.current) return;
+    const next = (cameraIdx + 1) % cameras.length;
+    setCameraIdx(next);
+    void scannerRef.current.setCamera(cameras[next]!.id).then(() => {
+      // setCamera troca de lente mas volta a pedir resolução mínima -- força alta nessa também.
+      const track = (videoRef.current?.srcObject as MediaStream | null)?.getVideoTracks()[0];
+      track?.applyConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 } }).catch(() => {});
+    });
+  }
 
   useEffect(() => {
     let stopped = false;
     let scannerInstance: import("qr-scanner").default | null = null;
     const lastSeen = new Map<string, number>();
+    // "already" (prop) só reflete o textarea no momento em que a câmera abriu -- sem isso
+    // à parte, escanear a mesma placa 2x na mesma sessão de câmera passava direto, porque
+    // o closure do onDecode não via o textarea crescer entre um scan e outro.
+    const seenThisSession = new Set([...already].map((c) => c.toLowerCase()));
 
     function extractCode(raw: string): string | null {
       // QR guarda a URL completa (gcardpro.com.br/r/<token>) -- usa o token como código.
@@ -256,10 +278,27 @@ function CameraScanner({
           const now = Date.now();
           if (lastSeen.get(code) && now - lastSeen.get(code)! < 2000) return;
           lastSeen.set(code, now);
-          if (already.has(code.toLowerCase()) || already.has(code.toUpperCase())) return;
-          beep();
-          setLastCode(code);
-          onScan(code);
+          if (seenThisSession.has(code.toLowerCase())) return;
+          seenThisSession.add(code.toLowerCase());
+          void (async () => {
+            // QR guarda o token (hex), mas quem lê é gente -- mostra o GCARD-00001 escrito
+            // na placa, não o hex gigante. Sem achar, cai pro código bruto (raro).
+            let display = code;
+            if (/^[0-9a-f]{32}$/i.test(code)) {
+              const { data } = await supabase
+                .from("plates")
+                .select("short_code")
+                .eq("token", code)
+                .maybeSingle();
+              if (data?.short_code) {
+                display = data.short_code;
+                seenThisSession.add(display.toLowerCase());
+              }
+            }
+            beep();
+            setLastCode(display);
+            onScan(display);
+          })();
         },
         {
           preferredCamera: "environment",
@@ -268,8 +307,11 @@ function CameraScanner({
           maxScansPerSecond: 8,
         },
       );
+      scannerRef.current = scannerInstance;
       try {
         await scannerInstance.start();
+        const list = await QrScanner.listCameras(true);
+        if (!stopped && list.length > 1) setCameras(list);
       } catch {
         setError("Não consegui acessar a câmera. Confere a permissão do navegador.");
       }
@@ -294,6 +336,15 @@ function CameraScanner({
       <div className="relative mt-3 w-full max-w-sm overflow-hidden rounded-2xl border-2 border-white/20 bg-black">
         <video ref={videoRef} muted playsInline className="w-full" />
       </div>
+      {cameras.length > 1 && (
+        <button
+          type="button"
+          onClick={switchCamera}
+          className="mt-3 rounded-lg bg-white/10 px-4 py-2 text-sm text-white"
+        >
+          🔄 Trocar câmera ({cameraIdx + 1}/{cameras.length}) -- se não focar, tenta outra lente
+        </button>
+      )}
       {error && <p className="mt-3 max-w-sm text-center text-sm text-amber-300">{error}</p>}
       {lastCode && !error && (
         <p className="mt-3 rounded-xl bg-green-500/20 px-4 py-2 font-mono text-sm text-green-300">
