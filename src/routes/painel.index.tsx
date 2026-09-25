@@ -231,6 +231,23 @@ function CameraScanner({
         setError("Nenhuma câmera encontrada. Cole os códigos manualmente abaixo.");
         return;
       }
+      // A qr-scanner só pede resolução MÍNIMA de 1024px pra câmera -- em várias câmeras
+      // isso vira uma imagem fraca (não a lente/qualidade real do aparelho), insuficiente
+      // pra um QR pequeno de 10x10cm de perto. Pede o stream em alta resolução por conta
+      // própria e entrega pronto: se o <video> já tem srcObject, a lib reaproveita em vez
+      // de negociar a dela.
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+        });
+        if (stopped) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        videoRef.current.srcObject = stream;
+      } catch {
+        // sem permissão/câmera nesse passo -- deixa a qr-scanner tentar do jeito dela.
+      }
       scannerInstance = new QrScanner(
         videoRef.current,
         (result) => {
