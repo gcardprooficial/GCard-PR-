@@ -188,8 +188,10 @@ function beep() {
 
 /**
  * "Bipador" de placa via câmera do celular/notebook: aponta pro QR, ele extrai o código
- * sozinho e chama onScan -- sem digitar, sem colar. Usa BarcodeDetector nativo do navegador
- * (Chrome/Android e Safari recentes); sem isso, só sobra o fluxo de colar texto manualmente.
+ * sozinho e chama onScan -- sem digitar, sem colar. Usa a lib qr-scanner (nimiq), que faz
+ * o que um app de câmera nativo faz: autofoco tratado por engine dedicado, não pelo
+ * getUserMedia cru -- é o motivo de trocar da nossa implementação manual com BarcodeDetector,
+ * que não fechava foco em QR pequeno de perto.
  */
 function CameraScanner({
   onScan,
@@ -201,74 +203,13 @@ function CameraScanner({
   already: Set<string>;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const trackRef = useRef<MediaStreamTrack | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastCode, setLastCode] = useState<string | null>(null);
 
-  /** Toca na tela pra forçar refoco -- reaplica o modo de foco, que faz várias câmeras
-   * Android recalibrarem na distância atual (o autofoco "trava" e não corrige sozinho). */
-  function refocus() {
-    const track = trackRef.current;
-    const caps = track?.getCapabilities?.() as (MediaTrackCapabilities & { focusMode?: string[] }) | undefined;
-    if (!track || !caps?.focusMode?.includes("continuous")) return;
-    track
-      .applyConstraints({ advanced: [{ focusMode: "manual" }] } as unknown as MediaTrackConstraints)
-      .catch(() => {})
-      .finally(() => {
-        void track
-          .applyConstraints({ advanced: [{ focusMode: "continuous" }] } as unknown as MediaTrackConstraints)
-          .catch(() => {});
-      });
-  }
-
   useEffect(() => {
-    const Detector = (window as unknown as { BarcodeDetector?: new (opts: { formats: string[] }) => {
-      detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]>;
-    } }).BarcodeDetector;
-    if (!Detector) {
-      setError("Esse navegador não sabe escanear QR pela câmera. Cole os códigos manualmente abaixo.");
-      return;
-    }
-    let stream: MediaStream | null = null;
-    let raf = 0;
     let stopped = false;
-    const detector = new Detector({ formats: ["qr_code"] });
+    let scannerInstance: import("qr-scanner").default | null = null;
     const lastSeen = new Map<string, number>();
-
-    async function start() {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "environment",
-            // Resolução alta = QR pequeno ainda vira pixel suficiente pra decodificar.
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-        });
-        if (stopped || !videoRef.current) return;
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-
-        // Só foco contínuo -- zoom forçado tirava o QR do alcance mínimo de foco da lente
-        // (câmera fica "muito perto" e embaça). Sem zoom, o usuário acha a distância certa.
-        const [track] = stream.getVideoTracks();
-        trackRef.current = track ?? null;
-        const caps = track?.getCapabilities?.() as (MediaTrackCapabilities & { focusMode?: string[] }) | undefined;
-        if (track && caps?.focusMode?.includes("continuous")) {
-          try {
-            await track.applyConstraints({
-              advanced: [{ focusMode: "continuous" }],
-            } as unknown as MediaTrackConstraints);
-          } catch {
-            // dispositivo anunciou a capacidade mas recusou -- segue sem, não é crítico.
-          }
-        }
-
-        loop();
-      } catch {
-        setError("Não consegui acessar a câmera. Confere a permissão do navegador.");
-      }
-    }
 
     function extractCode(raw: string): string | null {
       // QR guarda a URL completa (gcardpro.com.br/r/<token>) -- usa o token como código.
@@ -279,33 +220,48 @@ function CameraScanner({
       return null;
     }
 
-    async function loop() {
+    async function start() {
+      const [{ default: QrScanner }, workerUrl] = await Promise.all([
+        import("qr-scanner"),
+        import("qr-scanner/qr-scanner-worker.min.js?url").then((m) => m.default),
+      ]);
+      QrScanner.WORKER_PATH = workerUrl;
       if (stopped || !videoRef.current) return;
-      try {
-        const codes = await detector.detect(videoRef.current);
-        for (const c of codes) {
-          const code = extractCode(c.rawValue);
-          if (!code) continue;
+      if (!(await QrScanner.hasCamera())) {
+        setError("Nenhuma câmera encontrada. Cole os códigos manualmente abaixo.");
+        return;
+      }
+      scannerInstance = new QrScanner(
+        videoRef.current,
+        (result) => {
+          const code = extractCode(result.data);
+          if (!code) return;
           const now = Date.now();
-          // Debounce: mesma placa não conta de novo se ainda tá na frente da câmera.
-          if (lastSeen.get(code) && now - lastSeen.get(code)! < 2000) continue;
+          if (lastSeen.get(code) && now - lastSeen.get(code)! < 2000) return;
           lastSeen.set(code, now);
-          if (already.has(code.toLowerCase()) || already.has(code.toUpperCase())) continue;
+          if (already.has(code.toLowerCase()) || already.has(code.toUpperCase())) return;
           beep();
           setLastCode(code);
           onScan(code);
-        }
+        },
+        {
+          preferredCamera: "environment",
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          maxScansPerSecond: 8,
+        },
+      );
+      try {
+        await scannerInstance.start();
       } catch {
-        // frame ilegível, ignora e tenta o próximo
+        setError("Não consegui acessar a câmera. Confere a permissão do navegador.");
       }
-      raf = requestAnimationFrame(() => void loop());
     }
 
     void start();
     return () => {
       stopped = true;
-      cancelAnimationFrame(raf);
-      stream?.getTracks().forEach((t) => t.stop());
+      scannerInstance?.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -318,17 +274,9 @@ function CameraScanner({
           Fechar
         </button>
       </div>
-      <div
-        className="relative mt-3 aspect-square w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-white/20 bg-black"
-        onClick={refocus}
-      >
-        <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
-        <div className="pointer-events-none absolute inset-[12%] rounded-xl border-2 border-dashed border-white/70" />
+      <div className="relative mt-3 w-full max-w-sm overflow-hidden rounded-2xl border-2 border-white/20 bg-black">
+        <video ref={videoRef} muted playsInline className="w-full" />
       </div>
-      <p className="mt-2 max-w-[280px] text-center text-xs text-white/60">
-        Ajuste a distância até o QR ficar nítido dentro do quadrado (nem muito perto, nem muito
-        longe) -- toque na tela pra forçar foco de novo.
-      </p>
       {error && <p className="mt-3 max-w-sm text-center text-sm text-amber-300">{error}</p>}
       {lastCode && !error && (
         <p className="mt-3 rounded-xl bg-green-500/20 px-4 py-2 font-mono text-sm text-green-300">
