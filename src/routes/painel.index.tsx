@@ -201,8 +201,25 @@ function CameraScanner({
   already: Set<string>;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const trackRef = useRef<MediaStreamTrack | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastCode, setLastCode] = useState<string | null>(null);
+
+  /** Toca na tela pra forçar refoco -- reaplica o modo de foco, que faz várias câmeras
+   * Android recalibrarem na distância atual (o autofoco "trava" e não corrige sozinho). */
+  function refocus() {
+    const track = trackRef.current;
+    const caps = track?.getCapabilities?.() as (MediaTrackCapabilities & { focusMode?: string[] }) | undefined;
+    if (!track || !caps?.focusMode?.includes("continuous")) return;
+    track
+      .applyConstraints({ advanced: [{ focusMode: "manual" }] } as unknown as MediaTrackConstraints)
+      .catch(() => {})
+      .finally(() => {
+        void track
+          .applyConstraints({ advanced: [{ focusMode: "continuous" }] } as unknown as MediaTrackConstraints)
+          .catch(() => {});
+      });
+  }
 
   useEffect(() => {
     const Detector = (window as unknown as { BarcodeDetector?: new (opts: { formats: string[] }) => {
@@ -232,22 +249,18 @@ function CameraScanner({
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
 
-        // Foco contínuo + zoom de aproximação, quando o celular suporta -- sem isso,
-        // várias câmeras traseiras ficam num foco "genérico" e nunca fecham em QR pequeno.
+        // Só foco contínuo -- zoom forçado tirava o QR do alcance mínimo de foco da lente
+        // (câmera fica "muito perto" e embaça). Sem zoom, o usuário acha a distância certa.
         const [track] = stream.getVideoTracks();
-        if (track) {
-          const caps = track.getCapabilities?.() as
-            | (MediaTrackCapabilities & { focusMode?: string[]; zoom?: { min: number; max: number } })
-            | undefined;
-          const advanced: Record<string, unknown>[] = [];
-          if (caps?.focusMode?.includes("continuous")) advanced.push({ focusMode: "continuous" });
-          if (caps?.zoom) advanced.push({ zoom: Math.min(caps.zoom.max, Math.max(caps.zoom.min, 2)) });
-          if (advanced.length > 0) {
-            try {
-              await track.applyConstraints({ advanced } as MediaTrackConstraints);
-            } catch {
-              // dispositivo anunciou a capacidade mas recusou -- segue sem, não é crítico.
-            }
+        trackRef.current = track ?? null;
+        const caps = track?.getCapabilities?.() as (MediaTrackCapabilities & { focusMode?: string[] }) | undefined;
+        if (track && caps?.focusMode?.includes("continuous")) {
+          try {
+            await track.applyConstraints({
+              advanced: [{ focusMode: "continuous" }],
+            } as unknown as MediaTrackConstraints);
+          } catch {
+            // dispositivo anunciou a capacidade mas recusou -- segue sem, não é crítico.
           }
         }
 
@@ -305,12 +318,16 @@ function CameraScanner({
           Fechar
         </button>
       </div>
-      <div className="relative mt-3 aspect-square w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-white/20 bg-black">
+      <div
+        className="relative mt-3 aspect-square w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-white/20 bg-black"
+        onClick={refocus}
+      >
         <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
         <div className="pointer-events-none absolute inset-[12%] rounded-xl border-2 border-dashed border-white/70" />
       </div>
       <p className="mt-2 max-w-[280px] text-center text-xs text-white/60">
-        Aproxime até o QR preencher o quadrado tracejado -- muito longe, a câmera não foca.
+        Ajuste a distância até o QR ficar nítido dentro do quadrado (nem muito perto, nem muito
+        longe) -- toque na tela pra forçar foco de novo.
       </p>
       {error && <p className="mt-3 max-w-sm text-center text-sm text-amber-300">{error}</p>}
       {lastCode && !error && (
