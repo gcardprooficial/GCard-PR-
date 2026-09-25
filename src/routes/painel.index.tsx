@@ -220,10 +220,37 @@ function CameraScanner({
 
     async function start() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment",
+            // Resolução alta = QR pequeno ainda vira pixel suficiente pra decodificar.
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+        });
         if (stopped || !videoRef.current) return;
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
+
+        // Foco contínuo + zoom de aproximação, quando o celular suporta -- sem isso,
+        // várias câmeras traseiras ficam num foco "genérico" e nunca fecham em QR pequeno.
+        const [track] = stream.getVideoTracks();
+        if (track) {
+          const caps = track.getCapabilities?.() as
+            | (MediaTrackCapabilities & { focusMode?: string[]; zoom?: { min: number; max: number } })
+            | undefined;
+          const advanced: Record<string, unknown>[] = [];
+          if (caps?.focusMode?.includes("continuous")) advanced.push({ focusMode: "continuous" });
+          if (caps?.zoom) advanced.push({ zoom: Math.min(caps.zoom.max, Math.max(caps.zoom.min, 2)) });
+          if (advanced.length > 0) {
+            try {
+              await track.applyConstraints({ advanced } as MediaTrackConstraints);
+            } catch {
+              // dispositivo anunciou a capacidade mas recusou -- segue sem, não é crítico.
+            }
+          }
+        }
+
         loop();
       } catch {
         setError("Não consegui acessar a câmera. Confere a permissão do navegador.");
@@ -278,9 +305,13 @@ function CameraScanner({
           Fechar
         </button>
       </div>
-      <div className="relative mt-3 w-full max-w-sm overflow-hidden rounded-2xl border-2 border-white/20">
-        <video ref={videoRef} muted playsInline className="w-full" />
+      <div className="relative mt-3 aspect-square w-full max-w-[280px] overflow-hidden rounded-2xl border-2 border-white/20 bg-black">
+        <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
+        <div className="pointer-events-none absolute inset-[12%] rounded-xl border-2 border-dashed border-white/70" />
       </div>
+      <p className="mt-2 max-w-[280px] text-center text-xs text-white/60">
+        Aproxime até o QR preencher o quadrado tracejado -- muito longe, a câmera não foca.
+      </p>
       {error && <p className="mt-3 max-w-sm text-center text-sm text-amber-300">{error}</p>}
       {lastCode && !error && (
         <p className="mt-3 rounded-xl bg-green-500/20 px-4 py-2 font-mono text-sm text-green-300">
