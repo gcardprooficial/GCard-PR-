@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -169,6 +169,128 @@ function parseScanned(text: string) {
   return { hex, shorts };
 }
 
+/** Bip curto de confirmação -- sem asset, só osciladores do WebAudio. */
+function beep() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch {
+    // sem áudio disponível (autoplay bloqueado etc.) -- silencioso, não trava o scan.
+  }
+}
+
+/**
+ * "Bipador" de placa via câmera do celular/notebook: aponta pro QR, ele extrai o código
+ * sozinho e chama onScan -- sem digitar, sem colar. Usa BarcodeDetector nativo do navegador
+ * (Chrome/Android e Safari recentes); sem isso, só sobra o fluxo de colar texto manualmente.
+ */
+function CameraScanner({
+  onScan,
+  onClose,
+  already,
+}: {
+  onScan: (code: string) => void;
+  onClose: () => void;
+  already: Set<string>;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [lastCode, setLastCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    const Detector = (window as unknown as { BarcodeDetector?: new (opts: { formats: string[] }) => {
+      detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]>;
+    } }).BarcodeDetector;
+    if (!Detector) {
+      setError("Esse navegador não sabe escanear QR pela câmera. Cole os códigos manualmente abaixo.");
+      return;
+    }
+    let stream: MediaStream | null = null;
+    let raf = 0;
+    let stopped = false;
+    const detector = new Detector({ formats: ["qr_code"] });
+    const lastSeen = new Map<string, number>();
+
+    async function start() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        if (stopped || !videoRef.current) return;
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        loop();
+      } catch {
+        setError("Não consegui acessar a câmera. Confere a permissão do navegador.");
+      }
+    }
+
+    function extractCode(raw: string): string | null {
+      // QR guarda a URL completa (gcardpro.com.br/r/<token>) -- usa o token como código.
+      const tokenMatch = raw.match(/\/r\/([A-Za-z0-9_-]{4,64})/);
+      if (tokenMatch) return tokenMatch[1]!.toLowerCase();
+      if (/^GCARD-\d{5}$/i.test(raw)) return raw.toUpperCase();
+      if (/^[0-9a-f]{32}$/i.test(raw)) return raw.toLowerCase();
+      return null;
+    }
+
+    async function loop() {
+      if (stopped || !videoRef.current) return;
+      try {
+        const codes = await detector.detect(videoRef.current);
+        for (const c of codes) {
+          const code = extractCode(c.rawValue);
+          if (!code) continue;
+          const now = Date.now();
+          // Debounce: mesma placa não conta de novo se ainda tá na frente da câmera.
+          if (lastSeen.get(code) && now - lastSeen.get(code)! < 2000) continue;
+          lastSeen.set(code, now);
+          if (already.has(code.toLowerCase()) || already.has(code.toUpperCase())) continue;
+          beep();
+          setLastCode(code);
+          onScan(code);
+        }
+      } catch {
+        // frame ilegível, ignora e tenta o próximo
+      }
+      raf = requestAnimationFrame(() => void loop());
+    }
+
+    void start();
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(raf);
+      stream?.getTracks().forEach((t) => t.stop());
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4">
+      <div className="flex w-full max-w-sm items-center justify-between text-white">
+        <p className="text-sm font-semibold">Aponte pro QR da placa</p>
+        <button type="button" onClick={onClose} className="rounded-lg bg-white/10 px-3 py-1.5 text-sm">
+          Fechar
+        </button>
+      </div>
+      <div className="relative mt-3 w-full max-w-sm overflow-hidden rounded-2xl border-2 border-white/20">
+        <video ref={videoRef} muted playsInline className="w-full" />
+      </div>
+      {error && <p className="mt-3 max-w-sm text-center text-sm text-amber-300">{error}</p>}
+      {lastCode && !error && (
+        <p className="mt-3 rounded-xl bg-green-500/20 px-4 py-2 font-mono text-sm text-green-300">
+          ✓ {lastCode}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Orders() {
   const { userId, email } = usePanel();
   const search = Route.useSearch();
@@ -247,6 +369,7 @@ function Orders() {
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
   const [scanOpenFor, setScanOpenFor] = useState<string | null>(null);
   const [scanText, setScanText] = useState("");
+  const [cameraOpenFor, setCameraOpenFor] = useState<string | null>(null);
   const runGetFreightQuotes = useServerFn(getOrderFreightQuotes);
   const runBuyLabel = useServerFn(buyOrderShippingLabel);
   const [quotingFor, setQuotingFor] = useState<string | null>(null);
@@ -752,6 +875,14 @@ function Orders() {
                             Cole os {r.quantity} códigos das placas (GCARD-00001) ou os links escaneados
                             (gcardpro.com.br/r/…), um por linha. As placas precisam estar livres no estoque.
                           </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="mt-2 h-8 rounded-lg text-xs"
+                            onClick={() => setCameraOpenFor(r.id)}
+                          >
+                            📷 Bipar com a câmera
+                          </Button>
                           <textarea
                             value={scanText}
                             onChange={(e) => setScanText(e.target.value)}
@@ -759,6 +890,20 @@ function Orders() {
                             className="mt-2 w-full rounded-lg border border-input bg-background p-2 font-mono text-xs"
                             placeholder="Um código por linha, ex.: GCARD-00007"
                           />
+                          {cameraOpenFor === r.id && (
+                            <CameraScanner
+                              already={
+                                new Set([...parseScanned(scanText).hex, ...parseScanned(scanText).shorts])
+                              }
+                              onClose={() => setCameraOpenFor(null)}
+                              onScan={(code) => {
+                                setScanText((prev) => (prev.trim() ? `${prev.trim()}\n${code}` : code));
+                                const total =
+                                  parseScanned(scanText).hex.size + parseScanned(scanText).shorts.size + 1;
+                                if (total >= r.quantity) setCameraOpenFor(null);
+                              }}
+                            />
+                          )}
                           <div className="mt-2 flex items-center gap-3">
                             <Button
                               size="sm"
