@@ -39,6 +39,8 @@ export interface PaymentProvider {
   createPreference(input: {
     order: OrderForCheckout;
     origin: string;
+    /** Restringe o checkout só a Pix -- usado na promoção de desconto por Pix. */
+    pixOnly?: boolean;
   }): Promise<CheckoutPreference>;
   /** Validate an incoming webhook request. Returns null if invalid/irrelevant. */
   verifyWebhook(request: Request, rawBody: string): Promise<VerifiedEvent | null>;

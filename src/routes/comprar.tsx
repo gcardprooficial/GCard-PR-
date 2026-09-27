@@ -11,6 +11,7 @@ import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createPendingOrder } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { unitPriceForQuantity, money, resolveUnitPrice as resolveUnitPriceShared } from "@/lib/pricing";
+import { PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -190,6 +191,8 @@ function Comprar() {
   const runSearch = useServerFn(searchBusinesses);
   const submitOrder = useServerFn(createPendingOrder);
   const createPref = useServerFn(createCheckoutPreference);
+  const [wantsPixDiscount, setWantsPixDiscount] = useState(true);
+  const pixPromoLive = pixDiscountActive();
 
   const isResale = caminho === "revenda";
   const plan = data.plans.find((p) =>
@@ -411,7 +414,9 @@ function Comprar() {
       setOrderNumber(res.orderNumber);
       // Try to create a checkout preference (only works if provider configured)
       try {
-        const pref = await createPref({ data: { orderNumber: res.orderNumber } });
+        const pref = await createPref({
+          data: { orderNumber: res.orderNumber, pixDiscount: pixPromoLive && wantsPixDiscount },
+        });
         if (pref?.url) {
           // Redirect the buyer to the hosted checkout
           window.location.href = pref.url;
@@ -1818,10 +1823,28 @@ function Comprar() {
                     <p className="mt-2 text-sm font-semibold">{quantity} un. · frete incluso</p>
                   </div>
                   <p className="font-display text-4xl font-black leading-none text-primary-foreground sm:text-6xl">
-                    {money(total)}
+                    {money(wantsPixDiscount && pixPromoLive ? Math.round(total * (1 - PIX_DISCOUNT_PCT / 100)) : total)}
                   </p>
                 </div>
               </div>
+
+              {pixPromoLive && (
+                <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-g-green/40 bg-g-green/10 p-4">
+                  <input
+                    type="checkbox"
+                    checked={wantsPixDiscount}
+                    onChange={(e) => setWantsPixDiscount(e.target.checked)}
+                    className="mt-0.5 size-5 shrink-0 accent-g-green"
+                  />
+                  <span className="text-sm font-semibold leading-snug">
+                    💸 Pagar com <strong>Pix</strong> e ganhar <strong>{PIX_DISCOUNT_PCT}% de desconto</strong>{" "}
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      Promoção só até 30/09 — o checkout abre restrito ao Pix pra manter o preço
+                      reduzido. Desmarque pra pagar com cartão/boleto no preço cheio.
+                    </span>
+                  </span>
+                </label>
+              )}
             </div>
           )}
 

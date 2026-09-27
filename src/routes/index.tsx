@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { getCatalog } from "@/lib/catalog.functions";
 import { money, resolveTiersForProduct } from "@/lib/pricing";
+import { PIX_DISCOUNT_PCT, PIX_DISCOUNT_DEADLINE, pixDiscountActive } from "@/lib/promo";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { ReviewLinkGenerator } from "@/components/ReviewLinkGenerator";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
@@ -188,6 +190,44 @@ const FALLBACK_PRODUCTS = [
   },
 ] as const;
 
+function useCountdown(deadline: string) {
+  const [msLeft, setMsLeft] = useState(() => new Date(deadline).getTime() - Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setMsLeft(new Date(deadline).getTime() - Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [deadline]);
+  return msLeft;
+}
+
+/** Faixa temporária -- 5% no Pix + frete grátis, com cronômetro real até o prazo da promo. */
+function PromoBar() {
+  const msLeft = useCountdown(PIX_DISCOUNT_DEADLINE);
+  if (!pixDiscountActive()) return null;
+  const totalSeconds = Math.max(0, Math.floor(msLeft / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <div className="bg-foreground text-white">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-center text-xs font-bold sm:text-sm">
+        <span>
+          💸 <strong>{PIX_DISCOUNT_PCT}% OFF no Pix</strong>
+        </span>
+        <span className="hidden text-white/40 sm:inline">·</span>
+        <span>🚚 Frete grátis para todo o Brasil</span>
+        <span className="hidden text-white/40 sm:inline">·</span>
+        <span className="font-mono tabular-nums">
+          Termina em {days > 0 ? `${days}d ` : ""}
+          {pad(hours)}:{pad(minutes)}:{pad(seconds)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function Stars() {
   return (
     <span className="inline-flex gap-0.5 align-middle">
@@ -364,6 +404,7 @@ function Home() {
         className="pointer-events-none absolute top-40 -right-24 size-[460px] rounded-full bg-foreground/5 blur-3xl"
       />
 
+      <PromoBar />
       <Header />
 
       {/* ===== HERO ===== */}

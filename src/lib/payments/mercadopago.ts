@@ -68,7 +68,7 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
   return {
     name: "mercadopago",
 
-    async createPreference({ order, origin }): Promise<CheckoutPreference> {
+    async createPreference({ order, origin, pixOnly }): Promise<CheckoutPreference> {
       const unitPrice = Math.round(order.total_cents / order.quantity) / 100;
       // CPF/CNPJ ajuda a MP a registrar o pagamento (cartão/pix costumam exigir
       // identificação do comprador). Sem isso alguns pedidos ficam travados na
@@ -110,6 +110,15 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
           auto_return: "approved",
           notification_url: `${origin}/api/webhooks/mercadopago`,
           statement_descriptor: "GCARDPRO",
+          // Promoção Pix -5%: obriga pagar só por Pix, senão dá pra pegar cartão/boleto
+          // no preço já reduzido, que era feito só pra quem pagasse via Pix.
+          ...(pixOnly
+            ? {
+                payment_methods: {
+                  excluded_payment_types: [{ id: "credit_card" }, { id: "debit_card" }, { id: "ticket" }],
+                },
+              }
+            : {}),
         }),
       });
       if (!res.ok) {
