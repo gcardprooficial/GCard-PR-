@@ -54,6 +54,43 @@ function resolveReviewUrl(business: z.infer<typeof businessSchema>) {
   return null;
 }
 
+const returningCustomerSchema = z.object({
+  email: z.string().trim().email().max(160),
+  document: z.string().trim().max(20),
+});
+
+/** Já comprou (pago) antes com esse e-mail ou CPF/CNPJ? Se sim, o tutorial de QR/NFC
+ * no checkout não precisa aparecer de novo. */
+export const checkReturningCustomer = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => returningCustomerSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const docDigits = data.document.replace(/\D/g, "");
+    const byEmail = await supabaseAdmin
+      .from("orders")
+      .select("id")
+      .eq("payment_status", "pago")
+      .ilike("customer_email", data.email.trim())
+      .limit(1);
+    if ((byEmail.data?.length ?? 0) > 0) return { returning: true };
+    if (!docDigits) return { returning: false };
+    // customer_document é salvo do jeito que a pessoa digitou (com ou sem pontuação) --
+    // tenta os dois formatos mais comuns pra não perder um cliente antigo real.
+    const formatted =
+      docDigits.length === 11
+        ? docDigits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+        : docDigits.length === 14
+          ? docDigits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
+          : null;
+    const byDoc = await supabaseAdmin
+      .from("orders")
+      .select("id")
+      .eq("payment_status", "pago")
+      .in("customer_document", formatted ? [docDigits, formatted] : [docDigits])
+      .limit(1);
+    return { returning: (byDoc.data?.length ?? 0) > 0 };
+  });
+
 export const validateBusinessLink = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => businessSchema.parse(input))
   .handler(async ({ data }) => {

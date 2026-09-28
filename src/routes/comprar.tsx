@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getCatalog, type CatalogProduct, type ColorVariant } from "@/lib/catalog.functions";
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
-import { createPendingOrder } from "@/lib/checkout.functions";
+import { createPendingOrder, checkReturningCustomer } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { unitPriceForQuantity, money, resolveUnitPrice as resolveUnitPriceShared } from "@/lib/pricing";
 import { PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
@@ -361,6 +361,9 @@ function Comprar() {
   const [stepIndex, setStepIndex] = useState(0);
   const [video1Watched, setVideo1Watched] = useState(false);
   const [video2Watched, setVideo2Watched] = useState(false);
+  // null = ainda não sabemos (mostra o tutorial por padrão, mais seguro que pular à toa).
+  const [isReturningCustomer, setIsReturningCustomer] = useState<boolean | null>(null);
+  const runCheckReturning = useServerFn(checkReturningCustomer);
   const [product, setProduct] = useState<CatalogProduct | null>(null);
   const [color, setColor] = useState<ColorVariant | null>(null);
 
@@ -368,13 +371,19 @@ function Comprar() {
   // de cor no lugar.
   const isBlank = product?.is_blank ?? false;
   // Acrílico sem arte não tem QR/NFC -- não precisa assistir tutorial de configuração.
+  // Quem já comprou (pago) antes também não precisa ver de novo.
+  const skipVideos = isReturningCustomer === true;
   const steps = isBlank
     ? isResale
       ? (["estilo", "cor", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
       : (["estilo", "cor", "quantidade", "dados", "entrega", "revisao"] as const)
     : isResale
-      ? (["estilo", "conta", "quantidade", "dados", "entrega", "videos", "revisao"] as const)
-      : (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "videos", "revisao"] as const);
+      ? (skipVideos
+          ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
+          : (["estilo", "conta", "quantidade", "dados", "entrega", "videos", "revisao"] as const))
+      : skipVideos
+        ? (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "revisao"] as const)
+        : (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "videos", "revisao"] as const);
   const step = steps[stepIndex];
 
   const [term, setTerm] = useState("");
@@ -391,6 +400,22 @@ function Comprar() {
     email: "",
   });
   const [marketingConsent, setMarketingConsent] = useState(false);
+
+  // Assim que e-mail + CPF ficam válidos, confere se a pessoa já comprou (pago) antes --
+  // se já comprou, o tutorial de QR/NFC não precisa aparecer de novo.
+  useEffect(() => {
+    const email = customer.email.trim();
+    const docDigits = customer.document.replace(/\D/g, "");
+    if (!/.+@.+\..+/.test(email) || docDigits.length < 11) return;
+    let cancelled = false;
+    void runCheckReturning({ data: { email, document: customer.document } }).then((res) => {
+      if (!cancelled) setIsReturningCustomer(res.returning);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer.email, customer.document]);
   const [address, setAddress] = useState<Address>({
     zip: "",
     street: "",
