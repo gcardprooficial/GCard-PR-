@@ -129,11 +129,23 @@ function activationTutorial() {
   return (
     `<p style="margin:16px 0 6px;font-weight:700;">Como ativar cada plaquinha</p>` +
     `<ol style="margin:0;padding-left:20px;">` +
-    `<li>Entre em <a href="${siteUrl()}/ativar" style="color:#1A1A1A;font-weight:600;">gcardpro.com.br/ativar</a> com o mesmo e-mail e senha da compra.</li>` +
-    `<li>Ache a plaquinha pelo código escrito nela (ex.: <strong>GCARD-00061</strong>).</li>` +
+    `<li>A placa não vem mais com código escrito em papel: <strong>escaneie o QR Code dela</strong> com o celular -- abre uma página mostrando o código (ex.: <strong>GCARD-00061</strong>).</li>` +
+    `<li>Entre em <a href="${siteUrl()}/ativar" style="color:#1A1A1A;font-weight:600;">gcardpro.com.br/ativar</a> com o mesmo e-mail e senha da compra e ache a placa por esse código.</li>` +
     `<li>Informe o nome do negócio e cole o link de avaliação do Google dele.</li>` +
     `<li>Pronto: o QR e o NFC já apontam pra essa avaliação. Dá pra trocar o link quando quiser, no mesmo painel.</li>` +
-    `</ol>`
+    `</ol>` +
+    videoTutorialLinks()
+  );
+}
+
+/** Links dos 2 vídeos curtos (configurar QR + NFC) -- mesmos exibidos obrigatoriamente antes do pagamento. */
+function videoTutorialLinks() {
+  return (
+    `<p style="margin:16px 0 6px;font-weight:700;">Vídeos de configuração (2 min)</p>` +
+    `<ul style="margin:0;padding-left:20px;">` +
+    `<li><a href="https://youtube.com/shorts/zeA8QT-3Ltc" style="color:#1A1A1A;font-weight:600;">Parte 1 -- como configurar o QR Code</a></li>` +
+    `<li><a href="https://youtube.com/shorts/q8W2ojaF5vE" style="color:#1A1A1A;font-weight:600;">Parte 2 -- como configurar o NFC</a></li>` +
+    `</ul>`
   );
 }
 
@@ -302,7 +314,8 @@ export async function dispatchOrderEmailEvent(
             `Vamos separar as cores escolhidas e te avisamos quando entrar em produção e quando for enviado.</p>`;
         } else if (cardOnly && isRevenda) {
           body +=
-            `<p>Estamos separando os seus cartões de PVC com NFC. Avisamos quando entrar em produção e quando forem enviados, com o código de rastreio.</p>`;
+            `<p>Estamos separando os seus cartões de PVC com NFC. Avisamos quando entrar em produção e quando forem enviados, com o código de rastreio.</p>` +
+            `<p style="margin-top:8px;"><a href="https://youtube.com/shorts/q8W2ojaF5vE" style="color:#1A1A1A;font-weight:600;">Vídeo -- como configurar o NFC</a></p>`;
         } else if (isRevenda) {
           body +=
             `<p>As plaquinhas do kit de revenda chegam <strong>sem link de avaliação configurado</strong> — é o modelo de revenda: você ativa cada uma pro negócio do seu cliente.</p>` +
@@ -340,7 +353,7 @@ export async function dispatchOrderEmailEvent(
         } else if (isRevenda && !isBlank) {
           const manifest = await plateManifest(db, orderId);
           body +=
-            `<p>As plaquinhas chegam em branco (sem link configurado). Cada uma tem um código escrito — guarde esta lista de referência:</p>` +
+            `<p>As plaquinhas chegam em branco (sem link configurado). Não vem código escrito em papel: escaneie o QR de cada uma que abre uma página mostrando o código dela. Guarde esta lista de referência (código + link de cada QR):</p>` +
             manifest.html +
             activationTutorial();
         } else if (!isBlank) {
@@ -360,7 +373,10 @@ export async function dispatchOrderEmailEvent(
         } else {
           body += usageTips();
         }
-        body += `<p style="margin-top:16px;">Deu tudo certo? Conta pra gente no WhatsApp ou no Instagram — e se precisar de ajuda com a configuração, estamos por aqui.</p>`;
+        body +=
+          `<p style="margin-top:16px;">Deu tudo certo? Conta pra gente no WhatsApp ou no Instagram — e se precisar de ajuda com a configuração, estamos por aqui.</p>` +
+          `<p style="margin-top:12px;font-weight:700;">📹 Grava um vídeo rapidinho mostrando o seu GCard-PRÓ e marca a gente no Instagram ` +
+          `<a href="https://instagram.com/gcardpro.oficial" style="color:#1A1A1A;font-weight:700;">@gcardpro.oficial</a> — adoramos repostar!</p>`;
         break;
     }
 

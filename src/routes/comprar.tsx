@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -184,6 +184,114 @@ type Address = {
   state: string;
 };
 
+declare global {
+  interface Window {
+    YT?: {
+      Player: new (
+        el: HTMLElement,
+        opts: {
+          videoId: string;
+          playerVars?: Record<string, number>;
+          events?: { onStateChange?: (e: { data: number }) => void };
+        },
+      ) => unknown;
+      PlayerState: { ENDED: number };
+    };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+let ytApiPromise: Promise<void> | null = null;
+/** Carrega a API do YouTube 1x só, mesmo com 2 players na tela. */
+function loadYouTubeApi(): Promise<void> {
+  if (window.YT) return Promise.resolve();
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve) => {
+    window.onYouTubeIframeAPIReady = () => resolve();
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  });
+  return ytApiPromise;
+}
+
+/**
+ * Vídeo obrigatório: sem controles visíveis (sem pausar/pular pela barra), libera o
+ * "assistido" só quando o player emite ENDED. Aviso honesto: não dá pra bloquear teclas
+ * de mídia do sistema operacional -- é o limite técnico de um embed do YouTube.
+ */
+function RequiredVideo({ videoId, label, done, onDone }: { videoId: string; label: string; done: boolean; onDone: () => void }) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void loadYouTubeApi().then(() => {
+      if (cancelled || !hostRef.current || !window.YT) return;
+      new window.YT.Player(hostRef.current, {
+        videoId,
+        playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, playsinline: 1 },
+        events: {
+          onStateChange: (e) => {
+            if (window.YT && e.data === window.YT.PlayerState.ENDED) onDone();
+          },
+        },
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoId]);
+
+  return (
+    <div className="rounded-2xl border-2 border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-bold">{label}</p>
+        {done && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-g-green/15 px-2.5 py-1 text-xs font-black text-g-green">
+            ✓ Assistido
+          </span>
+        )}
+      </div>
+      <div className="mt-3 mx-auto aspect-[9/16] max-w-[220px] overflow-hidden rounded-xl bg-black">
+        <div ref={hostRef} className="size-full" />
+      </div>
+    </div>
+  );
+}
+
+function VideoGate({
+  watched1,
+  watched2,
+  onDone1,
+  onDone2,
+}: {
+  watched1: boolean;
+  watched2: boolean;
+  onDone1: () => void;
+  onDone2: () => void;
+}) {
+  return (
+    <div>
+      <h1 className="text-2xl leading-tight sm:text-3xl">
+        Antes de pagar, <span className="highlight-yellow">2 vídeos rápidos</span>
+      </h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+        Assista os dois até o final pra saber configurar o QR Code e o NFC assim que sua placa
+        chegar. É rápido (menos de 2 min no total) e o botão de pagamento só libera depois.
+      </p>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <RequiredVideo videoId="zeA8QT-3Ltc" label="Parte 1 — Configurar o QR Code" done={watched1} onDone={onDone1} />
+        <RequiredVideo videoId="q8W2ojaF5vE" label="Parte 2 — Configurar o NFC" done={watched2} onDone={onDone2} />
+      </div>
+      {!(watched1 && watched2) && (
+        <p className="mt-4 text-center text-xs font-semibold text-muted-foreground">
+          Assista os dois vídeos até o final para continuar.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Comprar() {
   const { caminho } = Route.useSearch();
   const navigate = useNavigate();
@@ -251,19 +359,22 @@ function Comprar() {
   }, [isResale]);
 
   const [stepIndex, setStepIndex] = useState(0);
+  const [video1Watched, setVideo1Watched] = useState(false);
+  const [video2Watched, setVideo2Watched] = useState(false);
   const [product, setProduct] = useState<CatalogProduct | null>(null);
   const [color, setColor] = useState<ColorVariant | null>(null);
 
   // Acrílico puro pula negócio/Google (não tem link pra gravar) e ganha a etapa
   // de cor no lugar.
   const isBlank = product?.is_blank ?? false;
+  // Acrílico sem arte não tem QR/NFC -- não precisa assistir tutorial de configuração.
   const steps = isBlank
     ? isResale
       ? (["estilo", "cor", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
       : (["estilo", "cor", "quantidade", "dados", "entrega", "revisao"] as const)
     : isResale
-      ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
-      : (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "revisao"] as const);
+      ? (["estilo", "conta", "quantidade", "dados", "entrega", "videos", "revisao"] as const)
+      : (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "videos", "revisao"] as const);
   const step = steps[stepIndex];
 
   const [term, setTerm] = useState("");
@@ -741,6 +852,8 @@ function Comprar() {
           address.city.length >= 2 &&
           address.state.length >= 2
         );
+      case "videos":
+        return video1Watched && video2Watched;
       default:
         return true;
     }
@@ -755,6 +868,7 @@ function Comprar() {
     quantidade: "Qtd.",
     dados: "Dados",
     entrega: "Entrega",
+    videos: "Tutorial",
     revisao: "Finalizar",
   };
 
@@ -1740,6 +1854,15 @@ function Comprar() {
                 </p>
               </div>
             </div>
+          )}
+
+          {step === "videos" && (
+            <VideoGate
+              watched1={video1Watched}
+              watched2={video2Watched}
+              onDone1={() => setVideo1Watched(true)}
+              onDone2={() => setVideo2Watched(true)}
+            />
           )}
 
           {step === "revisao" && (
