@@ -85,6 +85,7 @@ type OrderRow = {
   tracking_carrier: string | null;
   ship_street: string | null;
   ship_number: string | null;
+  ship_complement: string | null;
   ship_district: string | null;
   ship_city: string | null;
   ship_state: string | null;
@@ -376,7 +377,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, ship_street, ship_number, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr))",
+        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr))",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -991,6 +992,11 @@ function Orders() {
                       .join(", ") || "Sem endereço"}
                     {r.ship_zip ? ` · CEP ${formatCep(r.ship_zip)}` : " · CEP —"}
                   </p>
+                  {r.ship_complement && (
+                    <p className="mt-1 text-sm font-bold text-amber-700">
+                      📍 Complemento: {r.ship_complement}
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="font-display text-xl">{money(r.total_cents)}</p>
