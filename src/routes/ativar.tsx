@@ -75,6 +75,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [resetSent, setResetSent] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -90,6 +91,24 @@ function Login() {
       return;
     }
     if (mode === "signup") toast.success("Conta criada. Pode entrar.");
+  }
+
+  async function forgotPassword() {
+    if (!/.+@.+\..+/.test(email)) {
+      toast.error("Digita seu e-mail no campo acima primeiro.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/ativar`,
+    });
+    setBusy(false);
+    if (error) {
+      toast.error("Não consegui enviar o e-mail de redefinição.");
+      return;
+    }
+    setResetSent(true);
+    toast.success("Enviamos um link pra redefinir a senha.");
   }
 
   return (
@@ -122,6 +141,21 @@ function Login() {
         >
           {mode === "login" ? "Primeira vez? Criar conta" : "Já tenho conta"}
         </button>
+        {mode === "login" &&
+          (resetSent ? (
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Link enviado pro seu e-mail. Confere a caixa de entrada (e o spam).
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void forgotPassword()}
+              disabled={busy}
+              className="mt-2 w-full text-center text-xs text-muted-foreground underline hover:text-foreground"
+            >
+              Esqueci minha senha
+            </button>
+          ))}
       </form>
     </div>
   );
