@@ -46,20 +46,76 @@ type Plate = {
 function Ativar() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  // O link de "esqueci minha senha" já loga a pessoa sozinho (é assim que o Supabase
+  // funciona) -- sem isso, ela caía direto no painel em vez de trocar a senha.
+  const [recoveryMode, setRecoveryMode] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setReady(true);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === "PASSWORD_RECOVERY") setRecoveryMode(true);
+      setSession(s);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   if (!ready)
     return <Center>Carregando…</Center>;
+  if (recoveryMode) return <UpdatePassword onDone={() => setRecoveryMode(false)} />;
   if (!session) return <Login />;
   return <Lote email={session.user.email ?? ""} userId={session.user.id} />;
+}
+
+function UpdatePassword({ onDone }: { onDone: () => void }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (password.length < 6) {
+      toast.error("A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setBusy(false);
+    if (error) {
+      toast.error("Não consegui trocar a senha. Tenta pedir o link de novo.");
+      return;
+    }
+    toast.success("Senha atualizada!");
+    onDone();
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-surface px-5">
+      <form onSubmit={submit} className="w-full max-w-sm rounded-3xl bg-card p-8 card-soft">
+        <Link to="/" className="inline-flex items-center">
+          <img src={logoTransparente} alt="GCard-PRÓ" className="h-10 w-auto" draggable={false} />
+        </Link>
+        <h1 className="mt-4 text-xl">Escolha uma nova senha</h1>
+        <div className="mt-6">
+          <Label htmlFor="np">Nova senha</Label>
+          <Input
+            id="np"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1 h-11"
+            minLength={6}
+            required
+            autoFocus
+          />
+        </div>
+        <Button type="submit" className="mt-6 w-full" disabled={busy}>
+          {busy ? "Salvando…" : "Salvar nova senha"}
+        </Button>
+      </form>
+    </div>
+  );
 }
 
 function Center({ children }: { children: ReactNode }) {
