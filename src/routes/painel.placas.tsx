@@ -286,6 +286,190 @@ function CardStock({ userId }: { userId: string }) {
   );
 }
 
+type ComponentEntry = { id: string; name: string; quantity: number; note: string | null; created_at: string };
+
+const KNOWN_COMPONENTS = [
+  "Chip NFC avulso",
+  "Arte 10x10 Avaliação Google (adesivo)",
+  "Cartão PVC com NFC (sem arte)",
+];
+
+/**
+ * Estoque de insumo solto, sem produto do catálogo (chip NFC avulso, arte impressa
+ * avulsa, cartão PVC ainda sem arte) -- coisa que ainda não virou produto pronto.
+ * Mesmo padrão do CardStock acima, só que por nome livre em vez de product_id.
+ */
+function ComponentStock({ userId }: { userId: string }) {
+  const [entries, setEntries] = useState<ComponentEntry[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [name, setName] = useState(KNOWN_COMPONENTS[0]!);
+  const [mode, setMode] = useState<"producao" | "baixa">("producao");
+  const [qty, setQty] = useState("");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const db = supabase as unknown as {
+    from: (t: string) => {
+      select: (c: string) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      insert: (v: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+      delete: () => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> };
+    };
+  };
+
+  const load = useCallback(async () => {
+    const { data } = await db
+      .from("component_stock_entries")
+      .select("id, name, quantity, note, created_at")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    setEntries((data ?? []) as ComponentEntry[]);
+    setLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const names = useMemo(() => {
+    const set = new Set(KNOWN_COMPONENTS);
+    for (const e of entries) set.add(e.name);
+    return [...set];
+  }, [entries]);
+
+  async function add() {
+    const n = Math.abs(Math.trunc(Number(qty)));
+    if (!name.trim() || !n) {
+      toast.error("Informe o nome e a quantidade.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await db.from("component_stock_entries").insert({
+      name: name.trim(),
+      quantity: mode === "producao" ? n : -n,
+      note: note.trim() || null,
+      created_by: userId,
+    });
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setQty("");
+    setNote("");
+    toast.success(mode === "producao" ? `${n} adicionado(s) ao estoque.` : `Baixa de ${n} registrada.`);
+    void load();
+  }
+
+  async function remove(id: string) {
+    if (!window.confirm("Apagar este lançamento?")) return;
+    const { error } = await db.from("component_stock_entries").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    void load();
+  }
+
+  if (!loaded) return null;
+
+  return (
+    <section className="mt-4 rounded-2xl border border-border bg-card p-5 card-soft">
+      <h2 className="text-lg font-bold">Estoque de insumo avulso</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Chip NFC solto, arte impressa avulsa, cartão PVC sem arte aplicada -- ainda não é um
+        produto pronto pra vender, mas você tem em mãos e quer controlar.
+      </p>
+
+      {names.length > 0 && (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {names.map((n) => {
+            const total = entries.filter((e) => e.name === n).reduce((sum, e) => sum + e.quantity, 0);
+            return (
+              <div key={n} className="rounded-xl border border-border p-4">
+                <p className="font-semibold">{n}</p>
+                <p className={`mt-2 font-display text-2xl ${total < 0 ? "text-red-700" : "text-foreground"}`}>
+                  {total}
+                </p>
+                <p className="text-xs text-muted-foreground">em estoque</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap items-end gap-2">
+        <div>
+          <Label className="text-xs">Insumo</Label>
+          <Input
+            list="component-names"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-1 h-10 w-56"
+            placeholder="Nome do insumo"
+          />
+          <datalist id="component-names">
+            {names.map((n) => (
+              <option key={n} value={n} />
+            ))}
+          </datalist>
+        </div>
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value as "producao" | "baixa")}
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+        >
+          <option value="producao">Entrada (+)</option>
+          <option value="baixa">Baixa / uso (−)</option>
+        </select>
+        <Input
+          value={qty}
+          onChange={(e) => setQty(e.target.value)}
+          inputMode="numeric"
+          placeholder="Quantidade"
+          className="h-10 w-32"
+        />
+        <Input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Observação (opcional)"
+          className="h-10 w-full sm:w-56"
+        />
+        <Button size="sm" onClick={() => void add()} disabled={saving}>
+          {saving ? "Salvando…" : "Registrar"}
+        </Button>
+      </div>
+
+      {entries.length > 0 && (
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm font-semibold">Histórico ({entries.length})</summary>
+          <ul className="mt-2 space-y-1 text-sm">
+            {entries.slice(0, 30).map((e) => (
+              <li key={e.id} className="flex items-center justify-between gap-3 border-b border-border/60 py-1">
+                <span>
+                  <strong className={e.quantity > 0 ? "text-green-700" : "text-red-700"}>
+                    {e.quantity > 0 ? "+" : ""}
+                    {e.quantity}
+                  </strong>{" "}
+                  {e.name} · {new Date(e.created_at).toLocaleDateString("pt-BR")}
+                  {e.note ? ` · ${e.note}` : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void remove(e.id)}
+                  className="text-xs text-red-700 hover:underline"
+                >
+                  apagar
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
+  );
+}
+
 function Placas() {
   const { userId, email } = usePanel();
   const [rows, setRows] = useState<Plate[] | null>(null);
@@ -519,6 +703,7 @@ function Placas() {
       </div>
 
       <CardStock userId={userId} />
+      <ComponentStock userId={userId} />
 
       <div className="mt-3 flex flex-wrap gap-2">
         {VIEWS.map(([k, l]) => (
