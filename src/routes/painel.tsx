@@ -13,6 +13,7 @@ import {
   ScanLine,
   Menu,
   Plug,
+  Archive,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
@@ -36,6 +37,7 @@ const TABS = [
   { to: "/painel/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/painel/calculadora", label: "Calculadora", icon: Calculator },
   { to: "/painel/placas", label: "Placas", icon: CreditCard },
+  { to: "/painel/estoque", label: "Estoque", icon: Archive },
   { to: "/painel/scans", label: "Scans", icon: ScanLine },
   { to: "/painel/integracoes", label: "Integrações", icon: Plug },
 ] as const;
