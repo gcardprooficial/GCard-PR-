@@ -132,6 +132,77 @@ const orderSchema = z.object({
   }),
 });
 
+/** Resolve produto+preço de UMA linha do pedido -- nunca confia no preço vindo do navegador.
+ * Compartilhado entre pedido de 1 item e carrinho de vários, pra não duplicar a conta. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveOrderLine(
+  supabaseAdmin: any,
+  input: { planSlug: string; productSlug: string; colorSlug?: string | null | undefined; quantity: number },
+) {
+  const [{ data: plan }, { data: product }] = await Promise.all([
+    supabaseAdmin
+      .from("plans")
+      .select("id, name, slug, unit_price_cents, min_quantity, max_quantity, is_active, is_resale")
+      .eq("slug", input.planSlug)
+      .maybeSingle(),
+    supabaseAdmin
+      .from("products")
+      .select(
+        "id, name, slug, price_delta_cents, resale_delta_cents, status, is_blank, min_quantity, color_variants",
+      )
+      .eq("slug", input.productSlug)
+      .maybeSingle(),
+  ]);
+
+  if (!plan || !plan.is_active) throw new Error("Plano indisponível.");
+  if (!product || product.status !== "ativo") throw new Error(`Produto "${input.productSlug}" indisponível no momento.`);
+  const prod = product as typeof product & {
+    is_blank?: boolean;
+    min_quantity?: number;
+    color_variants?: { slug: string; name: string; delta_cents: number }[] | null;
+  };
+  if (prod.min_quantity && input.quantity < prod.min_quantity) {
+    throw new Error(`${product.name} é vendido em kit de ${prod.min_quantity} unidades ou mais.`);
+  }
+  if (input.quantity < plan.min_quantity) throw new Error("Quantidade abaixo do mínimo do plano.");
+  if (plan.max_quantity && input.quantity > plan.max_quantity) {
+    throw new Error("Quantidade acima do máximo do plano.");
+  }
+
+  const [{ data: tiers }, { data: productTiers }] = await Promise.all([
+    supabaseAdmin
+      .from("plan_price_tiers")
+      .select("min_quantity, unit_price_cents, label")
+      .eq("plan_id", plan.id),
+    plan.is_resale || prod.is_blank
+      ? supabaseAdmin.from("product_price_tiers").select("min_quantity, unit_price_cents, label").eq("product_id", product.id)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const colorVariant = input.colorSlug
+    ? (prod.color_variants ?? []).find((c: { slug: string }) => c.slug === input.colorSlug)
+    : null;
+  if (input.colorSlug && !colorVariant) throw new Error("Cor indisponível para este produto.");
+  const colorDelta = colorVariant?.delta_cents ?? 0;
+
+  let unitPrice: number;
+  if ((plan.is_resale || prod.is_blank) && productTiers && productTiers.length > 0) {
+    unitPrice = unitPriceForQuantity(productTiers, input.quantity, productTiers[0].unit_price_cents) + colorDelta;
+  } else {
+    const tierPrice = unitPriceForQuantity(tiers ?? [], input.quantity, plan.unit_price_cents);
+    const delta = plan.is_resale ? product.resale_delta_cents : product.price_delta_cents;
+    unitPrice = tierPrice + delta + colorDelta;
+  }
+
+  return {
+    plan,
+    product,
+    productName: colorVariant ? `${product.name} — ${colorVariant.name}` : `${product.name} — ${plan.name}`,
+    unitPrice,
+    subtotal: unitPrice * input.quantity,
+  };
+}
+
 export const createPendingOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderSchema.parse(input))
   .handler(async ({ data }) => {
@@ -149,75 +220,12 @@ export const createPendingOrder = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const [{ data: plan }, { data: product }] = await Promise.all([
-      supabaseAdmin
-        .from("plans")
-        .select(
-          "id, name, slug, unit_price_cents, min_quantity, max_quantity, is_active, is_resale",
-        )
-        .eq("slug", data.planSlug)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("products")
-        .select(
-          "id, name, slug, price_delta_cents, resale_delta_cents, status, is_blank, min_quantity, color_variants",
-        )
-        .eq("slug", data.productSlug)
-        .maybeSingle(),
-    ]);
-
-    if (!plan || !plan.is_active) throw new Error("Plano indisponível.");
-    if (!product || product.status !== "ativo") {
-      throw new Error("Produto indisponível no momento.");
-    }
-    const prod = product as typeof product & {
-      is_blank?: boolean;
-      min_quantity?: number;
-      color_variants?: { slug: string; name: string; delta_cents: number }[] | null;
-    };
-    // Acrílico é kit fechado: o mínimo dele manda, não o do plano.
-    if (prod.min_quantity && data.quantity < prod.min_quantity) {
-      throw new Error(`Este produto é vendido em kit de ${prod.min_quantity} unidades ou mais.`);
-    }
-    if (data.quantity < plan.min_quantity) throw new Error("Quantidade abaixo do mínimo do plano.");
-    if (plan.max_quantity && data.quantity > plan.max_quantity) {
-      throw new Error("Quantidade acima do máximo do plano.");
-    }
-
-    const [{ data: tiers }, { data: productTiers }] = await Promise.all([
-      supabaseAdmin
-        .from("plan_price_tiers")
-        .select("min_quantity, unit_price_cents, label")
-        .eq("plan_id", plan.id),
-      plan.is_resale || prod.is_blank
-        ? supabaseAdmin
-            .from("product_price_tiers")
-            .select("min_quantity, unit_price_cents, label")
-            .eq("product_id", product.id)
-        : Promise.resolve({ data: null }),
-    ]);
-
-    // Cor precisa existir no catálogo do produto -- delta nunca vem do navegador.
-    const colorVariant = data.colorSlug
-      ? (prod.color_variants ?? []).find((c) => c.slug === data.colorSlug)
-      : null;
-    if (data.colorSlug && !colorVariant) throw new Error("Cor indisponível para este produto.");
-    const colorDelta = colorVariant?.delta_cents ?? 0;
-
-    // Price is always recomputed here — never trusted from the browser.
-    // Produto com faixa própria usa ela; senão, plano + adicional. Cor soma por cima.
-    let unitPrice: number;
-    if ((plan.is_resale || prod.is_blank) && productTiers && productTiers.length > 0) {
-      unitPrice =
-        unitPriceForQuantity(productTiers, data.quantity, productTiers[0].unit_price_cents) +
-        colorDelta;
-    } else {
-      const tierPrice = unitPriceForQuantity(tiers ?? [], data.quantity, plan.unit_price_cents);
-      const delta = plan.is_resale ? product.resale_delta_cents : product.price_delta_cents;
-      unitPrice = tierPrice + delta + colorDelta;
-    }
-    const subtotal = unitPrice * data.quantity;
+    const { plan, product, productName, unitPrice, subtotal } = await resolveOrderLine(supabaseAdmin, {
+      planSlug: data.planSlug,
+      productSlug: data.productSlug,
+      colorSlug: data.colorSlug,
+      quantity: data.quantity,
+    });
 
     let businessId: string | null = null;
     if (data.business && parsedLink) {
@@ -271,9 +279,7 @@ export const createPendingOrder = createServerFn({ method: "POST" })
     const { error: itemError } = await supabaseAdmin.from("order_items").insert({
       order_id: order.id,
       product_id: product.id,
-      product_name: colorVariant
-        ? `${product.name} — ${colorVariant.name}`
-        : `${product.name} — ${plan.name}`,
+      product_name: productName,
       quantity: data.quantity,
       unit_price_cents: unitPrice,
       total_cents: subtotal,
@@ -312,4 +318,138 @@ export const createPendingOrder = createServerFn({ method: "POST" })
       unitPriceCents: unitPrice,
       quantity: data.quantity,
     };
+  });
+
+const cartOrderSchema = z.object({
+  business: businessSchema.nullable().optional(),
+  planSlug: z.string().trim().min(2).max(60),
+  items: z
+    .array(
+      z.object({
+        productSlug: z.string().trim().min(2).max(60),
+        colorSlug: z.string().trim().max(40).optional().nullable(),
+        quantity: z.number().int().min(1).max(500),
+      }),
+    )
+    .min(1)
+    .max(20),
+  marketingConsent: z.boolean().default(false),
+  customer: orderSchema.shape.customer,
+  address: orderSchema.shape.address,
+});
+
+/** Carrinho: vários produtos no mesmo pedido, sempre do mesmo plano (lojista OU revenda --
+ * decisão de negócio: não mistura os dois, cada um tem regra de preço/lote própria). */
+export const createCartOrder = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => cartOrderSchema.parse(input))
+  .handler(async ({ data }) => {
+    if (!rateLimit(`order:${data.customer.email.toLowerCase()}`, 5, 300_000)) {
+      throw new Error("Muitos pedidos seguidos com este e-mail. Aguarde alguns minutos.");
+    }
+    const ip = clientKey(getRequest());
+    if (!rateLimit(`order-ip:${ip}`, 10, 300_000)) {
+      throw new Error("Muitos pedidos seguidos. Aguarde alguns minutos.");
+    }
+
+    const parsedLink = data.business ? resolveReviewUrl(data.business) : null;
+    if (data.business && !parsedLink) {
+      throw new Error("Não conseguimos identificar o negócio no Google.");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Cada linha é recalculada e validada do zero -- preço nunca vem do navegador.
+    const lines = await Promise.all(
+      data.items.map((item) =>
+        resolveOrderLine(supabaseAdmin, {
+          planSlug: data.planSlug,
+          productSlug: item.productSlug,
+          colorSlug: item.colorSlug,
+          quantity: item.quantity,
+        }).then((resolved) => ({ ...resolved, quantity: item.quantity })),
+      ),
+    );
+
+    const isResale = lines[0]!.plan.is_resale;
+    const totalQuantity = lines.reduce((s, l) => s + l.quantity, 0);
+    const totalCents = lines.reduce((s, l) => s + l.subtotal, 0);
+
+    let businessId: string | null = null;
+    if (data.business && parsedLink) {
+      try {
+        const { data: business, error: businessError } = await supabaseAdmin
+          .from("businesses")
+          .insert({
+            name: data.business.name,
+            review_url: parsedLink.reviewUrl,
+            google_place_id: parsedLink.placeId,
+            address: data.business.address ?? null,
+          })
+          .select("id")
+          .single();
+        if (businessError) throw businessError;
+        businessId = business.id;
+      } catch (error) {
+        console.error("createCartOrder: falha ao salvar negócio", { error });
+      }
+    }
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .insert({
+        kind: isResale ? "revenda" : "individual",
+        customer_name: `${data.customer.firstName} ${data.customer.lastName}`.trim(),
+        customer_email: data.customer.email,
+        customer_phone: data.customer.phone,
+        customer_document: data.customer.document,
+        ship_zip: data.address.zip,
+        ship_street: data.address.street,
+        ship_number: data.address.number,
+        ship_complement: data.address.complement ?? null,
+        ship_district: data.address.district,
+        ship_city: data.address.city,
+        ship_state: data.address.state,
+        business_id: businessId,
+        plan_id: lines[0]!.plan.id,
+        quantity: totalQuantity,
+        subtotal_cents: totalCents,
+        shipping_cents: 0,
+        total_cents: totalCents,
+        marketing_consent_at: data.marketingConsent ? new Date().toISOString() : null,
+      } as never)
+      .select("id, order_number")
+      .single();
+    if (orderError) throw orderError;
+
+    const { error: itemsError } = await supabaseAdmin.from("order_items").insert(
+      lines.map((line) => ({
+        order_id: order.id,
+        product_id: line.product.id,
+        product_name: line.productName,
+        quantity: line.quantity,
+        unit_price_cents: line.unitPrice,
+        total_cents: line.subtotal,
+      })),
+    );
+    if (itemsError) throw itemsError;
+
+    try {
+      const { upsertCustomerConsent } = await import("@/lib/email-events.server");
+      await upsertCustomerConsent({
+        email: data.customer.email,
+        name: `${data.customer.firstName} ${data.customer.lastName}`.trim(),
+        consent: data.marketingConsent,
+      });
+    } catch (error) {
+      console.error("createCartOrder: falha ao salvar consentimento", { orderId: order.id, error });
+    }
+
+    try {
+      const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
+      await dispatchOrderEmailEvent(order.id, "pedido_recebido");
+    } catch (error) {
+      console.error("createCartOrder: falha ao registrar e-mail do pedido", { orderId: order.id, error });
+    }
+
+    return { orderNumber: order.order_number, totalCents };
   });

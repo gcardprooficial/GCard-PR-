@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getCatalog, type CatalogProduct, type ColorVariant } from "@/lib/catalog.functions";
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
-import { createPendingOrder, checkReturningCustomer } from "@/lib/checkout.functions";
+import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { unitPriceForQuantity, money, resolveUnitPrice as resolveUnitPriceShared } from "@/lib/pricing";
 import { PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
@@ -184,6 +184,16 @@ type Address = {
   state: string;
 };
 
+type CartLine = {
+  productSlug: string;
+  productName: string;
+  planSlug: string;
+  colorSlug: string | null;
+  quantity: number;
+  unitPriceCents: number;
+  totalCents: number;
+};
+
 declare global {
   interface Window {
     YT?: {
@@ -297,7 +307,7 @@ function Comprar() {
   const navigate = useNavigate();
   const { data } = useSuspenseQuery(catalogQuery);
   const runSearch = useServerFn(searchBusinesses);
-  const submitOrder = useServerFn(createPendingOrder);
+  const submitCart = useServerFn(createCartOrder);
   const createPref = useServerFn(createCheckoutPreference);
   const [wantsPixDiscount, setWantsPixDiscount] = useState(true);
   const pixPromoLive = pixDiscountActive();
@@ -379,11 +389,11 @@ function Comprar() {
       : (["estilo", "cor", "quantidade", "dados", "entrega", "revisao"] as const)
     : isResale
       ? (skipVideos
-          ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
-          : (["estilo", "conta", "quantidade", "dados", "entrega", "videos", "revisao"] as const))
+          ? (["estilo", "conta", "quantidade", "carrinho", "dados", "entrega", "revisao"] as const)
+          : (["estilo", "conta", "quantidade", "carrinho", "dados", "entrega", "videos", "revisao"] as const))
       : skipVideos
-        ? (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "revisao"] as const)
-        : (["estilo", "negocio", "confirmar", "quantidade", "dados", "entrega", "videos", "revisao"] as const);
+        ? (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "entrega", "revisao"] as const)
+        : (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "entrega", "videos", "revisao"] as const);
   const step = steps[stepIndex];
 
   const [term, setTerm] = useState("");
@@ -457,6 +467,56 @@ function Comprar() {
   }, [plan, product, quantity, isResale, color]);
   const total = unitPrice * quantity;
   const maxQuantity = plan?.max_quantity ?? 500;
+
+  // Carrinho: mais de um produto no mesmo pedido (só dentro do mesmo caminho --
+  // lojista com lojista, revenda com revenda; cada tipo tem lógica de preço/lote própria).
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const cartTotal = cart.reduce((s, l) => s + l.totalCents, 0);
+
+  function addCurrentToCart() {
+    if (!product) return;
+    setCart((prev) => [
+      ...prev,
+      {
+        productSlug: product.slug,
+        productName: color ? `${product.name} — ${color.name}` : product.name,
+        planSlug: plan.slug,
+        colorSlug: color?.slug ?? null,
+        quantity,
+        unitPriceCents: unitPrice,
+        totalCents: total,
+      },
+    ]);
+    setProduct(null);
+    setColor(null);
+    setQuantity(isResale ? 10 : 1);
+  }
+
+  function removeFromCart(index: number) {
+    setCart((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // Produtos sem passo de carrinho (acrílico sem arte) continuam com 1 item só --
+  // trata a seleção atual como "carrinho de 1" pra revisão/pagamento usarem sempre
+  // a mesma lógica, sem duplicar código de exibição/total.
+  const effectiveLines: CartLine[] =
+    cart.length > 0
+      ? cart
+      : product
+        ? [
+            {
+              productSlug: product.slug,
+              productName: color ? `${product.name} — ${color.name}` : product.name,
+              planSlug: plan.slug,
+              colorSlug: color?.slug ?? null,
+              quantity,
+              unitPriceCents: unitPrice,
+              totalCents: total,
+            },
+          ]
+        : [];
+  const effectiveTotal = effectiveLines.reduce((s, l) => s + l.totalCents, 0);
+  const effectiveQuantity = effectiveLines.reduce((s, l) => s + l.quantity, 0);
   // Acrílico é kit fechado: mínimo vem do produto, não do plano.
   const minQuantity = Math.max(plan?.min_quantity ?? 1, product?.min_quantity ?? 1);
 
@@ -528,10 +588,10 @@ function Comprar() {
   }
 
   async function finish() {
-    if (!plan || !product) return;
+    if (!plan || effectiveLines.length === 0) return;
     setSaving(true);
     try {
-      const res = await submitOrder({
+      const res = await submitCart({
         data: {
           business: business
             ? { name: business.name, placeId: business.placeId, address: business.address }
@@ -539,9 +599,11 @@ function Comprar() {
               ? { name: term || "Meu negócio", link: manualLink }
               : null,
           planSlug: plan.slug,
-          productSlug: product.slug,
-          colorSlug: color?.slug ?? null,
-          quantity,
+          items: effectiveLines.map((l) => ({
+            productSlug: l.productSlug,
+            colorSlug: l.colorSlug,
+            quantity: l.quantity,
+          })),
           customer,
           marketingConsent,
           address: { ...address, complement: address.complement || null },
@@ -828,7 +890,7 @@ function Comprar() {
                 concluir e enviar o código de rastreio.
               </p>
 
-              <PixFallback orderNumber={orderNumber} totalLabel={money(total)} />
+              <PixFallback orderNumber={orderNumber} totalLabel={money(effectiveTotal)} />
 
               <div className="relative mt-8 grid gap-3">
                 <Button
@@ -879,6 +941,8 @@ function Comprar() {
         );
       case "videos":
         return video1Watched && video2Watched;
+      case "carrinho":
+        return cart.length > 0 || !!product;
       default:
         return true;
     }
@@ -891,6 +955,7 @@ function Comprar() {
     negocio: "Negócio",
     confirmar: "Confirmar",
     quantidade: "Qtd.",
+    carrinho: "Carrinho",
     dados: "Dados",
     entrega: "Entrega",
     videos: "Tutorial",
@@ -1881,6 +1946,81 @@ function Comprar() {
             </div>
           )}
 
+          {step === "carrinho" && (
+            <div>
+              <h1 className="text-2xl leading-tight sm:text-3xl">
+                Quer levar <span className="highlight-yellow">mais de um produto</span>?
+              </h1>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                Dá pra juntar cartão e placa no mesmo pedido, com o mesmo frete grátis.
+              </p>
+
+              {cart.length > 0 && (
+                <dl className="mt-6 space-y-2">
+                  {cart.map((line, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4"
+                    >
+                      <div>
+                        <p className="text-sm font-bold">{line.productName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {line.quantity} un. × {money(line.unitPriceCents)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-display text-lg">{money(line.totalCents)}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(i)}
+                          className="text-xs font-semibold text-red-700 hover:underline"
+                        >
+                          remover
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </dl>
+              )}
+
+              {product && (
+                <div className="mt-4 rounded-2xl border-2 border-primary/30 bg-primary/5 p-4">
+                  <p className="text-xs font-black uppercase tracking-wider text-primary-foreground">
+                    Adicionado agora
+                  </p>
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <p className="text-sm font-bold">
+                      {color ? `${product.name} — ${color.name}` : product.name}
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        {quantity} un. × {money(unitPrice)}
+                      </span>
+                    </p>
+                    <span className="font-display text-lg">{money(total)}</span>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-5 h-12 w-full rounded-2xl font-bold"
+                onClick={() => {
+                  addCurrentToCart();
+                  setStepIndex(0);
+                }}
+                disabled={!product}
+              >
+                + Adicionar e comprar outro produto
+              </Button>
+
+              {cart.length + (product ? 1 : 0) > 0 && (
+                <p className="mt-4 text-right font-display text-xl">
+                  Total: {money(cartTotal + (product ? total : 0))}
+                </p>
+              )}
+            </div>
+          )}
+
           {step === "videos" && (
             <VideoGate
               watched1={video1Watched}
@@ -1921,13 +2061,17 @@ function Comprar() {
               </div>
 
               <dl className="mt-7 overflow-hidden rounded-2xl border border-border divide-y divide-border bg-card">
-                <Row label="Modelo" value={product?.name ?? "—"} />
                 <Row label="Produto" value={publicPlanName} />
                 {!isResale && (
                   <Row label="Negócio" value={business?.name ?? term ?? "Link colado"} />
                 )}
-                <Row label="Quantidade" value={`${quantity} unidade(s)`} />
-                <Row label="Preço por unidade" value={money(unitPrice)} />
+                {effectiveLines.map((line, i) => (
+                  <Row
+                    key={i}
+                    label={effectiveLines.length > 1 ? `Item ${i + 1}` : "Modelo"}
+                    value={`${line.productName} — ${line.quantity} un. × ${money(line.unitPriceCents)} = ${money(line.totalCents)}`}
+                  />
+                ))}
                 <Row
                   label="Frete"
                   value={
@@ -1968,10 +2112,14 @@ function Comprar() {
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-primary-foreground/80">
                       Total a pagar
                     </p>
-                    <p className="mt-2 text-sm font-semibold">{quantity} un. · frete incluso</p>
+                    <p className="mt-2 text-sm font-semibold">{effectiveQuantity} un. · frete incluso</p>
                   </div>
                   <p className="font-display text-4xl font-black leading-none text-primary-foreground sm:text-6xl">
-                    {money(wantsPixDiscount && pixPromoLive ? Math.round(total * (1 - PIX_DISCOUNT_PCT / 100)) : total)}
+                    {money(
+                      wantsPixDiscount && pixPromoLive
+                        ? Math.round(effectiveTotal * (1 - PIX_DISCOUNT_PCT / 100))
+                        : effectiveTotal,
+                    )}
                   </p>
                 </div>
               </div>
@@ -2066,11 +2214,16 @@ function Comprar() {
             ) : (
               <Button
                 size="lg"
-                onClick={() => go(1)}
+                onClick={() => {
+                  // Sair do carrinho pro pagamento: o item que tava sendo configurado
+                  // entra na lista automaticamente, sem precisar clicar "Adicionar" antes.
+                  if (step === "carrinho" && product) addCurrentToCart();
+                  go(1);
+                }}
                 disabled={!canAdvance || isTransitioning}
                 className="btn-press btn-primary-shadow shine-border h-14 rounded-2xl px-7 text-base font-black disabled:opacity-60 disabled:shadow-none"
               >
-                Continuar
+                {step === "carrinho" ? "Ir para pagamento" : "Continuar"}
                 <svg
                   className="size-4"
                   viewBox="0 0 24 24"
