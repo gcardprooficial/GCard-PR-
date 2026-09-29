@@ -564,19 +564,30 @@ function BatchSection({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-3 p-4 text-left"
+        className="flex w-full items-center justify-between gap-3 p-4 text-left active:bg-muted/60"
       >
-        <div>
+        <div className="min-w-0">
           <p className="font-display text-base font-bold">{title}</p>
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
+          <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+          <p className="mt-0.5 text-xs font-semibold text-primary-foreground sm:hidden">
+            {isOpen ? "Toque para fechar" : "Toque para ver as placas"}
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-muted-foreground">
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden text-xs font-semibold text-muted-foreground sm:inline">
             {activeCount}/{plates.length} ativados
           </span>
-          <span className={`transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+          <span
+            className={`flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-lg font-bold text-primary-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+            aria-hidden
+          >
+            ▾
+          </span>
         </div>
       </button>
+      <p className="px-4 pb-2 text-xs font-semibold text-muted-foreground sm:hidden">
+        {activeCount}/{plates.length} ativados
+      </p>
 
       {isOpen && (
         <div className="border-t border-border p-4 pt-3 space-y-3">
