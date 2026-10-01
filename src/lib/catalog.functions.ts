@@ -40,6 +40,8 @@ export type CatalogProduct = {
   min_quantity: number;
   /** Cores disponíveis; cada uma soma seu delta ao preço da faixa. Null = cor única. */
   color_variants: ColorVariant[] | null;
+  /** Preço do chip NFC avulso como add-on (centavos). Null = produto não oferece o add-on. */
+  nfc_addon_price_cents: number | null;
 };
 
 export type ColorVariant = { slug: string; name: string; delta_cents: number };
@@ -71,7 +73,7 @@ export const getCatalog = createServerFn({ method: "GET" }).handler(async () => 
     supabase
       .from("products")
       .select(
-        "id, slug, name, tagline, description, format, status, price_delta_cents, resale_delta_cents, has_qr, has_nfc, is_blank, min_quantity, color_variants",
+        "id, slug, name, tagline, description, format, status, price_delta_cents, resale_delta_cents, has_qr, has_nfc, is_blank, min_quantity, color_variants, nfc_addon_price_cents",
       )
       .order("sort_order"),
     supabase

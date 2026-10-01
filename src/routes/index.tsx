@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/accordion";
 import heroCartao from "@/assets/gcard-pro-hero-barbearia.jpeg";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
-import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-mockup.jpg";
-import produtoPlaquinhaL from "@/assets/gcard-pro-plaquinha-l-provisorio.jpg";
+import produtoPlaquinha10x10 from "@/assets/placa 10x10 avaliacao google.png";
+import produtoPlaquinhaL from "@/assets/placa 10x15 avaliacao google.png";
 import acrilico10x10Cristal from "@/assets/acrilico-10x10-cristal.jpg";
 import acrilicoLCristal from "@/assets/acrilico-l-cristal.jpg";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
@@ -964,13 +964,11 @@ function Home() {
                     i + 1
                   } overflow-hidden rounded-3xl border border-border bg-card card-soft card-soft-hover shine-border`}
                 >
-                  <div className="relative aspect-4/3 overflow-hidden bg-surface">
+                  <div className="relative aspect-square overflow-hidden bg-surface">
                     <img
                       src={IMAGES[product.slug] ?? produtoCartao}
                       alt={product.name}
-                      className={`h-full w-full object-cover transition-all duration-700 group-hover:scale-105 ${
-                        product.slug === "plaquinha-10x15-l" ? "blur-sm scale-110" : ""
-                      }`}
+                      className="h-full w-full object-cover transition-all duration-700 group-hover:scale-105"
                       loading="lazy"
                       draggable={false}
                     />

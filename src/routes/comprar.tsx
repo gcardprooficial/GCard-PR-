@@ -19,8 +19,8 @@ import { Progress } from "@/components/ui/progress";
 import { SecurityBadges } from "@/components/SecurityBadges";
 import { PixFallback } from "@/components/PixFallback";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
-import produtoPlaquinha10x10 from "@/assets/gcard-pro-plaquinha-10x10-mockup.jpg";
-import produtoPlaquinhaL from "@/assets/gcard-pro-plaquinha-l-provisorio.jpg";
+import produtoPlaquinha10x10 from "@/assets/placa 10x10 avaliacao google.png";
+import produtoPlaquinhaL from "@/assets/placa 10x15 avaliacao google.png";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 import acrilico10x10Cristal from "@/assets/acrilico-10x10-cristal.jpg";
 import acrilico10x10Branco from "@/assets/acrilico-10x10-branco.jpg";
@@ -163,6 +163,7 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     is_blank: false,
     min_quantity: 1,
     color_variants: null,
+    nfc_addon_price_cents: null,
   },
 ];
 
@@ -192,6 +193,7 @@ type CartLine = {
   quantity: number;
   unitPriceCents: number;
   totalCents: number;
+  nfcAddonQty: number;
 };
 
 declare global {
@@ -465,8 +467,17 @@ function Comprar() {
     if (!plan) return 0;
     return resolveUnitPrice(plan, product, quantity, isResale, color);
   }, [plan, product, quantity, isResale, color]);
-  const total = unitPrice * quantity;
   const maxQuantity = plan?.max_quantity ?? 500;
+
+  // Chip NFC avulso: add-on só pro acrílico liso, R$/un vem do produto (nunca hardcoded aqui).
+  const [nfcAddonQty, setNfcAddonQty] = useState(0);
+  const nfcAddonUnitCents = product?.nfc_addon_price_cents ?? 0;
+  const nfcAddonTotal = nfcAddonQty * nfcAddonUnitCents;
+  useEffect(() => {
+    setNfcAddonQty(0);
+  }, [product]);
+
+  const total = unitPrice * quantity + nfcAddonTotal;
 
   // Carrinho: mais de um produto no mesmo pedido (só dentro do mesmo caminho --
   // lojista com lojista, revenda com revenda; cada tipo tem lógica de preço/lote própria).
@@ -485,11 +496,13 @@ function Comprar() {
         quantity,
         unitPriceCents: unitPrice,
         totalCents: total,
+        nfcAddonQty,
       },
     ]);
     setProduct(null);
     setColor(null);
     setQuantity(isResale ? 10 : 1);
+    setNfcAddonQty(0);
   }
 
   function removeFromCart(index: number) {
@@ -512,6 +525,7 @@ function Comprar() {
               quantity,
               unitPriceCents: unitPrice,
               totalCents: total,
+              nfcAddonQty,
             },
           ]
         : [];
@@ -603,6 +617,7 @@ function Comprar() {
             productSlug: l.productSlug,
             colorSlug: l.colorSlug,
             quantity: l.quantity,
+            nfcAddonQty: l.nfcAddonQty || undefined,
           })),
           customer,
           marketingConsent,
@@ -1118,14 +1133,12 @@ function Comprar() {
                       )}
 
                       <div
-                        className={`relative aspect-4/3 overflow-hidden bg-surface transition-all ${!disabled ? "group-hover:scale-[1.02]" : ""}`}
+                        className={`relative aspect-square overflow-hidden bg-surface transition-all ${!disabled ? "group-hover:scale-[1.02]" : ""}`}
                       >
                         <img
                           src={IMAGES[item.slug] ?? produtoCartao}
                           alt={item.name}
-                          className={`h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 ${
-                            item.slug === "plaquinha-10x15-l" ? "blur-sm scale-110" : ""
-                          }`}
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                           loading="lazy"
                           draggable={false}
                         />
@@ -1699,6 +1712,70 @@ function Comprar() {
                 </div>
               </div>
 
+              {isBlank && nfcAddonUnitCents > 0 && (
+                <div className="mt-6 rounded-2xl border-2 border-border bg-background p-5 sm:p-6">
+                  <p className="font-display text-lg font-black">Quer chip NFC junto?</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Chip NFC avulso, {money(nfcAddonUnitCents)} por unidade. Enviamos solto, você cola na placa.
+                  </p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setNfcAddonQty(0)}
+                      className={`btn-press rounded-xl border-2 px-4 py-2 text-sm font-bold ${
+                        nfcAddonQty === 0
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground"
+                      }`}
+                    >
+                      Não
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNfcAddonQty((q) => (q === 0 ? quantity : q))}
+                      className={`btn-press rounded-xl border-2 px-4 py-2 text-sm font-bold ${
+                        nfcAddonQty > 0
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground"
+                      }`}
+                    >
+                      Sim
+                    </button>
+                    {nfcAddonQty > 0 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setNfcAddonQty((q) => Math.max(1, q - 1))}
+                          className="btn-press inline-flex size-10 items-center justify-center rounded-xl border-2 border-border text-xl font-black"
+                          aria-label="Diminuir chips"
+                        >
+                          −
+                        </button>
+                        <Input
+                          type="number"
+                          value={nfcAddonQty}
+                          onChange={(v) =>
+                            setNfcAddonQty(Math.max(1, Math.min(quantity, Number(v.target.value) || 1)))
+                          }
+                          className="h-10 w-20 text-center font-black input-soft rounded-xl"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setNfcAddonQty((q) => Math.min(quantity, q + 1))}
+                          className="btn-press inline-flex size-10 items-center justify-center rounded-xl border-2 border-border text-xl font-black"
+                          aria-label="Aumentar chips"
+                        >
+                          +
+                        </button>
+                        <span className="text-sm font-semibold text-muted-foreground">
+                          = {money(nfcAddonTotal)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="mt-8 relative overflow-hidden rounded-[1.5rem] border border-foreground/10 bg-gradient-to-br from-primary/20 via-primary/5 to-primary/10 p-6 sm:p-7">
                 <div
                   aria-hidden
@@ -1714,7 +1791,8 @@ function Comprar() {
                         {quantity} unidade{quantity === 1 ? "" : "s"}
                       </span>
                       <span className="text-sm font-semibold text-muted-foreground">
-                        × {money(unitPrice)} · frete grátis
+                        × {money(unitPrice)}
+                        {nfcAddonQty > 0 ? ` + ${nfcAddonQty} chip NFC` : ""} · frete grátis
                       </span>
                     </div>
                   </div>

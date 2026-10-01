@@ -148,7 +148,7 @@ async function resolveOrderLine(
     supabaseAdmin
       .from("products")
       .select(
-        "id, name, slug, price_delta_cents, resale_delta_cents, status, is_blank, min_quantity, color_variants",
+        "id, name, slug, price_delta_cents, resale_delta_cents, status, is_blank, min_quantity, color_variants, nfc_addon_price_cents",
       )
       .eq("slug", input.productSlug)
       .maybeSingle(),
@@ -329,6 +329,7 @@ const cartOrderSchema = z.object({
         productSlug: z.string().trim().min(2).max(60),
         colorSlug: z.string().trim().max(40).optional().nullable(),
         quantity: z.number().int().min(1).max(500),
+        nfcAddonQty: z.number().int().min(0).max(500).optional(),
       }),
     )
     .min(1)
@@ -366,13 +367,23 @@ export const createCartOrder = createServerFn({ method: "POST" })
           productSlug: item.productSlug,
           colorSlug: item.colorSlug,
           quantity: item.quantity,
-        }).then((resolved) => ({ ...resolved, quantity: item.quantity })),
+        }).then((resolved) => ({ ...resolved, quantity: item.quantity, nfcAddonQty: item.nfcAddonQty ?? 0 })),
       ),
     );
 
+    // Chip NFC avulso só é permitido no acrílico liso (is_blank) -- nunca confia na quantidade do navegador.
+    for (const line of lines) {
+      if (line.nfcAddonQty > 0 && !(line.product as { is_blank?: boolean }).is_blank) {
+        throw new Error(`Chip NFC avulso não disponível para "${line.product.name}".`);
+      }
+    }
+    const addonUnitCents = (product: { nfc_addon_price_cents?: number | null }) =>
+      product.nfc_addon_price_cents ?? 0;
+    const addonTotalCents = lines.reduce((s, l) => s + l.nfcAddonQty * addonUnitCents(l.product), 0);
+
     const isResale = lines[0]!.plan.is_resale;
     const totalQuantity = lines.reduce((s, l) => s + l.quantity, 0);
-    const totalCents = lines.reduce((s, l) => s + l.subtotal, 0);
+    const totalCents = lines.reduce((s, l) => s + l.subtotal, 0) + addonTotalCents;
 
     let businessId: string | null = null;
     if (data.business && parsedLink) {
@@ -421,8 +432,19 @@ export const createCartOrder = createServerFn({ method: "POST" })
       .single();
     if (orderError) throw orderError;
 
-    const { error: itemsError } = await supabaseAdmin.from("order_items").insert(
-      lines.map((line) => ({
+    const addonItems = lines
+      .filter((l) => l.nfcAddonQty > 0)
+      .map((l) => ({
+        order_id: order.id,
+        product_id: null,
+        product_name: "Chip NFC avulso (tag)",
+        quantity: l.nfcAddonQty,
+        unit_price_cents: addonUnitCents(l.product),
+        total_cents: l.nfcAddonQty * addonUnitCents(l.product),
+      }));
+
+    const { error: itemsError } = await supabaseAdmin.from("order_items").insert([
+      ...lines.map((line) => ({
         order_id: order.id,
         product_id: line.product.id,
         product_name: line.productName,
@@ -430,7 +452,8 @@ export const createCartOrder = createServerFn({ method: "POST" })
         unit_price_cents: line.unitPrice,
         total_cents: line.subtotal,
       })),
-    );
+      ...addonItems,
+    ]);
     if (itemsError) throw itemsError;
 
     try {
@@ -449,6 +472,19 @@ export const createCartOrder = createServerFn({ method: "POST" })
       await dispatchOrderEmailEvent(order.id, "pedido_recebido");
     } catch (error) {
       console.error("createCartOrder: falha ao registrar e-mail do pedido", { orderId: order.id, error });
+    }
+
+    if (addonTotalCents > 0) {
+      const totalAddonQty = lines.reduce((s, l) => s + l.nfcAddonQty, 0);
+      try {
+        await supabaseAdmin.from("component_stock_entries").insert({
+          name: "Chip NFC avulso",
+          quantity: -totalAddonQty,
+          note: `Venda no checkout - pedido #${order.order_number}`,
+        } as never);
+      } catch (error) {
+        console.error("createCartOrder: falha ao dar baixa no estoque de chip NFC", { orderId: order.id, error });
+      }
     }
 
     return { orderNumber: order.order_number, totalCents };
