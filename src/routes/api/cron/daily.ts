@@ -26,7 +26,17 @@ export const Route = createFileRoute("/api/cron/daily")({
           const reminders = await sendPaymentReminders();
           const autoCancelled = await autoCancelStalePending();
           const expired = await expireStalePendingOrders();
-          return Response.json({ ok: true, reconcile, reminders, autoCancelled, expired });
+
+          // Etiquetas de contato do WhatsApp (compraram, pararam no pagamento…). Não pode derrubar o cron.
+          let whatsappContacts: number | null = null;
+          try {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { data } = await (supabaseAdmin as any).rpc("wa_sync_contacts");
+            whatsappContacts = typeof data === "number" ? data : null;
+          } catch (error) {
+            console.error("Cron: falha ao sincronizar contatos do WhatsApp", error);
+          }
+          return Response.json({ ok: true, reconcile, reminders, autoCancelled, expired, whatsappContacts });
         } catch (error) {
           console.error("Cron diário falhou", error);
           return Response.json({ ok: false }, { status: 500 });

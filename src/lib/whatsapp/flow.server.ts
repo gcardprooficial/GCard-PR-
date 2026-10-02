@@ -1,10 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { aiReply, cepReply, CEP_RE, deliverAudio, handoff, norm, record, render, say, type Conv } from "./bot.server";
+import {
+  aiReply,
+  cepReply,
+  CEP_RE,
+  deliverAudio,
+  handoff,
+  norm,
+  record,
+  render,
+  say,
+  sendModelsWithPhotos,
+  type Conv,
+} from "./bot.server";
 import { sendButtons, supportsNativeButtons } from "./transport.server";
 
 export type FlowButton = { id: string; title: string; next: string | null };
 export type FlowNode = {
-  type: "text" | "audio" | "buttons" | "ask" | "cep" | "condition" | "ai" | "handoff";
+  type: "text" | "audio" | "buttons" | "ask" | "cep" | "condition" | "ai" | "handoff" | "models" | "goto";
+  target?: string; // goto: id do nó (ou "start")
   text?: string;
   audio_path?: string | null;
   buttons?: FlowButton[];
@@ -18,7 +31,7 @@ export type Flow = {
   id: string;
   name: string;
   is_active: boolean;
-  trigger: { type: string; keywords?: string[]; button_id?: string };
+  trigger: { type: string; keywords?: string[]; button_id?: string }; // first_message também aceita keywords
   start: string | null;
   nodes: Record<string, FlowNode>;
   sort_order: number;
@@ -93,6 +106,14 @@ async function run(conv: Conv, flow: Flow, startId: string | null, lastText: str
         await say(conv, await render(fill(n.text ?? "", conv, vars)));
         await setState(conv, flow.id, id, vars);
         return;
+      case "models":
+        if (n.text) await say(conv, await render(fill(n.text, conv, vars)));
+        await sendModelsWithPhotos(conv);
+        id = n.next ?? null;
+        break;
+      case "goto":
+        id = n.target === "start" || !n.target ? flow.start : n.target;
+        break;
       case "condition":
         id = hasKeyword(lastText, n.keywords) ? (n.yes ?? null) : (n.no ?? null);
         break;
@@ -189,7 +210,7 @@ export async function triggerFlow(
     const t = flow.trigger;
     const hit =
       phase === "specific"
-        ? (t.type === "keyword" && kind === "text" && !!text && hasKeyword(text, t.keywords)) ||
+        ? ((t.type === "keyword" || t.type === "first_message") && kind === "text" && !!text && hasKeyword(text, t.keywords)) ||
           (t.type === "audio" && kind === "audio") ||
           (t.type === "image" && kind === "image") ||
           (t.type === "button" && !!buttonId && t.button_id === buttonId)
@@ -200,4 +221,14 @@ export async function triggerFlow(
     }
   }
   return false;
+}
+
+/** Depois de uma resposta solta, oferece o menu de novo (nó "nfim" do fluxo de primeira mensagem), pro cliente nunca ficar sem próximo passo. */
+export async function offerMenu(conv: Conv): Promise<void> {
+  try {
+    const flow = (await loadFlows()).find((f) => f.trigger.type === "first_message" && f.nodes["nfim"]);
+    if (flow) await run(conv, flow, "nfim", "", {});
+  } catch (error) {
+    console.error("fluxo: falha ao oferecer menu", error);
+  }
 }

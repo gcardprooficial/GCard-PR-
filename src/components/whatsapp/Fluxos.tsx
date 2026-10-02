@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 // Tabelas novas ainda não estão nos tipos gerados do Supabase.
 const db = supabase as any;
 
-type NodeType = "text" | "audio" | "buttons" | "ask" | "cep" | "condition" | "ai" | "handoff";
+type NodeType = "text" | "audio" | "buttons" | "ask" | "cep" | "condition" | "ai" | "handoff" | "models" | "goto";
 type FNode = {
   type: NodeType;
   text?: string;
@@ -19,6 +19,7 @@ type FNode = {
   next?: string | null;
   yes?: string | null;
   no?: string | null;
+  target?: string;
 };
 type FlowRow = {
   id: string;
@@ -39,6 +40,8 @@ const NODE_META: Record<NodeType, { icon: string; label: string; color: string }
   condition: { icon: "🔀", label: "Condição (palavra-chave)", color: "border-pink-400/60" },
   ai: { icon: "🤖", label: "Resposta da IA", color: "border-cyan-400/60" },
   handoff: { icon: "🙋", label: "Passar pra atendente", color: "border-red-400/60" },
+  models: { icon: "🖼️", label: "Enviar modelos com foto", color: "border-teal-400/60" },
+  goto: { icon: "↩️", label: "Voltar ao início do fluxo", color: "border-zinc-400/60" },
 };
 
 const TRIGGERS = [
@@ -75,6 +78,10 @@ function defaultNode(type: NodeType): FNode {
       return { type, keywords: [], yes: null, no: null };
     case "ai":
       return { type, next: null };
+    case "models":
+      return { type, text: "Nossos modelos 👇", next: null };
+    case "goto":
+      return { type, target: "start" };
     default:
       return { type: "handoff", text: "Certo! Já chamei alguém da equipe pra te responder por aqui 🙂" };
   }
@@ -82,6 +89,7 @@ function defaultNode(type: NodeType): FNode {
 
 const childrenOf = (n: FNode): (string | null | undefined)[] => [
   n.next,
+  n.target && n.target !== "start" ? n.target : null,
   n.yes,
   n.no,
   ...(n.buttons ?? []).map((b) => b.next),
@@ -229,7 +237,7 @@ export function Fluxos() {
     const node = id ? draft?.nodes[id] : null;
     if (!id || !node) return <AddNode onAdd={(t) => addNode(t, attach)} />;
     const meta = NODE_META[node.type];
-    const hasText = ["text", "ask", "cep", "buttons", "handoff"].includes(node.type);
+    const hasText = ["text", "ask", "cep", "buttons", "handoff", "models"].includes(node.type);
 
     return (
       <div className="flex flex-col items-start">
@@ -281,6 +289,17 @@ export function Fluxos() {
                 patchNode(id, { keywords: e.target.value.split(",").map((k) => k.trim()).filter(Boolean) })
               }
             />
+          )}
+
+          {node.type === "models" && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Manda uma foto de cada modelo ativo, com nome e preço. Fotos ficam em public/wa/.
+            </p>
+          )}
+          {node.type === "goto" && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Volta pro primeiro passo do fluxo (o menu), pra o cliente nunca ficar sem opção.
+            </p>
           )}
 
           {node.type === "ai" && (
@@ -357,7 +376,7 @@ export function Fluxos() {
               </div>
             ))}
           </div>
-        ) : node.type === "handoff" ? null : (
+        ) : node.type === "handoff" || node.type === "goto" ? null : (
           <div className="ml-6 mt-1 border-l-2 border-border pl-3 pt-2">
             {chain(node.next, (nid) => patchNode(id, { next: nid }))}
           </div>
@@ -427,10 +446,10 @@ export function Fluxos() {
                 </option>
               ))}
             </select>
-            {draft.trigger.type === "keyword" && (
+            {(draft.trigger.type === "keyword" || draft.trigger.type === "first_message") && (
               <Input
                 className="mt-2 h-9"
-                placeholder="palavras separadas por vírgula"
+                placeholder={draft.trigger.type === "first_message" ? "também abrir quando disser… (menu, opções, ajuda)" : "palavras separadas por vírgula"}
                 value={(draft.trigger.keywords ?? []).join(", ")}
                 onChange={(e) =>
                   setDraft({

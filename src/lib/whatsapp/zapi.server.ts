@@ -43,6 +43,21 @@ export async function sendAudio(to: string, bytes: Uint8Array, mime: string): Pr
   return r.messageId ?? r.id ?? null;
 }
 
+export async function sendImage(to: string, url: string, caption: string): Promise<string | null> {
+  const r = await post("send-image", { phone: to, image: url, caption: caption.slice(0, 1000), delayMessage: 2 });
+  return r.messageId ?? r.id ?? null;
+}
+
+/** Botões nativos da Z-API. Instável fora da API oficial: só roda com ZAPI_NATIVE_BUTTONS=true. */
+export async function sendButtons(to: string, text: string, buttons: { id: string; title: string }[]): Promise<string | null> {
+  const r = await post("send-button-list", {
+    phone: to,
+    message: text.slice(0, 1000),
+    buttonList: { buttons: buttons.slice(0, 3).map((b) => ({ id: b.id, label: b.title.slice(0, 20) })) },
+  });
+  return r.messageId ?? r.id ?? null;
+}
+
 export async function markRead(to: string, messageId: string): Promise<void> {
   await post("read-message", { phone: to, messageId }).catch(() => undefined);
 }

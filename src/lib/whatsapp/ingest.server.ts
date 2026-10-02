@@ -26,6 +26,11 @@ export async function ingestInbound(m: Inbound): Promise<void> {
       .select("*")
       .single();
     conv = ins.data;
+    // Conversa nova: já etiqueta (se for cliente que comprou no site, aparece como "Cliente" na hora).
+    await db.rpc("wa_sync_contacts").then(
+      () => undefined,
+      () => undefined,
+    );
   }
   if (!conv) return;
 
@@ -79,7 +84,7 @@ export async function ingestInbound(m: Inbound): Promise<void> {
     .eq("conversation_id", conv.id)
     .eq("sender", "bot")
     .gte("created_at", since);
-  if ((count ?? 0) >= 12) {
+  if ((count ?? 0) >= 25) {
     await db.from("wa_conversations").update({ status: "humano" }).eq("id", conv.id);
     return;
   }

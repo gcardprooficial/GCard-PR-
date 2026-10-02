@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Fluxos } from "@/components/whatsapp/Fluxos";
+import { Contatos, contactKey, LabelChips, useContacts } from "@/components/whatsapp/Contatos";
 
 export const Route = createFileRoute("/painel/whatsapp")({ component: WhatsApp });
 
@@ -59,7 +60,7 @@ const fmtTime = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
 function WhatsApp() {
-  const [tab, setTab] = useState<"conversas" | "fluxos" | "respostas" | "ia">("conversas");
+  const [tab, setTab] = useState<"conversas" | "contatos" | "fluxos" | "respostas" | "ia">("conversas");
   const runStatus = useServerFn(getWhatsAppStatus);
   const [status, setStatus] = useState<{ provider: "zapi" | "meta"; connected: boolean; ai: boolean } | null>(null);
 
@@ -69,6 +70,7 @@ function WhatsApp() {
 
   const tabs = [
     ["conversas", "Conversas"],
+    ["contatos", "Contatos e etiquetas"],
     ["fluxos", "Fluxos"],
     ["respostas", "Respostas automáticas"],
     ["ia", "IA e conhecimento"],
@@ -117,6 +119,7 @@ function WhatsApp() {
 
       <div className="mt-5">
         {tab === "conversas" && <Conversas />}
+        {tab === "contatos" && <Contatos />}
         {tab === "fluxos" && <Fluxos />}
         {tab === "respostas" && <Respostas />}
         {tab === "ia" && <IA />}
@@ -128,6 +131,7 @@ function WhatsApp() {
 // ---------------------------------------------------------------------------
 function Conversas() {
   const { userId } = usePanel();
+  const { byKey: contactsByKey } = useContacts();
   const send = useServerFn(sendWhatsAppText);
   const sendQuick = useServerFn(sendWhatsAppQuickReply);
   const [convs, setConvs] = useState<Conv[]>([]);
@@ -284,6 +288,10 @@ function Conversas() {
                 )}
               </div>
               <p className="mt-0.5 truncate text-xs text-muted-foreground">{c.last_text}</p>
+              {(() => {
+                const ct = contactsByKey.get(contactKey(c.wa_id));
+                return ct ? <div className="mt-1"><LabelChips auto={ct.auto_labels} manual={ct.labels} /></div> : null;
+              })()}
               <div className="mt-1 flex items-center justify-between">
                 <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${STATUS_STYLE[c.status]}`}>
                   {STATUS_LABEL[c.status]}
@@ -316,6 +324,10 @@ function Conversas() {
                   {fmtPhone(active.wa_id)}
                 </a>
               </div>
+              {(() => {
+                const ct = contactsByKey.get(contactKey(active.wa_id));
+                return ct ? <LabelChips auto={ct.auto_labels} manual={ct.labels} /> : null;
+              })()}
               <span className={`rounded-md px-2 py-1 text-xs font-black ${STATUS_STYLE[active.status]}`}>
                 {STATUS_LABEL[active.status]}
               </span>

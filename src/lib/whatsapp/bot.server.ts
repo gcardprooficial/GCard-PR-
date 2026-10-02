@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { money, resolveUnitPrice, type PriceTier } from "@/lib/pricing";
 import { pixDiscountActive, PIX_DISCOUNT_PCT } from "@/lib/promo";
-import { sendAudio, sendText } from "./transport.server";
+import { sendAudio, sendImage, sendText } from "./transport.server";
 
 export type Conv = { id: string; wa_id: string; name: string | null; status: string };
 type QuickReply = {
@@ -21,7 +21,25 @@ async function admin(): Promise<any> {
 // ---------------------------------------------------------------------------
 // Catálogo ao vivo: preço/modelo nunca ficam escritos em texto fixo (senão desatualizam).
 // ---------------------------------------------------------------------------
-async function catalogTexts(): Promise<{ precos: string; modelos: string }> {
+/** Nomes curtos pro WhatsApp (os nomes do catálogo são longos demais pra mensagem de celular). */
+const SHORT_NAME: Record<string, string> = {
+  "cartao-bolso": "Cartão PVC com NFC",
+  "plaquinha-10x10": "Placa de acrílico 10x10 (NFC + QR)",
+  "plaquinha-10x15-l": "Placa de acrílico 10x15 (NFC + QR)",
+  "acrilico-10x10-sem-arte": "Acrílico liso 10x10 (sem arte)",
+};
+
+/** Fotos servidas pelo próprio site (public/wa). */
+const siteUrl = () => (process.env["PUBLIC_APP_URL"] ?? "https://www.gcardpro.com.br").replace(/\/$/, "");
+
+type Catalog = {
+  precos: string; // curto, pra mensagem
+  precosFull: string; // completo, pra IA
+  modelos: string;
+  fotos: { slug: string; url: string; caption: string }[];
+};
+
+async function catalogTexts(): Promise<Catalog> {
   const db = await admin();
   const [products, plans, planTiers, productTiers] = await Promise.all([
     db.from("products").select("*").eq("status", "ativo").order("sort_order"),
@@ -41,6 +59,8 @@ async function catalogTexts(): Promise<{ precos: string; modelos: string }> {
 
   const precoBlocks: string[] = [];
   const modeloBlocks: string[] = [];
+  const compact: string[] = [];
+  const fotos: Catalog["fotos"] = [];
 
   for (const prod of products.data ?? []) {
     const rTiers: PriceTier[] = (productTiers.data ?? [])
@@ -81,6 +101,16 @@ async function catalogTexts(): Promise<{ precos: string; modelos: string }> {
       }
     }
 
+    const short = SHORT_NAME[prod.slug] ?? prod.name;
+    let priceShort = "";
+    if (prod.is_blank) {
+      const first = rTiers[0];
+      if (first) priceShort = `kit ${first.min_quantity} un: a partir de ${money(first.unit_price_cents)}/un`;
+    } else if (lojista) {
+      priceShort = `${money(resolveUnitPrice(lojista, pricedProduct, 1, false))}/un`;
+    }
+    compact.push(`• ${short}: ${priceShort}`);
+    fotos.push({ slug: prod.slug, url: `${siteUrl()}/wa/${prod.slug}.jpg`, caption: `*${short}*\n${priceShort}` });
     precoBlocks.push(`*${prod.name}*\n${lines.join("\n")}`);
     modeloBlocks.push(
       `• *${prod.name}*${prod.format ? ` (${prod.format})` : ""}${prod.tagline ? ` — ${prod.tagline}` : ""}${
@@ -89,15 +119,33 @@ async function catalogTexts(): Promise<{ precos: string; modelos: string }> {
     );
   }
 
-  let precos = precoBlocks.join("\n\n");
-  if (pixDiscountActive()) precos += `\n\n💸 ${PIX_DISCOUNT_PCT}% de desconto pagando no Pix (promoção por tempo limitado)`;
-  return { precos, modelos: modeloBlocks.join("\n") };
+  const promo = pixDiscountActive() ? `\n\n💸 ${PIX_DISCOUNT_PCT}% de desconto pagando no Pix (promoção por tempo limitado)` : "";
+  return {
+    precos: compact.join("\n") + promo,
+    precosFull: precoBlocks.join("\n\n") + promo,
+    modelos: modeloBlocks.join("\n"),
+    fotos,
+  };
 }
 
 export async function render(template: string): Promise<string> {
   if (!template.includes("{{")) return template;
   const { precos, modelos } = await catalogTexts();
   return template.replaceAll("{{precos}}", precos).replaceAll("{{modelos}}", modelos);
+}
+
+/** Manda uma foto + legenda curta (nome e preço) de cada modelo ativo. Falha de imagem vira só texto. */
+export async function sendModelsWithPhotos(conv: Conv) {
+  const { fotos } = await catalogTexts();
+  for (const f of fotos) {
+    try {
+      const id = await sendImage(conv.wa_id, f.url, f.caption);
+      await record(conv.id, "bot", "image", f.caption, id);
+    } catch (error) {
+      console.error("whatsapp bot: falha ao enviar foto", f.slug, error);
+      await say(conv, f.caption);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -266,13 +314,13 @@ async function askAi(history: { role: "user" | "assistant"; content: string }[])
   const geminiKey = process.env["GEMINI_API_KEY"];
   if (!key && !geminiKey) return null;
   const db = await admin();
-  const [{ precos, modelos }, { data: know }] = await Promise.all([
+  const [{ precosFull: precos, modelos }, { data: know }] = await Promise.all([
     catalogTexts(),
     db.from("wa_knowledge").select("question, answer").order("created_at", { ascending: false }).limit(60),
   ]);
   const learned = (know ?? []).map((k: any) => `P: ${k.question}\nR: ${k.answer}`).join("\n\n");
 
-  const system = `Você atende clientes da GCard-PRÓ pelo WhatsApp, em português do Brasil, com tom simpático, direto e curto (máx. 5 linhas, no máximo 1 emoji). Escreva como mensagem de WhatsApp (sem markdown, só *negrito* com asteriscos simples quando ajudar).
+  const system = `Você atende clientes da GCard-PRÓ pelo WhatsApp, em português do Brasil, com tom simpático, direto e MUITO curto (máx. 3 linhas, no máximo 1 emoji). Escreva como mensagem de WhatsApp (sem markdown, só *negrito* com asteriscos simples quando ajudar).
 
 REGRAS INQUEBRÁVEIS:
 1. Responda SOMENTE com base nos FATOS, no CATÁLOGO e nas RESPOSTAS APROVADAS abaixo. Nunca invente preço, prazo, garantia, desconto, característica ou política.
@@ -402,6 +450,7 @@ export async function processInbound(
   const cepMatch = text.match(CEP_RE);
   if (cepMatch) {
     await say(conv, await cepReply(`${cepMatch[1]}${cepMatch[2]}`));
+    await flows.offerMenu(conv);
     return;
   }
 
@@ -414,7 +463,10 @@ export async function processInbound(
     .order("sort_order");
   const hit = matchQuickReply(text, (replies ?? []) as QuickReply[]);
   if (hit) {
-    await say(conv, await render(hit.body));
+    const wantsPhotos = hit.body.includes("{{fotos}}");
+    const body = hit.body.replace("{{fotos}}", "").trim();
+    if (body) await say(conv, await render(body));
+    if (wantsPhotos) await sendModelsWithPhotos(conv);
     if (hit.audio_path) {
       try {
         await deliverAudio(conv, hit.audio_path, "bot");
@@ -422,6 +474,7 @@ export async function processInbound(
         console.error("whatsapp bot: falha ao enviar áudio", error);
       }
     }
+    await flows.offerMenu(conv);
     return;
   }
 

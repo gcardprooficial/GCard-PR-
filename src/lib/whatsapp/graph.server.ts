@@ -89,6 +89,17 @@ export async function sendAudio(to: string, bytes: Uint8Array, mime: string): Pr
   return r.messages?.[0]?.id ?? null;
 }
 
+export async function sendImage(to: string, url: string, caption: string): Promise<string | null> {
+  const { phoneId } = cfg();
+  const r = await post(`${phoneId}/messages`, {
+    messaging_product: "whatsapp",
+    to,
+    type: "image",
+    image: { link: url, caption: caption.slice(0, 1000) },
+  });
+  return r.messages?.[0]?.id ?? null;
+}
+
 export async function markRead(waMessageId: string): Promise<void> {
   const { phoneId } = cfg();
   await post(`${phoneId}/messages`, {
