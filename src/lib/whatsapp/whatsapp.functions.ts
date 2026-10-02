@@ -37,6 +37,15 @@ export const sendWhatsAppQuickReply = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const sendWhatsAppOriginSurvey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ conversationId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeam(context.userId);
+    const { sendOriginSurvey } = await import("./bot.server");
+    return { sent: await sendOriginSurvey(data.conversationId) };
+  });
+
 export const getWhatsAppStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

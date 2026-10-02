@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 // Tabelas novas ainda não estão nos tipos gerados do Supabase.
 const db = supabase as any;
 
-type NodeType = "text" | "audio" | "buttons" | "ask" | "cep" | "condition" | "ai" | "handoff" | "models" | "goto";
+type NodeType = "text" | "audio" | "buttons" | "ask" | "cep" | "condition" | "ai" | "handoff" | "models" | "goto" | "choice";
 type FNode = {
   type: NodeType;
   text?: string;
@@ -20,6 +20,7 @@ type FNode = {
   yes?: string | null;
   no?: string | null;
   target?: string;
+  options?: { title: string }[];
 };
 type FlowRow = {
   id: string;
@@ -42,6 +43,7 @@ const NODE_META: Record<NodeType, { icon: string; label: string; color: string }
   handoff: { icon: "🙋", label: "Passar pra atendente", color: "border-red-400/60" },
   models: { icon: "🖼️", label: "Enviar modelos com foto", color: "border-teal-400/60" },
   goto: { icon: "↩️", label: "Voltar ao início do fluxo", color: "border-zinc-400/60" },
+  choice: { icon: "📋", label: "Pesquisa (lista numerada → etiqueta Origem)", color: "border-indigo-400/60" },
 };
 
 const TRIGGERS = [
@@ -51,6 +53,7 @@ const TRIGGERS = [
   ["image", "Cliente mandou imagem"],
   ["button", "Cliente clicou num botão (id)"],
   ["any_text", "Qualquer texto (último recurso)"],
+  ["manual", "Só quando a equipe enviar (botão no painel)"],
 ] as const;
 
 const newId = () => `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
@@ -82,6 +85,13 @@ function defaultNode(type: NodeType): FNode {
       return { type, text: "Nossos modelos 👇", next: null };
     case "goto":
       return { type, target: "start" };
+    case "choice":
+      return {
+        type,
+        text: "Por onde você chegou até nós?",
+        options: [{ title: "Instagram" }, { title: "YouTube" }, { title: "Outro" }],
+        next: null,
+      };
     default:
       return { type: "handoff", text: "Certo! Já chamei alguém da equipe pra te responder por aqui 🙂" };
   }
@@ -160,6 +170,7 @@ export function Fluxos() {
       const walk = (id?: string | null) => {
         if (!id || keep[id] || !draft.nodes[id]) return;
         keep[id] = draft.nodes[id]!;
+        if (keep[id]!.options) keep[id] = { ...keep[id]!, options: keep[id]!.options!.filter((o) => o.title.trim()) };
         childrenOf(keep[id]!).forEach(walk);
       };
       walk(draft.start);
@@ -237,7 +248,7 @@ export function Fluxos() {
     const node = id ? draft?.nodes[id] : null;
     if (!id || !node) return <AddNode onAdd={(t) => addNode(t, attach)} />;
     const meta = NODE_META[node.type];
-    const hasText = ["text", "ask", "cep", "buttons", "handoff", "models"].includes(node.type);
+    const hasText = ["text", "ask", "cep", "buttons", "handoff", "models", "choice"].includes(node.type);
 
     return (
       <div className="flex flex-col items-start">
@@ -291,6 +302,19 @@ export function Fluxos() {
             />
           )}
 
+          {node.type === "choice" && (
+            <div className="mt-2">
+              <textarea
+                className="min-h-24 w-full rounded-lg border border-border bg-background p-2 text-sm"
+                value={(node.options ?? []).map((o) => o.title).join("\n")}
+                placeholder="Uma opção por linha"
+                onChange={(e) => patchNode(id, { options: e.target.value.split("\n").map((title) => ({ title })) })}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Sai como lista numerada (até 9). A resposta do cliente vira a etiqueta “Origem: …” no contato.
+              </p>
+            </div>
+          )}
           {node.type === "models" && (
             <p className="mt-2 text-xs text-muted-foreground">
               Manda uma foto de cada modelo ativo, com nome e preço. Fotos ficam em public/wa/.

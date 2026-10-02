@@ -394,6 +394,17 @@ export async function dispatchOrderEmailEvent(
         sent_at: result.sent ? new Date().toISOString() : null,
       })
       .eq("id", inserted.id);
+
+    // Mesmo aviso por WhatsApp (isolado: falha aqui nunca afeta o e-mail nem o pedido).
+    try {
+      const { dispatchOrderWhatsApp } = await import("@/lib/whatsapp/notify.server");
+      await dispatchOrderWhatsApp(orderId, event, {
+        ...(extra?.paymentUrl ? { paymentUrl: extra.paymentUrl } : {}),
+        force: extra?.force ?? false,
+      });
+    } catch (waError) {
+      console.error("Falha no espelho do e-mail por WhatsApp", { orderId, event, waError });
+    }
     return { sent: result.sent, queued: !result.sent };
   } catch (error) {
     await db

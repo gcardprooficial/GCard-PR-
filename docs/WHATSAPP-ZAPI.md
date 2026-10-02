@@ -45,6 +45,23 @@ Automáticas, calculadas dos pedidos do site e das conversas: **Cliente**, **Cli
 - Áudio: `.ogg` (opus), `.mp3`, `.m4a`, `.aac` ou `.amr`. `.webm`/`.wav` não funcionam.
 - Se a Z-API mandar um formato que o sistema não reconheça, o erro aparece no log da Vercel (`Erro no webhook da Z-API`).
 
+## Avisos de pedido por WhatsApp (espelho dos e-mails)
+
+Tudo que o cliente recebe por e-mail também vai por WhatsApp, no mesmo momento, com as mesmas informações e links: pedido recebido, link/lembrete de pagamento, pagamento confirmado, lote pronto (código do lote + códigos das placas), em produção, enviado (transportadora, rastreio e link) e entregue (com o convite do vídeo no Instagram). O link de pagamento enviado à mão pelo painel também vai pelo WhatsApp.
+
+Só funciona com Z-API (na API oficial da Meta aviso proativo exige template aprovado). Regras que protegem o número:
+- 1 aviso por pedido + evento (o botão de reenviar do painel força o reenvio);
+- só pra quem informou telefone no checkout, e só se o número tiver WhatsApp (a Z-API confere antes);
+- limite de 80 avisos por dia (`WA_NOTIFY_DAILY_CAP` muda o valor);
+- quem responder **PARAR** recebe a etiqueta "Sem avisos" e nunca mais recebe (os e-mails continuam);
+- o resultado de cada aviso (enviado, pulado e por quê, falhou) fica na tabela `wa_order_notifications`.
+
+Se o cliente responder o aviso, a conversa aparece normalmente no painel.
+
+## Pesquisa "por onde chegou até nós"
+
+Fluxo "Pesquisa de origem (manual)": lista numerada (Instagram, YouTube, Google / Site, Indicação de amigo/parceiro, ChatGPT / Inteligência Artificial, Outro). A resposta (número ou nome) vira a etiqueta **Origem: …** no contato e o cliente recebe o agradecimento. Dispara quando você clica **Perguntar origem** na conversa e automaticamente ao clicar **Resolver** (se o contato ainda não tem origem). Dá pra editar as opções e o texto na aba **Fluxos**.
+
 ## Alternativa: API oficial da Meta
 
 Usada só se `ZAPI_INSTANCE_ID` **não** estiver definida (veja `WHATSAPP.md`).

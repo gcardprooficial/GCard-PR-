@@ -283,6 +283,27 @@ export async function cepReply(cep: string): Promise<string> {
   return `Saindo de Indaiatuba/SP${place}: ${total}`;
 }
 
+/** Quem pede pra parar não recebe mais avisos de pedido por WhatsApp (os e-mails continuam). */
+const OPT_OUT = /^(parar|sair|stop|cancelar avisos|nao quero (mais )?(receber|avisos)( avisos)?)[\s!.]*$/;
+
+async function optOut(conv: Conv) {
+  const db = await admin();
+  const key = conv.wa_id.slice(2, 4) + conv.wa_id.slice(-8);
+  const { data: c } = await db.from("wa_contacts").select("id, labels").eq("phone_key", key).maybeSingle();
+  const labels = Array.from(new Set([...((c?.labels ?? []) as string[]), "Sem avisos"]));
+  if (c) await db.from("wa_contacts").update({ labels }).eq("id", c.id);
+  else await db.from("wa_contacts").insert({ phone_key: key, wa_id: conv.wa_id, name: conv.name, labels, source: "whatsapp" });
+}
+
+/** Pesquisa "por onde chegou até nós" (fluxo manual). Usado pelo botão do painel e ao resolver a conversa. */
+export async function sendOriginSurvey(convId: string): Promise<boolean> {
+  const db = await admin();
+  const { data: conv } = await db.from("wa_conversations").select("*").eq("id", convId).maybeSingle();
+  if (!conv) throw new Error("Conversa não encontrada.");
+  const flows = await import("./flow.server");
+  return flows.startManualFlow(conv, "origem");
+}
+
 const GREETING = /^(oi+|ola|opa|e ai|eai|bom dia|boa tarde|boa noite|tudo bem|tudo bom|hey|hello|salve)[\s!.,?]*$/;
 const WANTS_HUMAN = /(atendente|atendimento humano|\bhumano\b|falar com (uma )?(pessoa|alguem|humano)|vendedor)/;
 
@@ -421,6 +442,13 @@ export async function processInbound(
   buttonId: string | null = null,
 ) {
   const db = await admin();
+
+  // PARAR vale mesmo com a equipe atendendo: é pedido de privacidade, não conversa.
+  if (kind === "text" && text && OPT_OUT.test(norm(text))) {
+    await optOut(conv);
+    await say(conv, "Pronto! Não enviaremos mais avisos por aqui. Seus pedidos continuam sendo avisados por e-mail 😉");
+    return;
+  }
 
   // Equipe já assumiu: bot fica quieto.
   if (conv.status === "humano") return;

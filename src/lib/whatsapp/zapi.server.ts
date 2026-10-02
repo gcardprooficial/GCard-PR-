@@ -58,6 +58,22 @@ export async function sendButtons(to: string, text: string, buttons: { id: strin
   return r.messageId ?? r.id ?? null;
 }
 
+/** O número tem WhatsApp? true/false; null se a Z-API não conseguiu responder (aí tenta enviar mesmo assim). */
+export async function phoneExists(to: string): Promise<boolean | null> {
+  try {
+    const { base, clientToken } = cfg();
+    const res = await fetch(`${base}/phone-exists/${to}`, {
+      headers: clientToken ? { "Client-Token": clientToken } : {},
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as { exists?: boolean };
+    return typeof j.exists === "boolean" ? j.exists : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function markRead(to: string, messageId: string): Promise<void> {
   await post("read-message", { phone: to, messageId }).catch(() => undefined);
 }

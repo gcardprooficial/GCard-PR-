@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePanel } from "@/lib/panelContext";
 import {
   getWhatsAppStatus,
+  sendWhatsAppOriginSurvey,
   sendWhatsAppQuickReply,
   sendWhatsAppText,
 } from "@/lib/whatsapp/whatsapp.functions";
@@ -134,6 +135,7 @@ function Conversas() {
   const { byKey: contactsByKey } = useContacts();
   const send = useServerFn(sendWhatsAppText);
   const sendQuick = useServerFn(sendWhatsAppQuickReply);
+  const sendSurvey = useServerFn(sendWhatsAppOriginSurvey);
   const [convs, setConvs] = useState<Conv[]>([]);
   const [filter, setFilter] = useState<"todas" | "humano" | "bot" | "resolvido">("todas");
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -188,11 +190,31 @@ function Conversas() {
   const shown = useMemo(() => convs.filter((c) => filter === "todas" || c.status === filter), [convs, filter]);
   const waiting = convs.filter((c) => c.status === "humano").length;
 
+  async function askOrigin(silent = false) {
+    if (!active) return;
+    try {
+      const r = await sendSurvey({ data: { conversationId: active.id } });
+      if (!silent) toast[r.sent ? "success" : "error"](r.sent ? "Pesquisa de origem enviada." : "Crie o fluxo 'Pesquisa de origem' (gatilho manual).");
+      else if (r.sent) toast.success("Conversa resolvida e pesquisa de origem enviada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não consegui enviar a pesquisa.");
+    }
+  }
+
   async function setStatus(status: Conv["status"]) {
     if (!active) return;
     const { error } = await db.from("wa_conversations").update({ status }).eq("id", active.id);
-    if (error) toast.error(error.message);
-    else void loadConvs();
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    void loadConvs();
+    // Final do atendimento: se ainda não sabemos por onde o cliente chegou, pergunta.
+    if (status === "resolvido") {
+      const ct = contactsByKey.get(contactKey(active.wa_id));
+      const hasOrigin = (ct?.labels ?? []).some((l) => l.startsWith("Origem: "));
+      if (!hasOrigin) void askOrigin(true);
+    }
   }
 
   async function submit() {
@@ -341,6 +363,9 @@ function Conversas() {
                   Devolver ao bot
                 </Button>
               )}
+              <Button size="sm" variant="outline" onClick={() => void askOrigin()}>
+                Perguntar origem
+              </Button>
               {active.status !== "resolvido" && (
                 <Button size="sm" variant="outline" onClick={() => setStatus("resolvido")}>
                   Resolver

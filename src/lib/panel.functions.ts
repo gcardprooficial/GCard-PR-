@@ -96,7 +96,7 @@ export const sendPaymentLinkEmail = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error } = await supabaseAdmin
       .from("orders")
-      .select("id, order_number, total_cents, quantity, customer_email, customer_name")
+      .select("id, order_number, total_cents, quantity, customer_email, customer_name, customer_phone")
       .eq("id", data.orderId)
       .maybeSingle();
     if (error) throw error;
@@ -106,7 +106,16 @@ export const sendPaymentLinkEmail = createServerFn({ method: "POST" })
     const preference = await provider.createPreference({ order: order as any, origin });
     const { sendPaymentLinkEmail: sendEmail } = await import("@/lib/email-events.server");
     const result = await sendEmail(order, preference.url);
-    if (!result.sent) throw new Error("RESEND_API_KEY não está configurada para enviar e-mails.");
+
+    // O mesmo link também por WhatsApp (isolado: não derruba o envio do e-mail).
+    let whatsapp = false;
+    try {
+      const { sendPaymentLinkWhatsApp } = await import("@/lib/whatsapp/notify.server");
+      whatsapp = (await sendPaymentLinkWhatsApp(order as any, preference.url)).sent;
+    } catch (waError) {
+      console.error("Falha ao enviar link de pagamento por WhatsApp", waError);
+    }
+    if (!result.sent && !whatsapp) throw new Error("Não consegui enviar: RESEND_API_KEY ausente e o WhatsApp não enviou.");
     return { ok: true as const };
   });
 

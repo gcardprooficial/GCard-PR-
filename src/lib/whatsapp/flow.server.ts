@@ -16,7 +16,8 @@ import { sendButtons, supportsNativeButtons } from "./transport.server";
 
 export type FlowButton = { id: string; title: string; next: string | null };
 export type FlowNode = {
-  type: "text" | "audio" | "buttons" | "ask" | "cep" | "condition" | "ai" | "handoff" | "models" | "goto";
+  type: "text" | "audio" | "buttons" | "ask" | "cep" | "condition" | "ai" | "handoff" | "models" | "goto" | "choice";
+  options?: { title: string }[]; // choice: lista numerada; a resposta vira a etiqueta "Origem: …"
   target?: string; // goto: id do nó (ou "start")
   text?: string;
   audio_path?: string | null;
@@ -106,6 +107,13 @@ async function run(conv: Conv, flow: Flow, startId: string | null, lastText: str
         await say(conv, await render(fill(n.text ?? "", conv, vars)));
         await setState(conv, flow.id, id, vars);
         return;
+      case "choice": {
+        const opts = (n.options ?? []).slice(0, 9);
+        const list = opts.map((o, i) => `*${i + 1}* - ${o.title}`).join("\n");
+        await say(conv, `${await render(fill(n.text ?? "", conv, vars))}\n\n${list}\n\nResponda com o número.`);
+        await setState(conv, flow.id, id, vars);
+        return;
+      }
       case "models":
         if (n.text) await say(conv, await render(fill(n.text, conv, vars)));
         await sendModelsWithPhotos(conv);
@@ -134,6 +142,25 @@ async function run(conv: Conv, flow: Flow, startId: string | null, lastText: str
     }
   }
   await setState(conv, null, null, {});
+}
+
+/** Grava (ou troca) a etiqueta manual "Origem: …" do contato dessa conversa. */
+async function setOrigin(conv: Conv, title: string) {
+  const db = await admin();
+  const key = conv.wa_id.slice(2, 4) + conv.wa_id.slice(-8);
+  const { data: c } = await db.from("wa_contacts").select("id, labels").eq("phone_key", key).maybeSingle();
+  const labels = ((c?.labels ?? []) as string[]).filter((l) => !l.startsWith("Origem: "));
+  labels.push(`Origem: ${title}`);
+  if (c) await db.from("wa_contacts").update({ labels }).eq("id", c.id);
+  else await db.from("wa_contacts").insert({ phone_key: key, wa_id: conv.wa_id, name: conv.name, labels, source: "whatsapp" });
+}
+
+/** Dispara um fluxo de gatilho "manual" pelo nome (ex.: "origem"). */
+export async function startManualFlow(conv: Conv, namePart: string): Promise<boolean> {
+  const flow = (await loadFlows()).find((f) => f.trigger.type === "manual" && f.name.toLowerCase().includes(namePart));
+  if (!flow?.start) return false;
+  await run(conv, flow, flow.start, "", {});
+  return true;
 }
 
 async function loadFlows(): Promise<Flow[]> {
@@ -171,6 +198,32 @@ export async function resumeFlow(
       return false; // digitou outra coisa: sai do fluxo e o bot normal responde
     }
     await run(conv, flow, hit.next, text ?? "", vars);
+    return true;
+  }
+  if (node.type === "choice") {
+    if (kind !== "text" || !text) {
+      await setState(conv, null, null, {});
+      return false;
+    }
+    const opts = node.options ?? [];
+    const clean = (x: string) => norm(x).replace(/[^a-z0-9 ]/g, "").trim();
+    const typed = clean(text);
+    let idx = /^[1-9]$/.test(typed) ? Number(typed) - 1 : -1;
+    if (idx < 0 || idx >= opts.length) {
+      idx = opts.findIndex((o) => {
+        const t = clean(o.title);
+        return typed === t || (typed.length >= 4 && (t.includes(typed) || typed.includes(t.split(" ")[0] ?? "§")));
+      });
+    }
+    const chosen = idx >= 0 ? opts[idx] : undefined;
+    // Pergunta de verdade (não é a resposta da pesquisa): sai do fluxo e o bot normal responde.
+    if (!chosen && (text.includes("?") || text.length > 40)) {
+      await setState(conv, null, null, {});
+      return false;
+    }
+    if (!chosen) vars["origem_texto"] = text.slice(0, 200);
+    await setOrigin(conv, chosen?.title ?? "Outro");
+    await run(conv, flow, node.next ?? null, text, vars);
     return true;
   }
   if (node.type === "ask") {
