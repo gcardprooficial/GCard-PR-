@@ -15,6 +15,8 @@ type ZapiPayload = {
   text?: { message?: string };
   audio?: unknown;
   image?: unknown;
+  sticker?: unknown;
+  reaction?: unknown;
   buttonsResponseMessage?: { buttonId?: string; message?: string };
   listResponseMessage?: { message?: string; selectedRowId?: string };
 };
@@ -41,10 +43,11 @@ export const Route = createFileRoute("/api/webhooks/zapi")({
           if (p.isGroup || p.isNewsletter || p.isStatusReply || p.broadcast) return new Response(null, { status: 200 });
           if (!p.phone || !p.messageId) return new Response(null, { status: 200 });
           if (p.fromMe && p.fromApi) return new Response(null, { status: 200 }); // enviada pelo nosso sistema
+          if (p.reaction) return new Response(null, { status: 200 }); // reação (👍) a uma mensagem: não é conversa
 
           const text =
             p.text?.message ?? p.buttonsResponseMessage?.message ?? p.listResponseMessage?.message ?? null;
-          const kind = text ? "text" : p.audio ? "audio" : p.image ? "image" : "other";
+          const kind = text ? "text" : p.audio ? "audio" : p.image ? "image" : p.sticker ? "sticker" : "other";
 
           const { ingestInbound } = await import("@/lib/whatsapp/ingest.server");
           await ingestInbound({

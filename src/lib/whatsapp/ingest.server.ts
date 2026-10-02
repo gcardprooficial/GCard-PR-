@@ -6,7 +6,7 @@ export type Inbound = {
   name: string | null;
   messageId: string;
   text: string | null;
-  kind: "text" | "audio" | "image" | "other";
+  kind: "text" | "audio" | "image" | "sticker" | "other";
   buttonId: string | null;
   fromMe: boolean; // mensagem escrita pelo dono direto no celular (Z-API)
 };
@@ -16,7 +16,8 @@ export async function ingestInbound(m: Inbound): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const db = supabaseAdmin as any;
   const now = new Date().toISOString();
-  const preview = m.text ?? (m.kind === "audio" ? "🎤 áudio" : m.kind === "image" ? "📷 imagem" : "mensagem");
+  const preview =
+    m.text ?? (m.kind === "audio" ? "🎤 áudio" : m.kind === "image" ? "📷 imagem" : m.kind === "sticker" ? "🙂 figurinha" : "mensagem");
 
   let { data: conv } = await db.from("wa_conversations").select("*").eq("wa_id", m.waId).maybeSingle();
   if (!conv) {

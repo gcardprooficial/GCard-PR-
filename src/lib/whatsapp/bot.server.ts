@@ -304,6 +304,28 @@ export async function sendOriginSurvey(convId: string): Promise<boolean> {
   return flows.startManualFlow(conv, "origem");
 }
 
+/** Mensagem curta de agradecimento/encerramento (sem pergunta): hora de perguntar por onde o cliente chegou. */
+const THANKS = /\b(obrigad[oa]?|obg+d?|brigad[oa]|valeu|vlw|show|top|beleza|blz|perfeito|otimo|massa|joia|ok|certo|entendi|combinado|fechado|tmj)\b/;
+const isClosing = (t: string, raw: string) =>
+  raw.length <= 40 && !raw.includes("?") && (THANKS.test(t) || /^[\p{Extended_Pictographic}\s]+$/u.test(raw));
+
+/** Cliente encerrou: pergunta a origem uma única vez; se já perguntou/respondeu, fica quieto (sem ping-pong). */
+async function closing(conv: Conv) {
+  const db = await admin();
+  const key = conv.wa_id.slice(2, 4) + conv.wa_id.slice(-8);
+  const { data: c } = await db.from("wa_contacts").select("labels").eq("phone_key", key).maybeSingle();
+  if (((c?.labels ?? []) as string[]).some((l) => l.startsWith("Origem: "))) return;
+  const { count } = await db
+    .from("wa_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("conversation_id", conv.id)
+    .eq("direction", "out")
+    .ilike("body", "Por gentileza, para nos ajudar%");
+  if ((count ?? 0) > 0) return;
+  const flows = await import("./flow.server");
+  await flows.startManualFlow(conv, "origem");
+}
+
 const GREETING = /^(oi+|ola|opa|e ai|eai|bom dia|boa tarde|boa noite|tudo bem|tudo bom|hey|hello|salve)[\s!.,?]*$/;
 const WANTS_HUMAN = /(atendente|atendimento humano|\bhumano\b|falar com (uma )?(pessoa|alguem|humano)|vendedor)/;
 
@@ -462,6 +484,12 @@ export async function processInbound(
   // Cliente no meio de um fluxo (clicou num botão / respondeu uma pergunta).
   if (await flows.resumeFlow(conv as any, kind, text, buttonId)) return;
 
+  // Figurinha/emoji solto = cliente se despedindo: pergunta a origem (não chama atendente).
+  if (kind === "sticker") {
+    await closing(conv);
+    return;
+  }
+
   // Áudio/imagem/etc: fluxo com esse gatilho, senão passa pra pessoa.
   if (kind !== "text" || !text) {
     if (await flows.triggerFlow(conv, "specific", kind, text, buttonId, false)) return;
@@ -473,6 +501,19 @@ export async function processInbound(
   if (WANTS_HUMAN.test(t)) {
     await handoff(conv);
     return;
+  }
+
+  // "Obrigado", "valeu", "👍"…: só depois de o bot já ter respondido algo (senão é só um oi educado).
+  if (isClosing(t, text)) {
+    const { count: botSent } = await db
+      .from("wa_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("conversation_id", conv.id)
+      .eq("direction", "out");
+    if ((botSent ?? 0) > 0) {
+      await closing(conv);
+      return;
+    }
   }
 
   const cepMatch = text.match(CEP_RE);

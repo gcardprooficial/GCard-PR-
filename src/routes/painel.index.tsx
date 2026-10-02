@@ -67,6 +67,27 @@ function formatCep(zip: string): string {
   return digits.replace(/(\d{5})(\d{3})/, "$1-$2");
 }
 
+type Period = "todos" | "hoje" | "ontem" | "7d" | "mes" | "custom";
+type SortBy = "recentes" | "antigos" | "maior" | "menor";
+
+/** Intervalo [início, fim) no fuso do navegador (BRT pra vocês), pelo dia em que o pedido foi feito. */
+function periodRange(p: Period, from: string, to: string): [number, number] | null {
+  if (p === "todos") return null;
+  const d0 = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = 86_400_000;
+  const today = d0(new Date()).getTime();
+  if (p === "hoje") return [today, today + day];
+  if (p === "ontem") return [today - day, today];
+  if (p === "7d") return [today - 6 * day, today + day];
+  if (p === "mes") {
+    const n = new Date();
+    return [new Date(n.getFullYear(), n.getMonth(), 1).getTime(), new Date(n.getFullYear(), n.getMonth() + 1, 1).getTime()];
+  }
+  const f = from ? new Date(`${from}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY;
+  const t = to ? new Date(`${to}T00:00:00`).getTime() + day : Number.POSITIVE_INFINITY;
+  return [f, t];
+}
+
 type OrderRow = {
   id: string;
   order_number: number;
@@ -370,6 +391,10 @@ function Orders() {
   const [stage, setStage] = useState<Stage | "todos">("a_produzir");
   const [checkingPayments, setCheckingPayments] = useState(false);
   const [q, setQ] = useState(search.q ?? "");
+  const [period, setPeriod] = useState<Period>("todos");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("recentes");
   const [sendingPaymentFor, setSendingPaymentFor] = useState<string | null>(null);
   const [deletingFor, setDeletingFor] = useState<string | null>(null);
 
@@ -705,6 +730,20 @@ function Orders() {
     toast.success(`Pedido #${row.order_number} atualizado.`);
   }
 
+  // Período vale pra tudo (abas, contagens, totais e lista).
+  const range = periodRange(period, dateFrom, dateTo);
+  const inPeriod = (r: OrderRow) => {
+    if (!range) return true;
+    const t = new Date(r.created_at).getTime();
+    return t >= range[0] && t < range[1];
+  };
+  const dated = (rows ?? []).filter(inPeriod);
+  const periodBase = dated.filter((r) => kindFilter === "all" || r.kind === kindFilter);
+  const periodPaid = periodBase.filter((r) => r.payment_status === "pago");
+  const periodOpen = periodBase.filter((r) => r.payment_status === "pendente");
+  const sum = (list: OrderRow[]) => list.reduce((s, r) => s + (r.total_cents ?? 0), 0);
+  const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   const stageCounts: Record<Stage, number> = {
     aguardando: 0,
     a_produzir: 0,
@@ -714,15 +753,15 @@ function Orders() {
     nao_pagos: 0,
     estornados: 0,
   };
-  for (const r of rows ?? []) {
+  for (const r of dated) {
     if (kindFilter === "all" || r.kind === kindFilter) stageCounts[stageOf(r)]++;
   }
   const counts = {
-    all: rows?.length ?? 0,
-    individual: rows?.filter((r) => r.kind === "individual").length ?? 0,
-    revenda: rows?.filter((r) => r.kind === "revenda").length ?? 0,
+    all: dated.length,
+    individual: dated.filter((r) => r.kind === "individual").length,
+    revenda: dated.filter((r) => r.kind === "revenda").length,
   };
-  const visible = (rows ?? []).filter((r) => {
+  const visible = dated.filter((r) => {
     if (kindFilter !== "all" && r.kind !== kindFilter) return false;
     // Buscando por nome/número: procura em todas as etapas, senão o pedido "some".
     if (!q.trim() && stage !== "todos" && stageOf(r) !== stage) return false;
@@ -734,6 +773,9 @@ function Orders() {
       String(r.order_number).includes(t)
     );
   });
+  if (sortBy === "antigos") visible.sort((a, b) => a.created_at.localeCompare(b.created_at));
+  else if (sortBy === "maior") visible.sort((a, b) => b.total_cents - a.total_cents);
+  else if (sortBy === "menor") visible.sort((a, b) => a.total_cents - b.total_cents);
 
   return (
     <>
@@ -821,6 +863,76 @@ function Orders() {
           </button>
         ))}
       </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
+        <span className="self-center">Período:</span>
+        {(
+          [
+            ["todos", "Tudo"],
+            ["hoje", "Hoje"],
+            ["ontem", "Ontem"],
+            ["7d", "Últimos 7 dias"],
+            ["mes", "Este mês"],
+            ["custom", "Escolher datas"],
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setPeriod(k)}
+            className={`rounded-full px-3 py-1 transition-colors ${
+              period === k ? "bg-muted font-bold text-foreground ring-1 ring-border" : "hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+        {period === "custom" && (
+          <span className="flex items-center gap-1">
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 w-36 text-xs" />
+            até
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-8 w-36 text-xs" />
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-1">
+          Ordenar:
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            className="h-8 rounded-lg border border-border bg-background px-2 text-xs font-semibold"
+          >
+            <option value="recentes">Mais recentes</option>
+            <option value="antigos">Mais antigos</option>
+            <option value="maior">Maior valor</option>
+            <option value="menor">Menor valor</option>
+          </select>
+        </span>
+      </div>
+
+      {rows !== null && (
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className="rounded-2xl bg-card p-3 card-soft">
+            <p className="text-xs font-semibold text-muted-foreground">Pedidos no período</p>
+            <p className="text-xl font-black">{periodBase.length}</p>
+            <p className="text-xs text-muted-foreground">{brl(sum(periodBase))} em pedidos feitos</p>
+          </div>
+          <div className="rounded-2xl bg-card p-3 card-soft">
+            <p className="text-xs font-semibold text-muted-foreground">Vendas pagas</p>
+            <p className="text-xl font-black text-g-green">{brl(sum(periodPaid))}</p>
+            <p className="text-xs text-muted-foreground">{periodPaid.length} pedido(s) pago(s)</p>
+          </div>
+          <div className="rounded-2xl bg-card p-3 card-soft">
+            <p className="text-xs font-semibold text-muted-foreground">Aguardando pagamento</p>
+            <p className="text-xl font-black">{brl(sum(periodOpen))}</p>
+            <p className="text-xs text-muted-foreground">{periodOpen.length} pedido(s) em aberto</p>
+          </div>
+        </div>
+      )}
+      {rows !== null && rows.length >= 500 && range && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Considerando os 500 pedidos mais recentes: períodos muito antigos podem estar incompletos.
+        </p>
+      )}
 
       {rows === null ? (
         <p className="mt-8 text-sm text-muted-foreground">Carregando…</p>

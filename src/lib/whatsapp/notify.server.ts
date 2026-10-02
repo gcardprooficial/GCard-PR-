@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { GOOGLE_REVIEW_URL } from "@/lib/company";
 import { carrierLabel, trackingUrl } from "@/lib/shipping";
 import { phoneExists } from "./zapi.server";
 import { provider, sendText } from "./transport.server";
@@ -120,7 +121,7 @@ function build(event: NotifyEvent, c: Ctx): string {
       else if (c.cardOnly) t += `\n${usageTips(c)}`;
       else if (c.isRevenda) t += `\n${activation()}`;
       else t += `\n${usageTips(c)}`;
-      t += `\n\nDeu tudo certo? Conta pra gente aqui ou no Instagram. 📹 Grava um vídeo rapidinho mostrando o seu GCard-PRÓ e marca @gcardpro.oficial: adoramos repostar!${FOOTER}`;
+      t += `\n\nDeu tudo certo? Conta pra gente aqui. 📹 Grava um vídeo rapidinho mostrando o seu GCard-PRÓ e *marca a gente no Instagram* @gcardpro.oficial: adoramos repostar!\n\n⭐ E avalia a GCard-PRÓ no Google (30 segundos):\n${GOOGLE_REVIEW_URL}${FOOTER}`;
       return t;
     }
   }

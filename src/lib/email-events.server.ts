@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
-import { COMPANY_ADDRESS, COMPANY_ID_LINE } from "@/lib/company";
+import { COMPANY_ADDRESS, COMPANY_ID_LINE, GOOGLE_REVIEW_URL } from "@/lib/company";
 import { carrierLabel, trackingUrl } from "@/lib/shipping";
 
 export type OrderEmailEvent =
@@ -376,7 +376,9 @@ export async function dispatchOrderEmailEvent(
         body +=
           `<p style="margin-top:16px;">Deu tudo certo? Conta pra gente no WhatsApp ou no Instagram — e se precisar de ajuda com a configuração, estamos por aqui.</p>` +
           `<p style="margin-top:12px;font-weight:700;">📹 Grava um vídeo rapidinho mostrando o seu GCard-PRÓ e marca a gente no Instagram ` +
-          `<a href="https://instagram.com/gcardpro.oficial" style="color:#1A1A1A;font-weight:700;">@gcardpro.oficial</a> — adoramos repostar!</p>`;
+          `<a href="https://instagram.com/gcardpro.oficial" style="color:#1A1A1A;font-weight:700;">@gcardpro.oficial</a> — adoramos repostar!</p>` +
+          `<p style="margin-top:16px;font-weight:700;">⭐ E que tal avaliar a GCard-PRÓ no Google? Leva 30 segundos e ajuda muito:</p>` +
+          ctaButton(GOOGLE_REVIEW_URL, "Avaliar no Google");
         break;
     }
 

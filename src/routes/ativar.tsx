@@ -41,6 +41,7 @@ type Plate = {
   batch_id: string | null;
   last_scan_at: string | null;
   scan_count: number;
+  activated_at: string | null;
 };
 
 function Ativar() {
@@ -223,6 +224,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "ativada" | "nao_ativada">("all");
+  const [sortBy, setSortBy] = useState<"codigo" | "recentes" | "antigas" | "negocio">("codigo");
   const [redeemCode, setRedeemCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
 
@@ -251,7 +253,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       const p = await supabase
         .from("plates")
         .select(
-          "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count",
+          "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count, activated_at",
         )
         .in("batch_id", batchIds)
         .order("short_code", { ascending: true });
@@ -332,7 +334,21 @@ function Lote({ email, userId }: { email: string; userId: string }) {
     return { total, active, blank: total - active };
   }, [plates]);
 
-  const filtered = plates.filter((p) => {
+  const byDate = (a: Plate, b: Plate, dir: 1 | -1) => {
+    // Quem ainda não foi ativado vai sempre pro fim, em qualquer sentido.
+    if (!a.activated_at && !b.activated_at) return a.short_code.localeCompare(b.short_code);
+    if (!a.activated_at) return 1;
+    if (!b.activated_at) return -1;
+    return (new Date(a.activated_at).getTime() - new Date(b.activated_at).getTime()) * dir;
+  };
+  const sortedPlates = [...plates].sort((a, b) => {
+    if (sortBy === "recentes") return byDate(a, b, -1);
+    if (sortBy === "antigas") return byDate(a, b, 1);
+    if (sortBy === "negocio") return (a.business_name ?? "￿").localeCompare(b.business_name ?? "￿", "pt-BR");
+    return a.short_code.localeCompare(b.short_code);
+  });
+
+  const filtered = sortedPlates.filter((p) => {
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
     if (!q.trim()) return true;
     const t = q.toLowerCase();
@@ -475,6 +491,23 @@ function Lote({ email, userId }: { email: string; userId: string }) {
                 <p className="text-xs text-muted-foreground">Clique num lote pra abrir e ativar os cartões dele</p>
               </div>
               <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código / negócio" className="h-10 w-full sm:w-64 input-soft rounded-xl" />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <label className="text-xs font-semibold text-muted-foreground" htmlFor="ordenar-placas">
+                Ordenar por
+              </label>
+              <select
+                id="ordenar-placas"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="h-9 rounded-xl border border-border bg-background px-3 text-xs font-semibold"
+              >
+                <option value="codigo">Código (GCARD-0000)</option>
+                <option value="recentes">Ativadas há menos tempo</option>
+                <option value="antigas">Ativadas há mais tempo</option>
+                <option value="negocio">Nome do negócio (A–Z)</option>
+              </select>
             </div>
 
             <div className="mt-3 flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
@@ -657,7 +690,10 @@ function PlateCard({
           {active ? "✓ Ativado no Google" : "○ Em branco (Sem loja)"}
         </span>
       </div>
-      <p className="mt-1.5 text-xs text-muted-foreground">{plate.scan_count} toque(s) / leitura(s) registradas</p>
+      <p className="mt-1.5 text-xs text-muted-foreground">
+        {plate.scan_count} toque(s) / leitura(s) registradas
+        {active && plate.activated_at ? ` · ativado em ${new Date(plate.activated_at).toLocaleDateString("pt-BR")}` : ""}
+      </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
