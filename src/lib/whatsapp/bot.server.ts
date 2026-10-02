@@ -236,7 +236,7 @@ export async function cepReply(cep: string): Promise<string> {
 }
 
 const GREETING = /^(oi+|ola|opa|e ai|eai|bom dia|boa tarde|boa noite|tudo bem|tudo bom|hey|hello|salve)[\s!.,?]*$/;
-const WANTS_HUMAN = /(atendente|humano|pessoa|falar com (alguem|voce)|vendedor|responsavel)/;
+const WANTS_HUMAN = /(atendente|atendimento humano|\bhumano\b|falar com (uma )?(pessoa|alguem|humano)|vendedor)/;
 
 const WELCOME =
   "Oi! 👋 Eu sou o assistente virtual da GCard-PRÓ.\n\nPosso te ajudar com:\n• Valores\n• Modelos\n• Prazo de entrega\n• Se a empresa é confiável\n• Como configurar o QR Code e o NFC\n\nÉ só escrever o que você precisa. Se preferir falar com uma pessoa, escreva *atendente*.";

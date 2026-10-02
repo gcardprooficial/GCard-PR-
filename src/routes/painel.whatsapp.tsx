@@ -99,12 +99,6 @@ function WhatsApp() {
           Passo a passo em <code>docs/WHATSAPP-ZAPI.md</code>.
         </div>
       )}
-      {status && !status.ai && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          IA desligada: falta <code>GEMINI_API_KEY</code> (Google) ou <code>ANTHROPIC_API_KEY</code>. Sem ela, o bot só usa as respostas automáticas e passa o
-          resto pra equipe.
-        </p>
-      )}
 
       <div className="mt-5 flex flex-wrap gap-2">
         {tabs.map(([k, label]) => (
