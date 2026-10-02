@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { aiReply, cepReply, CEP_RE, deliverAudio, handoff, norm, record, render, say, type Conv } from "./bot.server";
-import { sendButtons } from "./graph.server";
+import { sendButtons, supportsNativeButtons } from "./transport.server";
 
 export type FlowButton = { id: string; title: string; next: string | null };
 export type FlowNode = {
@@ -77,8 +77,14 @@ async function run(conv: Conv, flow: Flow, startId: string | null, lastText: str
       case "buttons": {
         const text = await render(fill(n.text ?? "", conv, vars));
         const buttons = (n.buttons ?? []).slice(0, 3);
-        const waId = await sendButtons(conv.wa_id, text, buttons);
-        await record(conv.id, "bot", "text", `${text}\n[${buttons.map((b) => b.title).join(" | ")}]`, waId);
+        if (supportsNativeButtons()) {
+          const waId = await sendButtons(conv.wa_id, text, buttons);
+          await record(conv.id, "bot", "text", `${text}\n[${buttons.map((b) => b.title).join(" | ")}]`, waId);
+        } else {
+          // Z-API: botão nativo é instável -> lista numerada; o cliente responde o número ou o nome.
+          const options = buttons.map((b, i) => `*${i + 1}* - ${b.title}`).join("\n");
+          await say(conv, `${text}\n\n${options}\n\nResponda com o número da opção.`);
+        }
         await setState(conv, flow.id, id, vars);
         return;
       }
@@ -132,9 +138,13 @@ export async function resumeFlow(
   const vars = { ...(conv.vars ?? {}) };
 
   if (node.type === "buttons") {
-    const hit = (node.buttons ?? []).find(
-      (b) => (buttonId && b.id === buttonId) || (text && norm(text) === norm(b.title)),
-    );
+    const list = node.buttons ?? [];
+    const clean = (s: string) => norm(s).replace(/[^a-z0-9 ]/g, "").trim();
+    const typed = text ? clean(text) : "";
+    const hit =
+      list.find((b) => buttonId && b.id === buttonId) ??
+      list.find((b) => typed && typed === clean(b.title)) ??
+      (/^[1-3]$/.test(typed) ? list[Number(typed) - 1] : undefined);
     if (!hit) {
       await setState(conv, null, null, {});
       return false; // digitou outra coisa: sai do fluxo e o bot normal responde

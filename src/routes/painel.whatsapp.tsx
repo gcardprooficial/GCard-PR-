@@ -61,7 +61,7 @@ const fmtTime = (iso: string) =>
 function WhatsApp() {
   const [tab, setTab] = useState<"conversas" | "fluxos" | "respostas" | "ia">("conversas");
   const runStatus = useServerFn(getWhatsAppStatus);
-  const [status, setStatus] = useState<{ whatsapp: boolean; webhookSecret: boolean; ai: boolean } | null>(null);
+  const [status, setStatus] = useState<{ provider: "zapi" | "meta"; connected: boolean; ai: boolean } | null>(null);
 
   useEffect(() => {
     runStatus().then(setStatus).catch(() => setStatus(null));
@@ -82,11 +82,21 @@ function WhatsApp() {
         a conversa vira <strong>Atendente</strong> e o bot fica quieto até você devolver.
       </p>
 
-      {status && (!status.whatsapp || !status.webhookSecret) && (
+      {status && !status.connected && (
         <div className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm">
-          <strong>WhatsApp ainda não conectado.</strong> Faltam as variáveis na Vercel:{" "}
-          <code>WHATSAPP_TOKEN</code>, <code>WHATSAPP_PHONE_NUMBER_ID</code>, <code>WHATSAPP_APP_SECRET</code>,{" "}
-          <code>WHATSAPP_VERIFY_TOKEN</code>. Passo a passo em <code>docs/WHATSAPP.md</code>.
+          <strong>WhatsApp ainda não conectado.</strong>{" "}
+          {status.provider === "zapi" ? (
+            <>
+              Falta <code>ZAPI_WEBHOOK_SECRET</code> na Vercel (e apontar o webhook da instância pra{" "}
+              <code>/api/webhooks/zapi?secret=…</code>).
+            </>
+          ) : (
+            <>
+              Defina na Vercel: <code>ZAPI_INSTANCE_ID</code> + <code>ZAPI_TOKEN</code> + <code>ZAPI_WEBHOOK_SECRET</code>{" "}
+              (Z-API, recomendado) ou as variáveis <code>WHATSAPP_*</code> (API oficial da Meta).
+            </>
+          )}{" "}
+          Passo a passo em <code>docs/WHATSAPP.md</code>.
         </div>
       )}
       {status && !status.ai && (

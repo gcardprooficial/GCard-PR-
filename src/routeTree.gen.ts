@@ -38,6 +38,7 @@ import { Route as ApiCronDailyRouteImport } from './routes/api/cron/daily'
 import { Route as ApiMelhorenvioCallbackRouteImport } from './routes/api/melhorenvio/callback'
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks/whatsapp'
+import { Route as ApiWebhooksZapiRouteImport } from './routes/api/webhooks/zapi'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -187,6 +188,11 @@ const ApiWebhooksWhatsappRoute = ApiWebhooksWhatsappRouteImport.update({
   path: '/api/webhooks/whatsapp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksZapiRoute = ApiWebhooksZapiRouteImport.update({
+  id: '/api/webhooks/zapi',
+  path: '/api/webhooks/zapi',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -218,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
+  '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
+  '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -279,6 +287,7 @@ export interface FileRoutesById {
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
+  '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -312,6 +321,7 @@ export interface FileRouteTypes {
     | '/api/melhorenvio/callback'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/whatsapp'
+    | '/api/webhooks/zapi'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/api/melhorenvio/callback'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/whatsapp'
+    | '/api/webhooks/zapi'
   id:
     | '__root__'
     | '/'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/api/melhorenvio/callback'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/whatsapp'
+    | '/api/webhooks/zapi'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -389,6 +401,7 @@ export interface RootRouteChildren {
   ApiMelhorenvioCallbackRoute: typeof ApiMelhorenvioCallbackRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
+  ApiWebhooksZapiRoute: typeof ApiWebhooksZapiRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -596,6 +609,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/zapi': {
+      id: '/api/webhooks/zapi'
+      path: '/api/webhooks/zapi'
+      fullPath: '/api/webhooks/zapi'
+      preLoaderRoute: typeof ApiWebhooksZapiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -662,6 +682,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMelhorenvioCallbackRoute: ApiMelhorenvioCallbackRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
+  ApiWebhooksZapiRoute: ApiWebhooksZapiRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -41,9 +41,15 @@ export const getWhatsAppStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertTeam(context.userId);
+    const { provider } = await import("./transport.server");
+    const p = provider();
+    const env = process.env;
     return {
-      whatsapp: Boolean(process.env["WHATSAPP_TOKEN"] && process.env["WHATSAPP_PHONE_NUMBER_ID"]),
-      webhookSecret: Boolean(process.env["WHATSAPP_APP_SECRET"] && process.env["WHATSAPP_VERIFY_TOKEN"]),
-      ai: Boolean(process.env["ANTHROPIC_API_KEY"]),
+      provider: p,
+      connected:
+        p === "zapi"
+          ? Boolean(env["ZAPI_WEBHOOK_SECRET"])
+          : Boolean(env["WHATSAPP_TOKEN"] && env["WHATSAPP_PHONE_NUMBER_ID"] && env["WHATSAPP_APP_SECRET"] && env["WHATSAPP_VERIFY_TOKEN"]),
+      ai: Boolean(env["ANTHROPIC_API_KEY"]),
     };
   });
