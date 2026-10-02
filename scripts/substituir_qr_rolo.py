@@ -48,6 +48,10 @@ def downscale_for_print(png_path: Path, bbox_pt: fitz.Rect, dpi: int) -> bytes:
     aqui vira um DPI absurdo (~1500) e infla o peso do PDF à toa."""
     target_px = max(1, round(bbox_pt.width / 72 * dpi))
     with Image.open(png_path) as im:
+        if im.mode in ("RGBA", "LA", "P"):
+            im = im.convert("RGBA")
+            fundo = Image.new("RGBA", im.size, (255, 255, 255, 255))
+            im = Image.alpha_composite(fundo, im)  # transparente vira branco, nunca preto
         im = im.convert("L").resize((target_px, target_px), Image.LANCZOS)
         buf = io.BytesIO()
         im.save(buf, format="PNG", optimize=True)
@@ -62,6 +66,12 @@ def main() -> None:
     ap.add_argument("--xref", type=int, default=None, help="xref da imagem do QR (confirme com --listar antes).")
     ap.add_argument("--listar", action="store_true", help="Só lista candidatos quadrados, não gera nada.")
     ap.add_argument("--dpi", type=int, default=300, help="Resolução de impressão do QR (padrão 300).")
+    ap.add_argument(
+        "--square",
+        action="store_true",
+        help="Arte com QR que não é quadrado no PDF (ex.: 10x15): encaixa o QR real quadrado, "
+        "centralizado no lugar do original, com lado = maior dimensão (cobre o QR antigo).",
+    )
     args = ap.parse_args()
 
     qr_files = sorted(Path(args.pasta_qrcodes).glob("*.png"))
@@ -113,6 +123,10 @@ def main() -> None:
             if total_placed >= len(qr_files):
                 break
             bbox = fitz.Rect(info["bbox"])
+            if args.square:
+                lado = max(bbox.width, bbox.height)
+                cx, cy = (bbox.x0 + bbox.x1) / 2, (bbox.y0 + bbox.y1) / 2
+                bbox = fitz.Rect(cx - lado / 2, cy - lado / 2, cx + lado / 2, cy + lado / 2)
             qr_bytes = downscale_for_print(qr_files[total_placed], bbox, args.dpi)
             page.insert_image(bbox, stream=qr_bytes)
             total_placed += 1
