@@ -263,7 +263,8 @@ ACRÍLICO LISO (sem arte): placa de acrílico 2mm sem impressão, kit mínimo de
 
 async function askAi(history: { role: "user" | "assistant"; content: string }[]): Promise<string | null> {
   const key = process.env["ANTHROPIC_API_KEY"];
-  if (!key) return null;
+  const geminiKey = process.env["GEMINI_API_KEY"];
+  if (!key && !geminiKey) return null;
   const db = await admin();
   const [{ precos, modelos }, { data: know }] = await Promise.all([
     catalogTexts(),
@@ -302,9 +303,30 @@ ${learned || "(nenhuma ainda)"}`;
   while (messages.length && messages[0]!.role !== "user") messages.shift();
   if (!messages.length) return null;
 
+  // Sem chave da Anthropic, usa a API do Gemini (Google).
+  if (!key && geminiKey) {
+    const model = process.env["GEMINI_MODEL"] ?? "gemini-2.5-flash";
+    const g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: "POST",
+      headers: { "x-goog-api-key": geminiKey, "content-type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+        generationConfig: { maxOutputTokens: 400, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } },
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!g.ok) {
+      console.error("whatsapp bot: erro do Gemini", g.status, await g.text().catch(() => ""));
+      return null;
+    }
+    const gj = (await g.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    return gj.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim() || null;
+  }
+
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    headers: { "x-api-key": key!, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 400, system, messages }),
     signal: AbortSignal.timeout(15_000),
   });
