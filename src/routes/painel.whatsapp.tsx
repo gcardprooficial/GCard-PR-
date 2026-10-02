@@ -96,7 +96,7 @@ function WhatsApp() {
               (Z-API, recomendado) ou as variáveis <code>WHATSAPP_*</code> (API oficial da Meta).
             </>
           )}{" "}
-          Passo a passo em <code>docs/WHATSAPP.md</code>.
+          Passo a passo em <code>docs/WHATSAPP-ZAPI.md</code>.
         </div>
       )}
       {status && !status.ai && (
