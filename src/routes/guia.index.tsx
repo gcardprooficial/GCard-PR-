@@ -65,7 +65,16 @@ function Guide() {
             digitais, QR Code e métricas podem trabalhar juntos.
           </p>
         </section>
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
+        <Link
+          to="/guia/como-configurar-placa-gcard"
+          className="group mt-12 flex flex-col gap-2 rounded-3xl border-2 border-primary bg-card p-6 transition hover:-translate-y-1 sm:p-8"
+        >
+          <span className="text-xs font-black uppercase tracking-[0.2em] text-primary">Tutorial em vídeo</span>
+          <h2 className="text-2xl font-bold group-hover:text-primary">Como configurar e ativar sua placa ou cartão GCard-PRÓ</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">Vídeo e passo a passo: entrar no painel, ativar o código, colar o link de avaliação do Google e trocar quando quiser.</p>
+          <span className="mt-2 text-sm font-bold text-primary">Assistir e ler →</span>
+        </Link>
+        <div className="mt-5 grid gap-5 md:grid-cols-3">
           <ArticleLink
             href="/guia/cartao-nfc-vs-cartao-digital"
             title="Cartão NFC ou cartão de visita digital?"
