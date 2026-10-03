@@ -62,7 +62,7 @@ const navLinkClass =
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-foreground text-white">
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-5">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4 sm:gap-4 sm:px-5">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="GCard-PRÓ — início">
           <img src={logoIcone} alt="" className="h-9 w-auto sm:h-10" draggable={false} />
           <img src={logoMarca} alt="GCard-PRÓ" className="hidden h-6 w-auto md:block" draggable={false} />
@@ -76,7 +76,7 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           <Link
             to="/ativar"
             className="inline-flex h-11 items-center whitespace-nowrap rounded-xl bg-primary px-3.5 text-[13px] sm:text-sm font-bold text-primary-foreground transition-transform active:scale-[0.97] sm:px-5"
@@ -96,7 +96,7 @@ export function SiteHeader() {
               <button
                 type="button"
                 aria-label="Abrir menu"
-                className="flex size-11 items-center justify-center rounded-xl text-white hover:bg-white/10 xl:hidden"
+                className="flex size-10 items-center justify-center rounded-xl text-white hover:bg-white/10 xl:hidden"
               >
                 <Menu className="size-7" />
               </button>
