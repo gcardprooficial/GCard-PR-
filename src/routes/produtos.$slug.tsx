@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { money } from "@/lib/pricing";
@@ -20,10 +21,10 @@ function Produto() {
   const { lojista, revenda } = plansFrom(data);
   const products = productsFrom(data);
   const p = products.find((x) => x.slug === slug);
+  const [modo, setModo] = useState<"lojista" | "revenda">(p?.is_blank ? "revenda" : "lojista");
   if (!p) throw notFound();
   const soon = p.status !== "ativo";
   const tiers = resaleLines(revenda, products).find((l) => l.slug === slug)?.tiers ?? [];
-  const caminho = p.is_blank ? "revenda" : "lojista";
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -49,14 +50,31 @@ function Produto() {
             {p.has_qr && <span className="rounded-lg bg-foreground/10 px-2.5 py-1 text-xs font-black">QR Code</span>}
           </div>
           {!p.is_blank && !soon && (
-            <p className="mt-6 font-display text-4xl">
-              {money(lojista.unit_price_cents + p.price_delta_cents)}
-              <span className="ml-2 font-sans text-sm font-semibold text-muted-foreground">por unidade · frete grátis</span>
-            </p>
+            <div className="mt-6 grid grid-cols-2 gap-2 rounded-2xl bg-muted p-1.5" role="tablist" aria-label="Como você vai usar">
+              {([
+                ["lojista", "Loja própria", "Já configurado pra você"],
+                ["revenda", "Revenda", "Em quantidade, a partir de 10"],
+              ] as const).map(([k, t, d]) => (
+                <button key={k} type="button" role="tab" aria-selected={modo === k} onClick={() => setModo(k)}
+                  className={`rounded-xl px-3 py-3 text-left transition-colors ${modo === k ? "bg-card shadow-sm ring-1 ring-border" : "text-muted-foreground"}`}>
+                  <span className="block text-sm font-black">{t}</span>
+                  <span className="block text-[11px] leading-tight">{d}</span>
+                </button>
+              ))}
+            </div>
           )}
-          {tiers.length > 0 && (
+          {modo === "lojista" && !p.is_blank && !soon && (
+            <>
+              <p className="mt-6 font-display text-4xl">
+                {money(lojista.unit_price_cents + p.price_delta_cents)}
+                <span className="ml-2 font-sans text-sm font-semibold text-muted-foreground">por unidade · frete grátis</span>
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">Chega pronto, apontando pra avaliação do seu Google. Você informa o seu negócio na compra.</p>
+            </>
+          )}
+          {modo === "revenda" && tiers.length > 0 && (
             <div className="mt-6 rounded-2xl border border-border bg-muted/70 p-4">
-              <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Preço de revenda por quantidade</p>
+              <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Preço por unidade · frete grátis</p>
               <ul className="mt-2 space-y-1 text-sm">
                 {tiers.map((t) => (
                   <li key={t.min_quantity} className="flex justify-between gap-3">
@@ -65,6 +83,7 @@ function Produto() {
                   </li>
                 ))}
               </ul>
+              {!p.is_blank && <p className="mt-3 text-xs text-muted-foreground">Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente.</p>}
             </div>
           )}
           {p.is_blank && <p className="mt-4 text-sm text-muted-foreground">Sem impressão. Cores: cristal, branco e preto. Você aplica a sua arte ou adesivo.</p>}
@@ -72,7 +91,7 @@ function Produto() {
             <Button disabled size="lg" className="mt-8 h-14 w-full rounded-xl">Em breve</Button>
           ) : (
             <Button asChild size="lg" className="btn-press btn-primary-shadow mt-8 h-14 w-full rounded-xl text-base font-bold">
-              <Link to="/comprar" search={{ caminho }}>Comprar agora →</Link>
+              <Link to="/comprar" search={{ caminho: modo }}>{modo === "revenda" ? "Comprar para revenda →" : "Comprar para o meu negócio →"}</Link>
             </Button>
           )}
         </div>
