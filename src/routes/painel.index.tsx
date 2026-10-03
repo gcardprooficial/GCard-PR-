@@ -781,25 +781,26 @@ function Orders() {
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl">Pedidos</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar nome / e-mail / número"
-            className="h-9 w-full sm:w-64"
+            className="h-10 min-w-0 flex-1 sm:w-64 sm:flex-none"
           />
           <Button
             size="sm"
             variant="outline"
+            className="h-10 shrink-0"
             disabled={checkingPayments}
             onClick={() => void load().then(() => checkPayments(false))}
           >
-            {checkingPayments ? "Conferindo…" : "Atualizar e conferir pagamentos"}
+            {checkingPayments ? "Conferindo…" : (<><span className="sm:hidden">Atualizar</span><span className="hidden sm:inline">Atualizar e conferir pagamentos</span></>)}
           </Button>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible">
         {STAGES.map((s) => {
           const active = stage === s.key;
           const urgent = s.key === "aguardando" && stageCounts.aguardando > 0;
@@ -808,7 +809,7 @@ function Orders() {
               key={s.key}
               type="button"
               onClick={() => setStage(s.key)}
-              className={`rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors ${
+              className={`shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors ${
                 active
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-muted-foreground hover:text-foreground"
@@ -832,7 +833,7 @@ function Orders() {
         <button
           type="button"
           onClick={() => setStage("todos")}
-          className={`rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors ${
+          className={`shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors ${
             stage === "todos"
               ? "border-primary bg-primary text-primary-foreground"
               : "border-border bg-card text-muted-foreground hover:text-foreground"
@@ -842,8 +843,8 @@ function Orders() {
         </button>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
-        <span className="self-center">Tipo:</span>
+      <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible text-xs font-semibold text-muted-foreground">
+        <span className="shrink-0 self-center">Tipo:</span>
         {(
           [
             ["all", `Todos (${counts.all})`],
@@ -855,7 +856,7 @@ function Orders() {
             key={k}
             type="button"
             onClick={() => setKindFilter(k)}
-            className={`rounded-full px-3 py-1 transition-colors ${
+            className={`shrink-0 rounded-full px-3 py-1 transition-colors ${
               kindFilter === k ? "bg-muted font-bold text-foreground ring-1 ring-border" : "hover:text-foreground"
             }`}
           >
@@ -864,8 +865,8 @@ function Orders() {
         ))}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
-        <span className="self-center">Período:</span>
+      <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible items-center text-xs font-semibold text-muted-foreground">
+        <span className="shrink-0 self-center">Período:</span>
         {(
           [
             ["todos", "Tudo"],
@@ -880,7 +881,7 @@ function Orders() {
             key={k}
             type="button"
             onClick={() => setPeriod(k)}
-            className={`rounded-full px-3 py-1 transition-colors ${
+            className={`shrink-0 rounded-full px-3 py-1 transition-colors ${
               period === k ? "bg-muted font-bold text-foreground ring-1 ring-border" : "hover:text-foreground"
             }`}
           >
@@ -894,7 +895,7 @@ function Orders() {
             <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-8 w-36 text-xs" />
           </span>
         )}
-        <span className="ml-auto flex items-center gap-1">
+        <span className="ml-auto flex shrink-0 items-center gap-1">
           Ordenar:
           <select
             value={sortBy}
