@@ -50,15 +50,18 @@ function Produto() {
             {p.has_qr && <span className="rounded-lg bg-foreground/10 px-2.5 py-1 text-xs font-black">QR Code</span>}
           </div>
           {!p.is_blank && !soon && (
-            <div className="mt-6 grid grid-cols-2 gap-2 rounded-2xl bg-muted p-1.5" role="tablist" aria-label="Como você vai usar">
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2" role="tablist" aria-label="Como você vai usar">
               {([
                 ["lojista", "Loja própria", "Já configurado pra você"],
                 ["revenda", "Revenda", "Em quantidade, a partir de 10"],
               ] as const).map(([k, t, d]) => (
                 <button key={k} type="button" role="tab" aria-selected={modo === k} onClick={() => setModo(k)}
-                  className={`rounded-xl px-3 py-3 text-left transition-colors ${modo === k ? "bg-card shadow-sm ring-1 ring-border" : "text-muted-foreground"}`}>
-                  <span className="block text-sm font-black">{t}</span>
-                  <span className="block text-[11px] leading-tight">{d}</span>
+                  className={`flex items-start gap-3 rounded-2xl border-2 px-4 py-4 text-left transition-all active:scale-[0.98] ${modo === k ? "border-primary bg-foreground text-white shadow-lg" : "border-foreground/30 bg-card text-foreground hover:border-foreground hover:shadow-md"}`}>
+                  <span aria-hidden className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${modo === k ? "border-primary bg-primary" : "border-foreground/40"}`}>{modo === k && <span className="size-2 rounded-full bg-foreground" />}</span>
+                  <span>
+                  <span className="block text-base font-black">{t}</span>
+                  <span className={`block text-xs leading-tight ${modo === k ? "text-white/70" : "text-muted-foreground"}`}>{d}</span>
+                  </span>
                 </button>
               ))}
             </div>
