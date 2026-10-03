@@ -1,7 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 
-const VIDEO_ID = "6nDW3OCKcAA";
+const VIDEO_QR = "zeA8QT-3Ltc";
+const VIDEO_NFC = "q8W2ojaF5vE";
+
+function Video({ id, title }: { id: string; title: string }) {
+  return (
+    <div className="aspect-video overflow-hidden rounded-3xl bg-foreground shadow-lg">
+      <iframe
+        className="size-full"
+        src={`https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1`}
+        title={title}
+        loading="lazy"
+        allow="encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+      />
+    </div>
+  );
+}
 const TITLE = "Como configurar e ativar sua placa ou cartão GCard-PRÓ (passo a passo)";
 
 const STEPS: { title: string; body: string }[] = [
@@ -75,18 +91,12 @@ function Tutorial() {
         <p className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-primary-foreground/80">Tutorial</p>
         <h1 className="mt-3 text-3xl leading-tight sm:text-4xl">{TITLE}</h1>
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-          Em poucos minutos a placa fica apontando para a avaliação do seu cliente. Assista ao vídeo ou siga o passo a passo abaixo.
+          Em poucos minutos a placa fica apontando para a avaliação do seu cliente. São dois vídeos (QR Code e NFC) e um passo a passo escrito abaixo.
         </p>
 
-        <div className="mt-8 aspect-video overflow-hidden rounded-3xl bg-foreground shadow-lg">
-          <iframe
-            className="size-full"
-            src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?rel=0&modestbranding=1`}
-            title="Aprenda a Configurar o QRCODE"
-            loading="lazy"
-            allow="encrypted-media; picture-in-picture; fullscreen"
-            allowFullScreen
-          />
+        <p className="mt-8 text-sm font-bold">Parte 1 — Configurar o QR Code</p>
+        <div className="mt-2">
+          <Video id={VIDEO_QR} title="Parte 1 — Configurar o QR Code" />
         </div>
 
         <section className="mt-10 rounded-3xl border border-border bg-card p-6">
@@ -112,10 +122,13 @@ function Tutorial() {
         </ol>
 
         <section className="mt-10 rounded-3xl bg-foreground p-6 text-white">
-          <h2 className="text-xl font-bold">Cartão de bolso: gravar a aproximação (NFC)</h2>
+          <h2 className="text-xl font-bold">Parte 2 — Gravar a aproximação (NFC)</h2>
           <p className="mt-2 text-sm leading-relaxed text-white/75">
             Abra o app <strong className="text-white">NFC Tools</strong> (grátis, Android e iPhone) → <em>Escrever</em> → <em>Adicionar registro</em> → <em>URL</em>. Cole o link do cartão e encoste o celular no chip.
           </p>
+          <div className="mt-4">
+            <Video id={VIDEO_NFC} title="Parte 2 — Configurar o NFC" />
+          </div>
         </section>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
