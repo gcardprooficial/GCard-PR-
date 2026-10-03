@@ -10,6 +10,7 @@ import { getCatalog, type CatalogProduct, type ColorVariant } from "@/lib/catalo
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
+import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
 import { unitPriceForQuantity, money, resolveUnitPrice as resolveUnitPriceShared } from "@/lib/pricing";
 import { PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
 import { Button } from "@/components/ui/button";
@@ -311,6 +312,8 @@ function Comprar() {
   const runSearch = useServerFn(searchBusinesses);
   const submitCart = useServerFn(createCartOrder);
   const createPref = useServerFn(createCheckoutPreference);
+  const createInfinitePay = useServerFn(createInfinitePayCheckout);
+  const [gateway, setGateway] = useState<"mercadopago" | "infinitepay">("mercadopago");
   const [wantsPixDiscount, setWantsPixDiscount] = useState(true);
   const pixPromoLive = pixDiscountActive();
 
@@ -627,9 +630,12 @@ function Comprar() {
       setOrderNumber(res.orderNumber);
       // Try to create a checkout preference (only works if provider configured)
       try {
-        const pref = await createPref({
-          data: { orderNumber: res.orderNumber, pixDiscount: pixPromoLive && wantsPixDiscount },
-        });
+        const pref =
+          gateway === "infinitepay"
+            ? await createInfinitePay({ data: { orderNumber: res.orderNumber } })
+            : await createPref({
+                data: { orderNumber: res.orderNumber, pixDiscount: pixPromoLive && wantsPixDiscount },
+              });
         if (pref?.url) {
           // Redirect the buyer to the hosted checkout
           window.location.href = pref.url;
@@ -2168,7 +2174,38 @@ function Comprar() {
                 </div>
               </div>
 
-              {pixPromoLive && (
+              <fieldset className="mt-4">
+                <legend className="text-sm font-black">Como você quer pagar?</legend>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  {(
+                    [
+                      ["mercadopago", "Mercado Pago", "Pix, cartão e boleto"],
+                      ["infinitepay", "InfinitePay", "Pix e cartão (alternativa se o outro recusar)"],
+                    ] as const
+                  ).map(([k, t, d]) => (
+                    <label
+                      key={k}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-4 transition-colors ${
+                        gateway === k ? "border-primary bg-primary/10" : "border-border bg-card hover:border-foreground/40"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="gateway"
+                        checked={gateway === k}
+                        onChange={() => setGateway(k)}
+                        className="mt-1 size-4 shrink-0 accent-[var(--color-primary)]"
+                      />
+                      <span>
+                        <span className="block text-sm font-black">{t}</span>
+                        <span className="block text-xs text-muted-foreground">{d}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              {pixPromoLive && gateway === "mercadopago" && (
                 <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-g-green/40 bg-g-green/10 p-4">
                   <input
                     type="checkbox"

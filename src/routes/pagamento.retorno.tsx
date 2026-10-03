@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { verifyReturnedPayment } from "@/lib/payments/reconcile.functions";
+import { verifyInfinitePayReturn } from "@/lib/payments/infinitepay.functions";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { PixFallback } from "@/components/PixFallback";
 
@@ -12,6 +13,10 @@ import { PixFallback } from "@/components/PixFallback";
 const searchSchema = z.object({
   payment_id: z.coerce.string().optional().catch(undefined),
   collection_id: z.coerce.string().optional().catch(undefined),
+  // InfinitePay volta com order_nsu (id do pedido), transaction_nsu e slug.
+  order_nsu: z.string().optional().catch(undefined),
+  transaction_nsu: z.string().optional().catch(undefined),
+  slug: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/pagamento/retorno")({
@@ -32,13 +37,18 @@ type View =
 function PagamentoRetorno() {
   const search = Route.useSearch();
   const paymentId = search.payment_id || search.collection_id;
-  const verify = useServerFn(verifyReturnedPayment);
-  const [view, setView] = useState<View>(paymentId ? { kind: "loading" } : { kind: "desconhecido" });
+  const verifyMp = useServerFn(verifyReturnedPayment);
+  const verifyIp = useServerFn(verifyInfinitePayReturn);
+  const isIp = Boolean(search.order_nsu && search.transaction_nsu && search.slug);
+  const [view, setView] = useState<View>(paymentId || isIp ? { kind: "loading" } : { kind: "desconhecido" });
 
   useEffect(() => {
-    if (!paymentId) return;
+    if (!paymentId && !isIp) return;
     let cancelled = false;
-    verify({ data: { paymentId } })
+    const call = isIp
+      ? verifyIp({ data: { orderId: search.order_nsu!, transactionNsu: search.transaction_nsu!, slug: search.slug! } })
+      : verifyMp({ data: { paymentId: paymentId! } });
+    call
       .then((res) => {
         if (cancelled) return;
         if (!res.ok) return setView({ kind: "desconhecido" });
@@ -51,12 +61,12 @@ function PagamentoRetorno() {
     return () => {
       cancelled = true;
     };
-  }, [paymentId, verify]);
+  }, [paymentId, isIp, search.order_nsu, search.transaction_nsu, search.slug, verifyMp, verifyIp]);
 
   const content = {
     loading: {
       title: "Confirmando seu pagamento…",
-      body: "Só um instante, estamos conferindo com o Mercado Pago.",
+      body: "Só um instante, estamos conferindo o pagamento.",
     },
     pago: {
       title: "Pagamento confirmado!",
@@ -68,7 +78,7 @@ function PagamentoRetorno() {
     },
     falhou: {
       title: "Pagamento não aprovado",
-      body: "O Mercado Pago não conseguiu aprovar essa tentativa. Você pode tentar de novo por outro meio de pagamento ou falar com a gente.",
+      body: "Essa tentativa não foi aprovada. Você pode tentar de novo por outro meio de pagamento ou falar com a gente.",
     },
     desconhecido: {
       title: "Não conseguimos confirmar agora",

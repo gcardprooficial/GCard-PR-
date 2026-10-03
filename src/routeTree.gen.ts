@@ -39,6 +39,7 @@ import { Route as ProdutosSlugRouteImport } from './routes/produtos.$slug'
 import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as ApiCronDailyRouteImport } from './routes/api/cron/daily'
 import { Route as ApiMelhorenvioCallbackRouteImport } from './routes/api/melhorenvio/callback'
+import { Route as ApiWebhooksInfinitepayRouteImport } from './routes/api/webhooks/infinitepay'
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks/whatsapp'
 import { Route as ApiWebhooksZapiRouteImport } from './routes/api/webhooks/zapi'
@@ -197,6 +198,11 @@ const ApiMelhorenvioCallbackRoute = ApiMelhorenvioCallbackRouteImport.update({
   path: '/api/melhorenvio/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksInfinitepayRoute = ApiWebhooksInfinitepayRouteImport.update({
+  id: '/api/webhooks/infinitepay',
+  path: '/api/webhooks/infinitepay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWebhooksMercadopagoRoute = ApiWebhooksMercadopagoRouteImport.update({
   id: '/api/webhooks/mercadopago',
   path: '/api/webhooks/mercadopago',
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/produtos/': typeof ProdutosIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
+  '/api/webhooks/infinitepay': typeof ApiWebhooksInfinitepayRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/produtos': typeof ProdutosIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
+  '/api/webhooks/infinitepay': typeof ApiWebhooksInfinitepayRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
@@ -313,6 +321,7 @@ export interface FileRoutesById {
   '/produtos/': typeof ProdutosIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
+  '/api/webhooks/infinitepay': typeof ApiWebhooksInfinitepayRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
@@ -350,6 +359,7 @@ export interface FileRouteTypes {
     | '/produtos/'
     | '/api/cron/daily'
     | '/api/melhorenvio/callback'
+    | '/api/webhooks/infinitepay'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/api/cron/daily'
     | '/api/melhorenvio/callback'
+    | '/api/webhooks/infinitepay'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/produtos/'
     | '/api/cron/daily'
     | '/api/melhorenvio/callback'
+    | '/api/webhooks/infinitepay'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
@@ -438,6 +450,7 @@ export interface RootRouteChildren {
   ProdutosIndexRoute: typeof ProdutosIndexRoute
   ApiCronDailyRoute: typeof ApiCronDailyRoute
   ApiMelhorenvioCallbackRoute: typeof ApiMelhorenvioCallbackRoute
+  ApiWebhooksInfinitepayRoute: typeof ApiWebhooksInfinitepayRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
   ApiWebhooksZapiRoute: typeof ApiWebhooksZapiRoute
@@ -655,6 +668,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMelhorenvioCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/infinitepay': {
+      id: '/api/webhooks/infinitepay'
+      path: '/api/webhooks/infinitepay'
+      fullPath: '/api/webhooks/infinitepay'
+      preLoaderRoute: typeof ApiWebhooksInfinitepayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/webhooks/mercadopago': {
       id: '/api/webhooks/mercadopago'
       path: '/api/webhooks/mercadopago'
@@ -744,6 +764,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutosIndexRoute: ProdutosIndexRoute,
   ApiCronDailyRoute: ApiCronDailyRoute,
   ApiMelhorenvioCallbackRoute: ApiMelhorenvioCallbackRoute,
+  ApiWebhooksInfinitepayRoute: ApiWebhooksInfinitepayRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
   ApiWebhooksZapiRoute: ApiWebhooksZapiRoute,
