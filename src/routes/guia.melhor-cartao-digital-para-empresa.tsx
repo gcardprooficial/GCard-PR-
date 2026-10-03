@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
+import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 
 const questions = [
   {
@@ -391,20 +391,15 @@ function Article() {
 
 function Page({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-background noise-bg">
-      <div className="mx-auto max-w-3xl px-5 py-10 sm:py-16">
-        <header>
-          <Link to="/">
-            <img src={logoTransparente} alt="GCard-PRÓ" className="h-8 w-auto" />
-          </Link>
-        </header>
-        <div className="mt-14">{children}</div>
-        <footer className="mt-16 border-t border-border pt-6 text-sm text-muted-foreground">
-          <Link to="/guia" className="hover:text-foreground">
-            ← Voltar ao guia
-          </Link>
-        </footer>
-      </div>
-    </main>
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+      <main className="mx-auto max-w-3xl px-5 py-10 sm:py-14">
+        <Link to="/guia" className="text-sm text-muted-foreground hover:text-foreground">
+          ← Voltar ao guia
+        </Link>
+        <div className="mt-8">{children}</div>
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

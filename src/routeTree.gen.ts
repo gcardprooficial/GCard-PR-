@@ -20,6 +20,7 @@ import { Route as ApiUnsubscribeRouteImport } from './routes/api/unsubscribe'
 import { Route as GuiaIndexRouteImport } from './routes/guia.index'
 import { Route as GuiaCartaoDeVisitaPorAproximacaoRouteImport } from './routes/guia.cartao-de-visita-por-aproximacao'
 import { Route as GuiaCartaoNfcVsCartaoDigitalRouteImport } from './routes/guia.cartao-nfc-vs-cartao-digital'
+import { Route as GuiaComoConfigurarPlacaGcardRouteImport } from './routes/guia.como-configurar-placa-gcard'
 import { Route as GuiaMelhorCartaoDigitalParaEmpresaRouteImport } from './routes/guia.melhor-cartao-digital-para-empresa'
 import { Route as PagamentoRetornoRouteImport } from './routes/pagamento.retorno'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
@@ -97,6 +98,12 @@ const GuiaCartaoNfcVsCartaoDigitalRoute =
   GuiaCartaoNfcVsCartaoDigitalRouteImport.update({
     id: '/cartao-nfc-vs-cartao-digital',
     path: '/cartao-nfc-vs-cartao-digital',
+    getParentRoute: () => GuiaRoute,
+  } as any)
+const GuiaComoConfigurarPlacaGcardRoute =
+  GuiaComoConfigurarPlacaGcardRouteImport.update({
+    id: '/como-configurar-placa-gcard',
+    path: '/como-configurar-placa-gcard',
     getParentRoute: () => GuiaRoute,
   } as any)
 const GuiaMelhorCartaoDigitalParaEmpresaRoute =
@@ -217,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
+  '/guia/como-configurar-placa-gcard': typeof GuiaComoConfigurarPlacaGcardRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
@@ -249,6 +257,7 @@ export interface FileRoutesByTo {
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
+  '/guia/como-configurar-placa-gcard': typeof GuiaComoConfigurarPlacaGcardRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
@@ -284,6 +293,7 @@ export interface FileRoutesById {
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
+  '/guia/como-configurar-placa-gcard': typeof GuiaComoConfigurarPlacaGcardRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
@@ -320,6 +330,7 @@ export interface FileRouteTypes {
     | '/api/unsubscribe'
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
+    | '/guia/como-configurar-placa-gcard'
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/pagamento/retorno'
     | '/painel/calculadora'
@@ -352,6 +363,7 @@ export interface FileRouteTypes {
     | '/api/unsubscribe'
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
+    | '/guia/como-configurar-placa-gcard'
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/pagamento/retorno'
     | '/painel/calculadora'
@@ -386,6 +398,7 @@ export interface FileRouteTypes {
     | '/api/unsubscribe'
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
+    | '/guia/como-configurar-placa-gcard'
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/pagamento/retorno'
     | '/painel/calculadora'
@@ -507,6 +520,13 @@ declare module '@tanstack/react-router' {
       path: '/cartao-nfc-vs-cartao-digital'
       fullPath: '/guia/cartao-nfc-vs-cartao-digital'
       preLoaderRoute: typeof GuiaCartaoNfcVsCartaoDigitalRouteImport
+      parentRoute: typeof GuiaRoute
+    }
+    '/guia/como-configurar-placa-gcard': {
+      id: '/guia/como-configurar-placa-gcard'
+      path: '/como-configurar-placa-gcard'
+      fullPath: '/guia/como-configurar-placa-gcard'
+      preLoaderRoute: typeof GuiaComoConfigurarPlacaGcardRouteImport
       parentRoute: typeof GuiaRoute
     }
     '/guia/melhor-cartao-digital-para-empresa': {
@@ -662,6 +682,7 @@ declare module '@tanstack/react-router' {
 interface GuiaRouteChildren {
   GuiaCartaoDeVisitaPorAproximacaoRoute: typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   GuiaCartaoNfcVsCartaoDigitalRoute: typeof GuiaCartaoNfcVsCartaoDigitalRoute
+  GuiaComoConfigurarPlacaGcardRoute: typeof GuiaComoConfigurarPlacaGcardRoute
   GuiaMelhorCartaoDigitalParaEmpresaRoute: typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   GuiaIndexRoute: typeof GuiaIndexRoute
 }
@@ -669,6 +690,7 @@ interface GuiaRouteChildren {
 const GuiaRouteChildren: GuiaRouteChildren = {
   GuiaCartaoDeVisitaPorAproximacaoRoute: GuiaCartaoDeVisitaPorAproximacaoRoute,
   GuiaCartaoNfcVsCartaoDigitalRoute: GuiaCartaoNfcVsCartaoDigitalRoute,
+  GuiaComoConfigurarPlacaGcardRoute: GuiaComoConfigurarPlacaGcardRoute,
   GuiaMelhorCartaoDigitalParaEmpresaRoute:
     GuiaMelhorCartaoDigitalParaEmpresaRoute,
   GuiaIndexRoute: GuiaIndexRoute,

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
+import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 
 export const Route = createFileRoute("/termos")({
   head: () => ({
@@ -19,25 +19,8 @@ function Termos() {
       <div className="pointer-events-none absolute -top-40 -right-32 size-[28rem] rounded-full bg-primary/15 blur-3xl" />
       <div className="pointer-events-none absolute top-60 -left-32 size-[24rem] rounded-full bg-secondary/5 blur-3xl" />
 
-      <div className="relative mx-auto max-w-3xl px-5 py-12 sm:py-20">
-        <header className="flex items-center justify-between animate-rise-sm">
-          <Link to="/" className="inline-flex items-center">
-            <img
-              src={logoTransparente}
-              alt="GCard-PRÓ"
-              className="h-8 sm:h-9 w-auto object-contain"
-            />
-          </Link>
-          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <Link
-              to="/privacidade"
-              className="rounded-full border border-border px-3 py-1.5 bg-card hover:border-primary/40 transition-colors"
-            >
-              Privacidade
-            </Link>
-          </div>
-        </header>
-
+      <SiteHeader />
+      <div className="relative mx-auto max-w-3xl px-5 py-10 sm:py-14">
         <div className="mt-14 sm:mt-16 animate-rise-sm delay-1">
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
             <span className="size-1.5 rounded-full bg-primary" />
@@ -118,31 +101,8 @@ function Termos() {
           </Section>
         </div>
 
-        <footer className="mt-16 pt-8 border-t border-border animate-rise-sm delay-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-sm">
-            <div className="flex items-center gap-3">
-              <img src={logoTransparente} alt="GCard-PRÓ" className="h-6 w-auto opacity-80" />
-              <span className="text-muted-foreground text-xs">
-                © {new Date().getFullYear()} GCard-PRÓ. Todos os direitos reservados.
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <Link
-                to="/"
-                className="rounded-full border border-border px-4 py-1.5 text-xs font-medium hover:border-primary/40 hover:bg-card transition-all"
-              >
-                ← Início
-              </Link>
-              <Link
-                to="/privacidade"
-                className="rounded-full border border-border px-4 py-1.5 text-xs font-medium hover:border-primary/40 hover:bg-card transition-all"
-              >
-                Privacidade
-              </Link>
-            </div>
-          </div>
-        </footer>
       </div>
+      <SiteFooter />
     </div>
   );
 }

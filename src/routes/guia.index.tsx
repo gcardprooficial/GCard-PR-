@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
+import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 
 export const Route = createFileRoute("/guia/")({
   head: () => ({
@@ -26,7 +26,9 @@ export const Route = createFileRoute("/guia/")({
 
 function Guide() {
   return (
-    <main className="min-h-screen bg-background noise-bg">
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+      <main>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -41,19 +43,7 @@ function Guide() {
         }}
       />
       <div className="mx-auto max-w-5xl px-5 py-10 sm:py-16">
-        <header className="flex items-center justify-between">
-          <Link to="/">
-            <img src={logoTransparente} alt="GCard-PRÓ" className="h-8 w-auto" />
-          </Link>
-          <Link
-            to="/comprar"
-            search={{ caminho: "lojista" }}
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-          >
-            Conheça o cartão
-          </Link>
-        </header>
-        <section className="mt-16 max-w-3xl">
+        <section className="mt-4 max-w-3xl">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
             Conteúdo para empresas
           </p>
@@ -113,7 +103,9 @@ function Guide() {
           </div>
         </section>
       </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </div>
   );
 }
 

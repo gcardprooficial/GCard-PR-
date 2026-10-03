@@ -21,7 +21,7 @@ import { PixFallback } from "@/components/PixFallback";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 import produtoPlaquinha10x10 from "@/assets/placa 10x10 avaliacao google.png";
 import produtoPlaquinhaL from "@/assets/placa 10x15 avaliacao google.png";
-import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
+import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import acrilico10x10Cristal from "@/assets/acrilico-10x10-cristal.jpg";
 import acrilico10x10Branco from "@/assets/acrilico-10x10-branco.jpg";
 import acrilico10x10Preto from "@/assets/acrilico-10x10-preto.jpg";
@@ -685,29 +685,7 @@ function Comprar() {
           className="pointer-events-none absolute top-40 -right-20 size-[420px] rounded-full bg-foreground/5 blur-3xl"
         />
 
-        <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-3.5">
-            <Link
-              to="/"
-              className="group -m-1 p-1 rounded-xl transition-transform duration-300 hover:scale-[1.02]"
-            >
-              <img
-                src={logoTransparente}
-                alt="GCard-PRÓ"
-                className="h-8 w-auto sm:h-9 select-none"
-                draggable={false}
-              />
-            </Link>
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="btn-press rounded-xl hover:bg-surface"
-            >
-              <Link to="/">← Voltar</Link>
-            </Button>
-          </div>
-        </header>
+        <SiteHeader />
 
         <div className="relative mx-auto max-w-4xl px-5 pb-20 pt-12 sm:pt-16">
           <div className="animate-rise max-w-2xl">
@@ -984,20 +962,9 @@ function Comprar() {
         className="pointer-events-none absolute -top-24 -left-24 size-[480px] rounded-full bg-primary/12 blur-3xl"
       />
 
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-3.5">
-          <Link
-            to="/"
-            className="group -m-1 p-1 rounded-xl transition-transform duration-300 hover:scale-[1.02]"
-          >
-            <img
-              src={logoTransparente}
-              alt="GCard-PRÓ"
-              className="h-8 w-auto sm:h-9 select-none"
-              draggable={false}
-            />
-          </Link>
-          <button
+      <SiteHeader />
+      <div className="mx-auto max-w-4xl px-5 pt-4">
+        <button
             type="button"
             onClick={() => navigate({ to: "/comprar" })}
             className="btn-press inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
@@ -1017,8 +984,7 @@ function Comprar() {
             </svg>
             Trocar opção
           </button>
-        </div>
-      </header>
+      </div>
 
       <div className="relative mx-auto max-w-4xl px-5 pb-20 pt-8 sm:pt-10">
         <div className="mb-7 flex items-center gap-4">
