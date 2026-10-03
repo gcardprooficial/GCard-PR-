@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ReviewLinkPicker } from "@/components/ReviewLinkPicker";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 import logoMarca from "@/assets/logo/header-marca.png";
 import logoIcone from "@/assets/logo/header-icone.png";
@@ -704,6 +705,7 @@ function PlateCard({
   const [name, setName] = useState(plate.business_name ?? "");
   const [url, setUrl] = useState(plate.destination_url ?? "");
   const [soldTo, setSoldTo] = useState(plate.sold_to ?? "");
+  const [picking, setPicking] = useState(false);
   const active = plate.status === "ativada";
   const dynamicUrl = `${typeof window !== "undefined" ? window.location.origin : "https://gcardpro.com.br"}/r/${plate.token}`;
 
@@ -769,6 +771,23 @@ function PlateCard({
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://search.google.com/local/writereview?placeid=..."
             className="mt-1 h-10 input-soft rounded-xl"
+          />
+          <button
+            type="button"
+            onClick={() => setPicking(true)}
+            className="mt-2 inline-flex h-10 items-center gap-2 rounded-xl border-2 border-primary bg-primary/10 px-4 text-sm font-bold text-foreground hover:bg-primary/20"
+          >
+            🔎 Não tem o link? Buscar pelo nome do negócio
+          </button>
+          <ReviewLinkPicker
+            open={picking}
+            onOpenChange={setPicking}
+            initialTerm={name}
+            onPick={(r) => {
+              setUrl(r.reviewUrl);
+              if (!name.trim()) setName(r.name);
+              toast.success("Link preenchido. Clique em Ativar para salvar.");
+            }}
           />
         </div>
       </div>
