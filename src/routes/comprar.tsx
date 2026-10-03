@@ -680,6 +680,8 @@ function Comprar() {
         },
       });
       setOrderNumber(res.orderNumber);
+      // Cupom vale só pra compra que veio do clique: recompra precisa do link/cupom de novo.
+      if (res.couponCode) clearReferral();
       // Try to create a checkout preference (only works if provider configured)
       try {
         const pref =

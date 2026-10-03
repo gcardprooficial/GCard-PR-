@@ -3,7 +3,7 @@
 
 export const COUPON_RE = /^[a-z0-9_-]{3,30}$/;
 const KEY = "gcard_ref";
-const TTL_MS = 30 * 86_400_000; // atribuição de 30 dias, último link clicado vence
+const TTL_MS = 30 * 86_400_000; // clique vale 30 dias até a compra; apagado depois que o pedido sai com o cupom
 
 export function normalizeCouponCode(raw: string | null | undefined): string | null {
   const code = (raw ?? "").trim().toLowerCase();
