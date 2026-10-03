@@ -162,3 +162,56 @@ export const saveOrderTracking = createServerFn({ method: "POST" })
     }
     return { ok: true as const };
   });
+
+/** Marca como pagas todas as comissões pendentes do parceiro e lança 1 saída no Financeiro. */
+export const payAffiliateCommissions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ affiliateId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeam(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabaseAdmin as any;
+    const { data: affiliate } = await db
+      .from("affiliates")
+      .select("id, name, code")
+      .eq("id", data.affiliateId)
+      .maybeSingle();
+    if (!affiliate) throw new Error("Parceiro não encontrado.");
+
+    // Fecha o lote primeiro (só o que ainda é pendente), depois lança o total exato que foi fechado --
+    // dois cliques simultâneos não pagam a mesma comissão duas vezes.
+    const paidAt = new Date().toISOString();
+    const { data: closed, error } = await db
+      .from("affiliate_commissions")
+      .update({ status: "paga", paid_at: paidAt })
+      .eq("affiliate_id", affiliate.id)
+      .eq("status", "pendente")
+      .select("id, amount_cents");
+    if (error) throw error;
+    const rows = (closed ?? []) as { id: string; amount_cents: number }[];
+    const total = rows.reduce((s, r) => s + r.amount_cents, 0);
+    if (!rows.length) return { ok: true as const, count: 0, totalCents: 0 };
+
+    const { data: entry, error: entryError } = await db
+      .from("finance_entries")
+      .insert({
+        kind: "saida",
+        category: "Comissões",
+        description: `Comissão parceiro ${affiliate.name} (${affiliate.code}) — ${rows.length} venda(s)`,
+        amount_cents: total,
+        entry_date: new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+        created_by: context.userId,
+      })
+      .select("id")
+      .single();
+    if (entryError) {
+      console.error("payAffiliateCommissions: comissões fechadas mas saída não lançada", { affiliateId: affiliate.id, entryError });
+    } else {
+      await db
+        .from("affiliate_commissions")
+        .update({ finance_entry_id: entry.id })
+        .in("id", rows.map((r) => r.id));
+    }
+    return { ok: true as const, count: rows.length, totalCents: total };
+  });

@@ -17,6 +17,7 @@ import { Route as PainelRouteImport } from './routes/painel'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as ApiUnsubscribeRouteImport } from './routes/api/unsubscribe'
+import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as GuiaIndexRouteImport } from './routes/guia.index'
 import { Route as GuiaCartaoDeVisitaPorAproximacaoRouteImport } from './routes/guia.cartao-de-visita-por-aproximacao'
 import { Route as GuiaCartaoNfcVsCartaoDigitalRouteImport } from './routes/guia.cartao-nfc-vs-cartao-digital'
@@ -24,6 +25,7 @@ import { Route as GuiaComoConfigurarPlacaGcardRouteImport } from './routes/guia.
 import { Route as GuiaMelhorCartaoDigitalParaEmpresaRouteImport } from './routes/guia.melhor-cartao-digital-para-empresa'
 import { Route as PagamentoRetornoRouteImport } from './routes/pagamento.retorno'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
+import { Route as PainelAfiliadosRouteImport } from './routes/painel.afiliados'
 import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculadora'
 import { Route as PainelClientesRouteImport } from './routes/painel.clientes'
 import { Route as PainelEstoqueRouteImport } from './routes/painel.estoque'
@@ -34,6 +36,7 @@ import { Route as PainelPlacasRouteImport } from './routes/painel.placas'
 import { Route as PainelScansRouteImport } from './routes/painel.scans'
 import { Route as PainelVisaoGeralRouteImport } from './routes/painel.visao-geral'
 import { Route as PainelWhatsappRouteImport } from './routes/painel.whatsapp'
+import { Route as ParceiroTokenRouteImport } from './routes/parceiro.$token'
 import { Route as ProdutosIndexRouteImport } from './routes/produtos.index'
 import { Route as ProdutosSlugRouteImport } from './routes/produtos.$slug'
 import { Route as RTokenRouteImport } from './routes/r.$token'
@@ -84,6 +87,11 @@ const ApiUnsubscribeRoute = ApiUnsubscribeRouteImport.update({
   path: '/api/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CCodeRoute = CCodeRouteImport.update({
+  id: '/c/$code',
+  path: '/c/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuiaIndexRoute = GuiaIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -121,6 +129,11 @@ const PagamentoRetornoRoute = PagamentoRetornoRouteImport.update({
 const PainelIndexRoute = PainelIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelAfiliadosRoute = PainelAfiliadosRouteImport.update({
+  id: '/afiliados',
+  path: '/afiliados',
   getParentRoute: () => PainelRoute,
 } as any)
 const PainelCalculadoraRoute = PainelCalculadoraRouteImport.update({
@@ -172,6 +185,11 @@ const PainelWhatsappRoute = PainelWhatsappRouteImport.update({
   id: '/whatsapp',
   path: '/whatsapp',
   getParentRoute: () => PainelRoute,
+} as any)
+const ParceiroTokenRoute = ParceiroTokenRouteImport.update({
+  id: '/parceiro/$token',
+  path: '/parceiro/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProdutosIndexRoute = ProdutosIndexRouteImport.update({
   id: '/produtos/',
@@ -228,11 +246,13 @@ export interface FileRoutesByFullPath {
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
+  '/c/$code': typeof CCodeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/como-configurar-placa-gcard': typeof GuiaComoConfigurarPlacaGcardRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
+  '/painel/afiliados': typeof PainelAfiliadosRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/estoque': typeof PainelEstoqueRoute
@@ -243,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/painel/scans': typeof PainelScansRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
+  '/parceiro/$token': typeof ParceiroTokenRoute
   '/produtos/$slug': typeof ProdutosSlugRoute
   '/r/$token': typeof RTokenRoute
   '/guia/': typeof GuiaIndexRoute
@@ -262,11 +283,13 @@ export interface FileRoutesByTo {
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
+  '/c/$code': typeof CCodeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/como-configurar-placa-gcard': typeof GuiaComoConfigurarPlacaGcardRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
+  '/painel/afiliados': typeof PainelAfiliadosRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/estoque': typeof PainelEstoqueRoute
@@ -277,6 +300,7 @@ export interface FileRoutesByTo {
   '/painel/scans': typeof PainelScansRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
+  '/parceiro/$token': typeof ParceiroTokenRoute
   '/produtos/$slug': typeof ProdutosSlugRoute
   '/r/$token': typeof RTokenRoute
   '/guia': typeof GuiaIndexRoute
@@ -299,11 +323,13 @@ export interface FileRoutesById {
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
+  '/c/$code': typeof CCodeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/como-configurar-placa-gcard': typeof GuiaComoConfigurarPlacaGcardRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
+  '/painel/afiliados': typeof PainelAfiliadosRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/estoque': typeof PainelEstoqueRoute
@@ -314,6 +340,7 @@ export interface FileRoutesById {
   '/painel/scans': typeof PainelScansRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
+  '/parceiro/$token': typeof ParceiroTokenRoute
   '/produtos/$slug': typeof ProdutosSlugRoute
   '/r/$token': typeof RTokenRoute
   '/guia/': typeof GuiaIndexRoute
@@ -337,11 +364,13 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/termos'
     | '/api/unsubscribe'
+    | '/c/$code'
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/como-configurar-placa-gcard'
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/pagamento/retorno'
+    | '/painel/afiliados'
     | '/painel/calculadora'
     | '/painel/clientes'
     | '/painel/estoque'
@@ -352,6 +381,7 @@ export interface FileRouteTypes {
     | '/painel/scans'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
+    | '/parceiro/$token'
     | '/produtos/$slug'
     | '/r/$token'
     | '/guia/'
@@ -371,11 +401,13 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/termos'
     | '/api/unsubscribe'
+    | '/c/$code'
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/como-configurar-placa-gcard'
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/pagamento/retorno'
+    | '/painel/afiliados'
     | '/painel/calculadora'
     | '/painel/clientes'
     | '/painel/estoque'
@@ -386,6 +418,7 @@ export interface FileRouteTypes {
     | '/painel/scans'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
+    | '/parceiro/$token'
     | '/produtos/$slug'
     | '/r/$token'
     | '/guia'
@@ -407,11 +440,13 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/termos'
     | '/api/unsubscribe'
+    | '/c/$code'
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/como-configurar-placa-gcard'
     | '/guia/melhor-cartao-digital-para-empresa'
     | '/pagamento/retorno'
+    | '/painel/afiliados'
     | '/painel/calculadora'
     | '/painel/clientes'
     | '/painel/estoque'
@@ -422,6 +457,7 @@ export interface FileRouteTypes {
     | '/painel/scans'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
+    | '/parceiro/$token'
     | '/produtos/$slug'
     | '/r/$token'
     | '/guia/'
@@ -444,7 +480,9 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   TermosRoute: typeof TermosRoute
   ApiUnsubscribeRoute: typeof ApiUnsubscribeRoute
+  CCodeRoute: typeof CCodeRoute
   PagamentoRetornoRoute: typeof PagamentoRetornoRoute
+  ParceiroTokenRoute: typeof ParceiroTokenRoute
   ProdutosSlugRoute: typeof ProdutosSlugRoute
   RTokenRoute: typeof RTokenRoute
   ProdutosIndexRoute: typeof ProdutosIndexRoute
@@ -514,6 +552,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$code': {
+      id: '/c/$code'
+      path: '/c/$code'
+      fullPath: '/c/$code'
+      preLoaderRoute: typeof CCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guia/': {
       id: '/guia/'
       path: '/'
@@ -561,6 +606,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/painel/'
       preLoaderRoute: typeof PainelIndexRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/afiliados': {
+      id: '/painel/afiliados'
+      path: '/afiliados'
+      fullPath: '/painel/afiliados'
+      preLoaderRoute: typeof PainelAfiliadosRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/calculadora': {
@@ -632,6 +684,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/painel/whatsapp'
       preLoaderRoute: typeof PainelWhatsappRouteImport
       parentRoute: typeof PainelRoute
+    }
+    '/parceiro/$token': {
+      id: '/parceiro/$token'
+      path: '/parceiro/$token'
+      fullPath: '/parceiro/$token'
+      preLoaderRoute: typeof ParceiroTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/produtos/': {
       id: '/produtos/'
@@ -719,6 +778,7 @@ const GuiaRouteChildren: GuiaRouteChildren = {
 const GuiaRouteWithChildren = GuiaRoute._addFileChildren(GuiaRouteChildren)
 
 interface PainelRouteChildren {
+  PainelAfiliadosRoute: typeof PainelAfiliadosRoute
   PainelCalculadoraRoute: typeof PainelCalculadoraRoute
   PainelClientesRoute: typeof PainelClientesRoute
   PainelEstoqueRoute: typeof PainelEstoqueRoute
@@ -733,6 +793,7 @@ interface PainelRouteChildren {
 }
 
 const PainelRouteChildren: PainelRouteChildren = {
+  PainelAfiliadosRoute: PainelAfiliadosRoute,
   PainelCalculadoraRoute: PainelCalculadoraRoute,
   PainelClientesRoute: PainelClientesRoute,
   PainelEstoqueRoute: PainelEstoqueRoute,
@@ -758,7 +819,9 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   TermosRoute: TermosRoute,
   ApiUnsubscribeRoute: ApiUnsubscribeRoute,
+  CCodeRoute: CCodeRoute,
   PagamentoRetornoRoute: PagamentoRetornoRoute,
+  ParceiroTokenRoute: ParceiroTokenRoute,
   ProdutosSlugRoute: ProdutosSlugRoute,
   RTokenRoute: RTokenRoute,
   ProdutosIndexRoute: ProdutosIndexRoute,

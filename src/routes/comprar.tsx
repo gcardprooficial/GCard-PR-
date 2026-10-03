@@ -11,6 +11,8 @@ import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
+import { checkCoupon } from "@/lib/affiliates.functions";
+import { captureReferralFromUrl, clearReferral, getStoredReferral, storeReferral } from "@/lib/referral";
 import { unitPriceForQuantity, money, resolveUnitPrice as resolveUnitPriceShared } from "@/lib/pricing";
 import { PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
 import { Button } from "@/components/ui/button";
@@ -316,6 +318,52 @@ function Comprar() {
   const [gateway, setGateway] = useState<"mercadopago" | "infinitepay">("mercadopago");
   const [wantsPixDiscount, setWantsPixDiscount] = useState(true);
   const pixPromoLive = pixDiscountActive();
+  const runCheckCoupon = useServerFn(checkCoupon);
+  const [coupon, setCoupon] = useState<{ code: string; discountPct: number; partnerFirstName: string } | null>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
+
+  // Cupom do link do parceiro entra sozinho. Lê a URL aqui também: o efeito do layout raiz
+  // roda depois deste quando a pessoa cai direto em /comprar?cupom=.
+  useEffect(() => {
+    const code = captureReferralFromUrl() ?? getStoredReferral();
+    if (!code) return;
+    runCheckCoupon({ data: { code } })
+      .then((res) => {
+        if (res.ok) setCoupon({ code: res.code, discountPct: res.discountPct, partnerFirstName: res.partnerFirstName });
+        else clearReferral();
+      })
+      .catch(() => {
+        /* sem cupom não bloqueia a compra */
+      });
+  }, [runCheckCoupon]);
+
+  async function applyCouponInput() {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCheckingCoupon(true);
+    try {
+      const res = await runCheckCoupon({ data: { code } });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      setCoupon({ code: res.code, discountPct: res.discountPct, partnerFirstName: res.partnerFirstName });
+      storeReferral(res.code);
+      setCouponOpen(false);
+      toast.success(`Cupom ${res.code.toUpperCase()} aplicado: ${res.discountPct}% de desconto.`);
+    } catch {
+      toast.error("Não conseguimos conferir o cupom agora.");
+    } finally {
+      setCheckingCoupon(false);
+    }
+  }
+
+  function removeCoupon() {
+    setCoupon(null);
+    clearReferral();
+  }
 
   const isResale = caminho === "revenda";
   const plan = data.plans.find((p) =>
@@ -532,7 +580,10 @@ function Comprar() {
             },
           ]
         : [];
-  const effectiveTotal = effectiveLines.reduce((s, l) => s + l.totalCents, 0);
+  const grossTotal = effectiveLines.reduce((s, l) => s + l.totalCents, 0);
+  // Prévia só pra tela -- o servidor recalcula o desconto do cupom a partir do banco.
+  const couponDiscount = coupon ? Math.round((grossTotal * coupon.discountPct) / 100) : 0;
+  const effectiveTotal = grossTotal - couponDiscount;
   const effectiveQuantity = effectiveLines.reduce((s, l) => s + l.quantity, 0);
   // Acrílico é kit fechado: mínimo vem do produto, não do plano.
   const minQuantity = Math.max(plan?.min_quantity ?? 1, product?.min_quantity ?? 1);
@@ -624,6 +675,7 @@ function Comprar() {
           })),
           customer,
           marketingConsent,
+          couponCode: coupon?.code ?? null,
           address: { ...address, complement: address.complement || null },
         },
       });
@@ -2142,6 +2194,25 @@ function Comprar() {
                     </span>
                   }
                 />
+                {coupon && (
+                  <Row
+                    label="Cupom"
+                    value={
+                      <span className="inline-flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-g-green">
+                          {coupon.code.toUpperCase()} · −{coupon.discountPct}% (−{money(couponDiscount)})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={removeCoupon}
+                          className="text-xs font-semibold text-muted-foreground underline underline-offset-2"
+                        >
+                          remover
+                        </button>
+                      </span>
+                    }
+                  />
+                )}
                 <Row
                   label="Cliente"
                   value={`${customer.firstName} ${customer.lastName} · ${customer.email}`}
@@ -2173,6 +2244,44 @@ function Comprar() {
                   </p>
                 </div>
               </div>
+
+              {coupon ? (
+                <p className="mt-3 rounded-2xl border border-g-green/40 bg-g-green/10 px-4 py-3 text-sm font-semibold">
+                  🎟️ Cupom <strong>{coupon.code.toUpperCase()}</strong>
+                  {coupon.partnerFirstName ? ` (indicação de ${coupon.partnerFirstName})` : ""} aplicado:{" "}
+                  <strong>{coupon.discountPct}% OFF</strong>
+                </p>
+              ) : couponOpen ? (
+                <div className="mt-3 flex gap-2">
+                  <Input
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void applyCouponInput();
+                    }}
+                    placeholder="Código do cupom"
+                    autoCapitalize="characters"
+                    className="h-11 uppercase"
+                    maxLength={30}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => void applyCouponInput()}
+                    disabled={checkingCoupon || !couponInput.trim()}
+                    className="h-11 shrink-0 rounded-xl px-5 font-bold"
+                  >
+                    {checkingCoupon ? "…" : "Aplicar"}
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setCouponOpen(true)}
+                  className="mt-3 text-sm font-semibold text-muted-foreground underline underline-offset-2"
+                >
+                  Tem cupom de desconto?
+                </button>
+              )}
 
               <fieldset className="mt-4">
                 <legend className="text-sm font-black">Como você quer pagar?</legend>
