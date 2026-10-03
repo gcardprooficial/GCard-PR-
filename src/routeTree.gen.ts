@@ -33,6 +33,8 @@ import { Route as PainelPlacasRouteImport } from './routes/painel.placas'
 import { Route as PainelScansRouteImport } from './routes/painel.scans'
 import { Route as PainelVisaoGeralRouteImport } from './routes/painel.visao-geral'
 import { Route as PainelWhatsappRouteImport } from './routes/painel.whatsapp'
+import { Route as ProdutosIndexRouteImport } from './routes/produtos.index'
+import { Route as ProdutosSlugRouteImport } from './routes/produtos.$slug'
 import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as ApiCronDailyRouteImport } from './routes/api/cron/daily'
 import { Route as ApiMelhorenvioCallbackRouteImport } from './routes/api/melhorenvio/callback'
@@ -163,6 +165,16 @@ const PainelWhatsappRoute = PainelWhatsappRouteImport.update({
   path: '/whatsapp',
   getParentRoute: () => PainelRoute,
 } as any)
+const ProdutosIndexRoute = ProdutosIndexRouteImport.update({
+  id: '/produtos/',
+  path: '/produtos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProdutosSlugRoute = ProdutosSlugRouteImport.update({
+  id: '/produtos/$slug',
+  path: '/produtos/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RTokenRoute = RTokenRouteImport.update({
   id: '/r/$token',
   path: '/r/$token',
@@ -217,9 +229,11 @@ export interface FileRoutesByFullPath {
   '/painel/scans': typeof PainelScansRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
+  '/produtos/$slug': typeof ProdutosSlugRoute
   '/r/$token': typeof RTokenRoute
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
+  '/produtos/': typeof ProdutosIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
@@ -247,9 +261,11 @@ export interface FileRoutesByTo {
   '/painel/scans': typeof PainelScansRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
+  '/produtos/$slug': typeof ProdutosSlugRoute
   '/r/$token': typeof RTokenRoute
   '/guia': typeof GuiaIndexRoute
   '/painel': typeof PainelIndexRoute
+  '/produtos': typeof ProdutosIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
@@ -280,9 +296,11 @@ export interface FileRoutesById {
   '/painel/scans': typeof PainelScansRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
+  '/produtos/$slug': typeof ProdutosSlugRoute
   '/r/$token': typeof RTokenRoute
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
+  '/produtos/': typeof ProdutosIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
@@ -314,9 +332,11 @@ export interface FileRouteTypes {
     | '/painel/scans'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
+    | '/produtos/$slug'
     | '/r/$token'
     | '/guia/'
     | '/painel/'
+    | '/produtos/'
     | '/api/cron/daily'
     | '/api/melhorenvio/callback'
     | '/api/webhooks/mercadopago'
@@ -344,9 +364,11 @@ export interface FileRouteTypes {
     | '/painel/scans'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
+    | '/produtos/$slug'
     | '/r/$token'
     | '/guia'
     | '/painel'
+    | '/produtos'
     | '/api/cron/daily'
     | '/api/melhorenvio/callback'
     | '/api/webhooks/mercadopago'
@@ -376,9 +398,11 @@ export interface FileRouteTypes {
     | '/painel/scans'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
+    | '/produtos/$slug'
     | '/r/$token'
     | '/guia/'
     | '/painel/'
+    | '/produtos/'
     | '/api/cron/daily'
     | '/api/melhorenvio/callback'
     | '/api/webhooks/mercadopago'
@@ -396,7 +420,9 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   ApiUnsubscribeRoute: typeof ApiUnsubscribeRoute
   PagamentoRetornoRoute: typeof PagamentoRetornoRoute
+  ProdutosSlugRoute: typeof ProdutosSlugRoute
   RTokenRoute: typeof RTokenRoute
+  ProdutosIndexRoute: typeof ProdutosIndexRoute
   ApiCronDailyRoute: typeof ApiCronDailyRoute
   ApiMelhorenvioCallbackRoute: typeof ApiMelhorenvioCallbackRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
@@ -574,6 +600,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelWhatsappRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/produtos/': {
+      id: '/produtos/'
+      path: '/produtos'
+      fullPath: '/produtos/'
+      preLoaderRoute: typeof ProdutosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/produtos/$slug': {
+      id: '/produtos/$slug'
+      path: '/produtos/$slug'
+      fullPath: '/produtos/$slug'
+      preLoaderRoute: typeof ProdutosSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/r/$token': {
       id: '/r/$token'
       path: '/r/$token'
@@ -677,7 +717,9 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   ApiUnsubscribeRoute: ApiUnsubscribeRoute,
   PagamentoRetornoRoute: PagamentoRetornoRoute,
+  ProdutosSlugRoute: ProdutosSlugRoute,
   RTokenRoute: RTokenRoute,
+  ProdutosIndexRoute: ProdutosIndexRoute,
   ApiCronDailyRoute: ApiCronDailyRoute,
   ApiMelhorenvioCallbackRoute: ApiMelhorenvioCallbackRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,

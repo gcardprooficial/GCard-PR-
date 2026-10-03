@@ -447,3 +447,24 @@ header img, .site-header img, .page-header img {
 
 /* Ensure sticky header doesn't push content on small screens */
 header.sticky, .sticky { position: sticky; top: 0; z-index: 40; }
+
+/* Faixa de fotos do site: corre da direita para a esquerda */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee 60s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+  .marquee {
+    overflow-x: auto;
+  }
+}
