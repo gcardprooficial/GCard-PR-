@@ -166,6 +166,31 @@ function PanelLayout() {
           <Outlet />
         </main>
       </PanelCtx.Provider>
+
+      {/* Celular: barra de abas fixa embaixo (atalhos + "Mais" abre o menu completo) */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card md:hidden" aria-label="Atalhos do painel">
+        <ul className="grid h-16 grid-cols-5 items-center text-[11px] font-semibold">
+          {(["/painel", "/painel/clientes", "/painel/whatsapp", "/painel/estoque"] as const).map((to) => {
+            const t = TABS.find((x) => x.to === to)!;
+            const active = "exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to);
+            const Icon = t.icon;
+            return (
+              <li key={to}>
+                <Link to={to} className={`flex flex-col items-center gap-0.5 ${active ? "text-foreground" : "text-muted-foreground"}`}>
+                  <Icon className={`size-5 ${active ? "text-primary" : ""}`} />
+                  {t.label}
+                </Link>
+              </li>
+            );
+          })}
+          <li>
+            <button type="button" onClick={() => setMenuOpen(true)} className="mx-auto flex flex-col items-center gap-0.5 text-muted-foreground">
+              <Menu className="size-5" />
+              Mais
+            </button>
+          </li>
+        </ul>
+      </nav>
     </div>
   );
 }

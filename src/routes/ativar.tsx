@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
+import logoMarca from "@/assets/logo/header-marca.png";
+import logoIcone from "@/assets/logo/header-icone.png";
 
 export const Route = createFileRoute("/ativar")({
   head: () => ({
@@ -384,24 +386,34 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   if (batches === null) return <Center>Carregando…</Center>;
 
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <Link to="/" className="inline-flex items-center gap-3">
-            <img src={logoTransparente} alt="GCard-PRÓ" className="h-9 w-auto" draggable={false} />
-            <span className="text-muted-foreground">/ meus códigos</span>
+    <div id="topo" className="min-h-screen bg-surface pb-24 md:pb-0">
+      <header className="sticky top-0 z-40 bg-foreground text-white">
+        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between gap-3 px-5">
+          <Link to="/" className="inline-flex items-center gap-2.5" aria-label="GCard-PRÓ — início">
+            <img src={logoIcone} alt="" className="h-9 w-auto" draggable={false} />
+            <img src={logoMarca} alt="GCard-PRÓ" className="hidden h-5 w-auto sm:block" draggable={false} />
           </Link>
           <div className="flex items-center gap-3 text-sm">
-            <span className="hidden text-muted-foreground sm:inline">{email}</span>
-            <Button size="sm" variant="outline" onClick={() => supabase.auth.signOut()}>
+            <span className="hidden text-white/60 sm:inline">{email}</span>
+            <Button size="sm" variant="outline" className="rounded-xl border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white" onClick={() => supabase.auth.signOut()}>
               Sair
             </Button>
           </div>
         </div>
+        <div className="mx-auto max-w-4xl px-5 pb-6 pt-2">
+          <p className="text-sm text-white/60">Olá 👋</p>
+          <h1 className="font-display text-2xl leading-tight sm:text-3xl">Painel do Revendedor</h1>
+          <a
+            href="#resgatar"
+            className="mt-4 inline-flex h-12 items-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
+          >
+            + Ativar / resgatar lote
+          </a>
+        </div>
       </header>
 
       <div className="mx-auto max-w-4xl px-5 py-8">
-        <form onSubmit={redeem} className="rounded-2xl bg-card p-5 card-soft border border-dashed border-primary/40 mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <form id="resgatar" onSubmit={redeem} className="scroll-mt-24 rounded-2xl bg-card p-5 card-soft border border-dashed border-primary/40 mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
             <Label className="text-xs font-semibold">Recebeu um lote novo? Resgate pelo código</Label>
             <Input
@@ -443,7 +455,15 @@ function Lote({ email, userId }: { email: string; userId: string }) {
           </div>
         ) : (
           <>
-            <div className="rounded-2xl bg-card p-6 card-soft border border-border">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Stat label="Lotes" value={batches.length} />
+              <Stat label="Total de códigos" value={counts.total} />
+              <Stat label="Ativados" value={counts.active} />
+              <Stat label="Em branco" value={counts.blank} />
+            </div>
+
+            <div className="mt-5" />
+            <div id="ajuda" className="scroll-mt-24 rounded-2xl bg-card p-6 card-soft border border-border">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <span className="badge-pill bg-primary/20 text-foreground font-black text-xs">
@@ -479,13 +499,8 @@ function Lote({ email, userId }: { email: string; userId: string }) {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <Stat label="Total de códigos" value={counts.total} />
-              <Stat label="Ativados" value={counts.active} />
-              <Stat label="Em branco" value={counts.blank} />
-            </div>
 
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div id="placas" className="mt-5 flex scroll-mt-24 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-lg font-bold">Cartões por lote</h2>
                 <p className="text-xs text-muted-foreground">Clique num lote pra abrir e ativar os cartões dele</p>
@@ -551,6 +566,39 @@ function Lote({ email, userId }: { email: string; userId: string }) {
           </>
         )}
       </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card md:hidden" aria-label="Painel">
+        <ul className="mx-auto grid h-16 max-w-md grid-cols-5 items-center text-[11px] font-semibold text-muted-foreground">
+          {[
+            ["#topo", "Início", "⌂"],
+            ["#placas", "Placas", "▦"],
+          ].map(([href, label, icon]) => (
+            <li key={href}>
+              <a href={href} className="flex flex-col items-center gap-0.5">
+                <span className="text-lg leading-none">{icon}</span>
+                {label}
+              </a>
+            </li>
+          ))}
+          <li className="flex justify-center">
+            <a href="#resgatar" aria-label="Ativar lote" className="-mt-6 flex size-14 items-center justify-center rounded-full bg-primary text-2xl font-black text-primary-foreground shadow-lg">
+              +
+            </a>
+          </li>
+          <li>
+            <a href="#ajuda" className="flex flex-col items-center gap-0.5">
+              <span className="text-lg leading-none">?</span>
+              Ajuda
+            </a>
+          </li>
+          <li>
+            <button type="button" onClick={() => supabase.auth.signOut()} className="mx-auto flex flex-col items-center gap-0.5">
+              <span className="text-lg leading-none">⏻</span>
+              Sair
+            </button>
+          </li>
+        </ul>
+      </nav>
     </div>
   );
 }
