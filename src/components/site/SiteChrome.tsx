@@ -30,7 +30,7 @@ export function PromoBar() {
 
   return (
     <div className="bg-primary text-primary-foreground">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-center text-xs font-bold sm:text-sm">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-center text-xs font-bold sm:text-sm">
         <span>
           💸 <strong>{PIX_DISCOUNT_PCT}% OFF no Pix</strong>
         </span>
@@ -62,13 +62,13 @@ const navLinkClass =
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-foreground text-white">
-      <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-4 px-5">
-        <Link to="/" className="flex items-center gap-2.5" aria-label="GCard-PRÓ — início">
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-5">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="GCard-PRÓ — início">
           <img src={logoIcone} alt="" className="h-9 w-auto sm:h-10" draggable={false} />
-          <img src={logoMarca} alt="GCard-PRÓ" className="hidden h-6 w-auto sm:block" draggable={false} />
+          <img src={logoMarca} alt="GCard-PRÓ" className="hidden h-6 w-auto md:block" draggable={false} />
         </Link>
 
-        <nav className="hidden items-center gap-5 lg:flex" aria-label="Principal">
+        <nav className="hidden items-center gap-5 xl:flex" aria-label="Principal">
           {NAV.map((item) => (
             <Link key={item.label} to={item.to} {...(item.hash ? { hash: item.hash } : {})} className={navLinkClass}>
               {item.label}
@@ -96,7 +96,7 @@ export function SiteHeader() {
               <button
                 type="button"
                 aria-label="Abrir menu"
-                className="flex size-11 items-center justify-center rounded-xl text-white hover:bg-white/10 lg:hidden"
+                className="flex size-11 items-center justify-center rounded-xl text-white hover:bg-white/10 xl:hidden"
               >
                 <Menu className="size-7" />
               </button>
@@ -171,7 +171,7 @@ const footerLink =
 export function SiteFooter() {
   return (
     <footer className="bg-foreground text-white">
-      <div className="mx-auto max-w-6xl px-5 py-14">
+      <div className="mx-auto max-w-7xl px-5 py-14">
         <div className="grid gap-10 md:grid-cols-[1.3fr_2fr]">
           <div>
             <Link to="/" className="inline-flex items-center gap-2.5" aria-label="GCard-PRÓ — início">

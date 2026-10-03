@@ -22,7 +22,7 @@ export function PhoneMockup() {
     ["GCARD-00396", "Aguardando ativação", false],
   ] as const;
   return (
-    <div className="mx-auto w-[260px] rounded-[2.4rem] border-[6px] border-white/15 bg-background p-3 shadow-2xl">
+    <div className="mx-auto w-[260px] text-foreground rounded-[2.4rem] border-[6px] border-white/15 bg-background p-3 shadow-2xl">
       <div className="mx-auto mb-3 h-1.5 w-16 rounded-full bg-foreground/15" />
       <p className="text-xs text-muted-foreground">Olá 👋</p>
       <p className="font-display text-base font-black leading-tight">Seu painel de placas</p>

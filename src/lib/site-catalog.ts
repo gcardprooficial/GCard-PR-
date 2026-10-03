@@ -25,7 +25,9 @@ export const PRODUCT_IMAGES: Record<string, string> = {
 };
 
 /** Fotos de balcão (public/mockups), usadas no carrossel e na galeria dos produtos. */
-export const MOCKUPS = Array.from({ length: 8 }, (_, i) => `/mockups/balcao-0${i + 1}.jpg`);
+export const MOCKUPS = [
+  "10x10_02", "cartao_bolso_02", "10x15_02", "10x10_03", "cartao_bolso_03", "10x15_03", "10x10_corrigido", "cartao_bolso_corrigido", "10x15_corrigido",
+].map((n) => `/faixa/${n}.webp`);
 
 export const FALLBACK_PRODUCTS = [
   {

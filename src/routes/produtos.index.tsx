@@ -24,13 +24,13 @@ function Produtos() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <section className="bg-foreground text-white">
-        <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">
+        <div className="mx-auto max-w-7xl px-5 py-12 md:py-16">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Produtos</p>
           <h1 className="mt-3 text-4xl leading-tight sm:text-5xl">Todos os produtos GCard-PRÓ</h1>
           <p className="mt-3 max-w-xl text-white/70">Com arte pronta ou acrílico puro. Frete grátis para todo o Brasil e sem mensalidade.</p>
         </div>
       </section>
-      <section className="mx-auto grid max-w-6xl gap-5 px-5 py-12 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="mx-auto grid max-w-7xl gap-5 px-5 py-12 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((p) => {
           const soon = p.status !== "ativo";
           return (

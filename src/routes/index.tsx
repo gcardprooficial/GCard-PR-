@@ -141,7 +141,7 @@ function Home() {
       {/* ===== HERO ===== */}
       <section className="relative overflow-hidden bg-foreground text-white">
         <div aria-hidden className="pointer-events-none absolute -right-32 -top-24 size-[520px] rounded-full bg-primary/15 blur-3xl" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 pb-14 pt-10 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:pb-20 md:pt-16">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 pb-14 pt-10 md:grid-cols-[1.05fr_0.95fr] md:gap-12 md:pb-20 md:pt-16">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3.5 py-1.5 text-xs font-bold tracking-wide text-primary sm:text-sm">
               Fornecedor direto · NFC · Sem mensalidade
@@ -174,7 +174,7 @@ function Home() {
 
           <div className="relative">
             <div aria-hidden className="absolute -inset-3 rounded-[2.25rem] bg-gradient-to-br from-primary/30 via-transparent to-transparent blur-xl" />
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+            <div className="relative -mx-5 overflow-hidden shadow-2xl md:mx-0 md:rounded-[2rem] md:border md:border-white/10">
               <img
                 src={heroCartao}
                 alt="Cartão GCard-PRÓ sendo aproximado do celular para abrir a avaliação no Google"
@@ -185,7 +185,7 @@ function Home() {
                 draggable={false}
               />
             </div>
-            <div className="absolute -bottom-4 left-3 rounded-2xl border border-border bg-card px-4 py-3 text-foreground shadow-2xl sm:-left-6">
+            <div className="absolute bottom-3 left-3 rounded-2xl border border-border bg-card px-4 py-3 text-foreground shadow-2xl sm:-left-6">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Cartão NFC</p>
               <p className="font-display text-xl font-black leading-tight text-primary-foreground">Pronto para usar</p>
               <p className="text-xs font-semibold text-muted-foreground">configurado para seu negócio</p>
@@ -196,7 +196,7 @@ function Home() {
 
       {/* ===== FAIXA DE GARANTIAS ===== */}
       <section className="border-b border-border bg-card">
-        <ul className="mx-auto grid max-w-6xl grid-cols-2 gap-x-4 gap-y-5 px-5 py-6 md:grid-cols-4">
+        <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-x-4 gap-y-5 px-5 py-6 md:grid-cols-4">
           {[
             ["Compra segura", "Mercado Pago · Pix, cartão e boleto"],
             ["Frete grátis", "Todo o Brasil pelos Correios"],
@@ -216,7 +216,7 @@ function Home() {
 
       {/* ===== PRODUTOS: CARROSSEL DE BALCÃO ===== */}
       <section id="produtos" className="bg-surface/60 py-14 md:py-20">
-        <div className="mx-auto max-w-6xl px-5">
+        <div className="mx-auto max-w-7xl px-5">
           <Eyebrow>Nossos produtos</Eyebrow>
           <h2 className="mt-3 max-w-2xl text-3xl leading-tight sm:text-4xl md:text-5xl">
             Pronto pra usar, ou acrílico puro pra sua arte.
@@ -235,12 +235,12 @@ function Home() {
               alt={`Placa GCard-PRÓ no balcão, foto ${i + 1}`}
               loading="lazy"
               draggable={false}
-              className="h-56 w-auto rounded-2xl object-cover shadow-md sm:h-72"
+              className="h-36 w-auto rounded-xl object-cover shadow-md sm:h-44"
             />
           ))}
         </Marquee>
 
-        <div className="mx-auto mt-10 grid max-w-6xl gap-5 px-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto mt-10 grid max-w-7xl gap-5 px-5 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => {
             const soon = product.status !== "ativo";
             return (
@@ -284,7 +284,7 @@ function Home() {
       </section>
 
       {/* ===== COMO FUNCIONA ===== */}
-      <section id="como-funciona" className="mx-auto max-w-6xl px-5 py-14 md:py-20">
+      <section id="como-funciona" className="mx-auto max-w-7xl px-5 py-14 md:py-20">
         <div className="mx-auto max-w-3xl text-center">
           <Eyebrow>Como funciona</Eyebrow>
           <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">
@@ -312,7 +312,7 @@ function Home() {
 
       {/* ===== SISTEMA / PAINEL ===== */}
       <section id="painel" className="bg-foreground text-white">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-14 md:grid-cols-[1.1fr_0.9fr] md:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-14 md:grid-cols-[1.1fr_0.9fr] md:py-20">
           <div>
             <Eyebrow dark>Seu painel</Eyebrow>
             <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">Ative e troque no seu painel.</h2>
@@ -336,7 +336,7 @@ function Home() {
       </section>
 
       {/* ===== REVENDEDOR ===== */}
-      <section id="revendedor" className="mx-auto max-w-6xl px-5 py-14 md:py-20">
+      <section id="revendedor" className="mx-auto max-w-7xl px-5 py-14 md:py-20">
         <div className="max-w-2xl">
           <Eyebrow>Seja um revendedor</Eyebrow>
           <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">Pra revender, o preço cai com a quantidade.</h2>
@@ -393,7 +393,7 @@ function Home() {
 
       {/* ===== SEU NEGÓCIO ===== */}
       <section id="seu-negocio" className="border-y border-border bg-surface/60">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-5 py-14 md:grid-cols-2 md:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-14 md:grid-cols-2 md:py-20">
           <div>
             <Eyebrow>Para o seu negócio</Eyebrow>
             <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">Pra usar no meu negócio</h2>
@@ -439,7 +439,7 @@ function Home() {
       </section>
 
       {/* ===== O QUE É CADA PRODUTO ===== */}
-      <section id="o-que-e" className="mx-auto max-w-6xl px-5 py-14 md:py-20">
+      <section id="o-que-e" className="mx-auto max-w-7xl px-5 py-14 md:py-20">
         <div className="mx-auto max-w-3xl text-center">
           <Eyebrow>Quem somos</Eyebrow>
           <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">

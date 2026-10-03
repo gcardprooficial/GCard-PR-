@@ -27,10 +27,10 @@ function Produto() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <div className="mx-auto max-w-6xl px-5 pt-6 text-sm text-muted-foreground">
+      <div className="mx-auto max-w-7xl px-5 pt-6 text-sm text-muted-foreground">
         <Link to="/produtos" className="hover:text-foreground">← Produtos</Link>
       </div>
-      <section className="mx-auto grid max-w-6xl gap-8 px-5 py-8 md:grid-cols-2 md:gap-12">
+      <section className="mx-auto grid max-w-7xl gap-8 px-5 py-8 md:grid-cols-2 md:gap-12">
         <div>
           <div className="overflow-hidden rounded-3xl border border-border bg-surface">
             <img src={PRODUCT_IMAGES[p.slug] ?? produtoCartao} alt={p.name} className={`aspect-square w-full ${p.is_blank ? "object-contain p-8" : "object-cover"}`} />
