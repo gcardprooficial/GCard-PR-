@@ -1,8 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { money } from "@/lib/pricing";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
-import { PRODUCT_IMAGES, catalogQuery, plansFrom, productsFrom } from "@/lib/site-catalog";
+import { PRODUCT_IMAGES, catalogQuery, productsFrom } from "@/lib/site-catalog";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 
 export const Route = createFileRoute("/produtos/")({
@@ -18,7 +17,6 @@ export const Route = createFileRoute("/produtos/")({
 
 function Produtos() {
   const { data } = useSuspenseQuery(catalogQuery);
-  const { lojista } = plansFrom(data);
   const products = productsFrom(data);
   return (
     <div className="min-h-screen bg-background">
@@ -42,13 +40,6 @@ function Produtos() {
               <div className="p-5">
                 <h2 className="text-lg font-bold">{p.name}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{p.format}</p>
-                {!p.is_blank && !soon && (
-                  <p className="mt-3 font-display text-2xl">
-                    <span className="mr-1 font-sans text-xs font-semibold text-muted-foreground">a partir de</span>
-                    {money(lojista.unit_price_cents + p.price_delta_cents)}
-                  </p>
-                )}
-                {p.is_blank && <p className="mt-3 text-sm font-semibold text-muted-foreground">Revenda · kit a partir de 10 un.</p>}
               </div>
             </Link>
           );
