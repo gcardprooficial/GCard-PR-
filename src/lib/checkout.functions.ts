@@ -335,6 +335,8 @@ const cartOrderSchema = z.object({
     .min(1)
     .max(20),
   marketingConsent: z.boolean().default(false),
+  /** Cupom do parceiro (link /c/{code}). Só o código -- % e valores vêm do banco. */
+  couponCode: z.string().trim().max(40).optional().nullable(),
   customer: orderSchema.shape.customer,
   address: orderSchema.shape.address,
 });
@@ -383,7 +385,10 @@ export const createCartOrder = createServerFn({ method: "POST" })
 
     const isResale = lines[0]!.plan.is_resale;
     const totalQuantity = lines.reduce((s, l) => s + l.quantity, 0);
-    const totalCents = lines.reduce((s, l) => s + l.subtotal, 0) + addonTotalCents;
+    const grossCents = lines.reduce((s, l) => s + l.subtotal, 0) + addonTotalCents;
+    const { resolveOrderCoupon } = await import("@/lib/affiliates.server");
+    const coupon = await resolveOrderCoupon(data.couponCode, data.customer, grossCents);
+    const totalCents = coupon?.totalCents ?? grossCents;
 
     let businessId: string | null = null;
     if (data.business && parsedLink) {
@@ -423,9 +428,13 @@ export const createCartOrder = createServerFn({ method: "POST" })
         business_id: businessId,
         plan_id: lines[0]!.plan.id,
         quantity: totalQuantity,
-        subtotal_cents: totalCents,
+        subtotal_cents: grossCents,
         shipping_cents: 0,
         total_cents: totalCents,
+        affiliate_id: coupon?.affiliate.id ?? null,
+        coupon_code: coupon?.affiliate.code ?? null,
+        coupon_discount_cents: coupon?.discountCents ?? 0,
+        affiliate_commission_pct: coupon?.affiliate.commission_pct ?? null,
         marketing_consent_at: data.marketingConsent ? new Date().toISOString() : null,
       } as never)
       .select("id, order_number")
@@ -487,5 +496,10 @@ export const createCartOrder = createServerFn({ method: "POST" })
       }
     }
 
-    return { orderNumber: order.order_number, totalCents };
+    return {
+      orderNumber: order.order_number,
+      totalCents,
+      couponCode: coupon?.affiliate.code ?? null,
+      couponDiscountCents: coupon?.discountCents ?? 0,
+    };
   });

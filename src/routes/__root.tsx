@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import appCss from "../styles.css?url";
+import { captureReferralFromUrl } from "@/lib/referral";
 
 function NotFoundComponent() {
   return (
@@ -223,6 +224,7 @@ function RootComponent() {
       <Outlet />
       <WhatsAppButton />
       <Analytics />
+      <ReferralCapture />
       <Toaster
         theme="light"
         position="top-right"
@@ -243,6 +245,14 @@ function RootComponent() {
       />
     </QueryClientProvider>
   );
+}
+
+/** Guarda ?cupom= de qualquer página (link do parceiro) pro checkout aplicar sozinho. */
+function ReferralCapture() {
+  useEffect(() => {
+    captureReferralFromUrl();
+  }, []);
+  return null;
 }
 
 function Analytics() {
