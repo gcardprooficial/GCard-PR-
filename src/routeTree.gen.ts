@@ -28,6 +28,7 @@ import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculado
 import { Route as PainelClientesRouteImport } from './routes/painel.clientes'
 import { Route as PainelEstoqueRouteImport } from './routes/painel.estoque'
 import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
+import { Route as PainelFreteRouteImport } from './routes/painel.frete'
 import { Route as PainelIntegracoesRouteImport } from './routes/painel.integracoes'
 import { Route as PainelLotesRouteImport } from './routes/painel.lotes'
 import { Route as PainelPlacasRouteImport } from './routes/painel.placas'
@@ -143,6 +144,11 @@ const PainelFinanceiroRoute = PainelFinanceiroRouteImport.update({
   path: '/financeiro',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelFreteRoute = PainelFreteRouteImport.update({
+  id: '/frete',
+  path: '/frete',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelIntegracoesRoute = PainelIntegracoesRouteImport.update({
   id: '/integracoes',
   path: '/integracoes',
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
+  '/painel/frete': typeof PainelFreteRoute
   '/painel/integracoes': typeof PainelIntegracoesRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
+  '/painel/frete': typeof PainelFreteRoute
   '/painel/integracoes': typeof PainelIntegracoesRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
@@ -308,6 +316,7 @@ export interface FileRoutesById {
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
+  '/painel/frete': typeof PainelFreteRoute
   '/painel/integracoes': typeof PainelIntegracoesRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
@@ -346,6 +355,7 @@ export interface FileRouteTypes {
     | '/painel/clientes'
     | '/painel/estoque'
     | '/painel/financeiro'
+    | '/painel/frete'
     | '/painel/integracoes'
     | '/painel/lotes'
     | '/painel/placas'
@@ -380,6 +390,7 @@ export interface FileRouteTypes {
     | '/painel/clientes'
     | '/painel/estoque'
     | '/painel/financeiro'
+    | '/painel/frete'
     | '/painel/integracoes'
     | '/painel/lotes'
     | '/painel/placas'
@@ -416,6 +427,7 @@ export interface FileRouteTypes {
     | '/painel/clientes'
     | '/painel/estoque'
     | '/painel/financeiro'
+    | '/painel/frete'
     | '/painel/integracoes'
     | '/painel/lotes'
     | '/painel/placas'
@@ -591,6 +603,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelFinanceiroRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/frete': {
+      id: '/painel/frete'
+      path: '/frete'
+      fullPath: '/painel/frete'
+      preLoaderRoute: typeof PainelFreteRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/integracoes': {
       id: '/painel/integracoes'
       path: '/integracoes'
@@ -723,6 +742,7 @@ interface PainelRouteChildren {
   PainelClientesRoute: typeof PainelClientesRoute
   PainelEstoqueRoute: typeof PainelEstoqueRoute
   PainelFinanceiroRoute: typeof PainelFinanceiroRoute
+  PainelFreteRoute: typeof PainelFreteRoute
   PainelIntegracoesRoute: typeof PainelIntegracoesRoute
   PainelLotesRoute: typeof PainelLotesRoute
   PainelPlacasRoute: typeof PainelPlacasRoute
@@ -737,6 +757,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelClientesRoute: PainelClientesRoute,
   PainelEstoqueRoute: PainelEstoqueRoute,
   PainelFinanceiroRoute: PainelFinanceiroRoute,
+  PainelFreteRoute: PainelFreteRoute,
   PainelIntegracoesRoute: PainelIntegracoesRoute,
   PainelLotesRoute: PainelLotesRoute,
   PainelPlacasRoute: PainelPlacasRoute,

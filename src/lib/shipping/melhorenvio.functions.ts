@@ -124,3 +124,40 @@ export const buyOrderShippingLabel = createServerFn({ method: "POST" })
 
     return result;
   });
+
+// CEP central de cada capital: base de comparação por estado (interior costuma custar mais).
+const UF_CEPS: Record<string, string> = {
+  AC: "69900000", AL: "57010000", AP: "68900000", AM: "69005010", BA: "40020000", CE: "60025000", DF: "70040010",
+  ES: "29010000", GO: "74003010", MA: "65010000", MT: "78005000", MS: "79002000", MG: "30130000", PA: "66010000",
+  PB: "58010000", PR: "80010000", PE: "50010000", PI: "64000000", RJ: "20010000", RN: "59010000", RS: "90010000",
+  RO: "76801000", RR: "69301000", SC: "88010000", SP: "01001000", SE: "49010000", TO: "77001000",
+};
+
+/** Só consulta preço (não gasta saldo): melhor Jadlog e melhor Correios por estado, pra 1 kit de placa e de cartão. */
+export const getFreightByState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertTeam(context.userId);
+    const { calculateFreight } = await import("./melhorenvio.server");
+    type Cell = { jadlog: number | null; correios: number | null } | { error: string };
+    const cheapest = (quotes: { company: string; priceCents: number }[], re: RegExp) => {
+      const m = quotes.filter((q) => re.test(q.company)).map((q) => q.priceCents);
+      return m.length ? Math.min(...m) : null;
+    };
+    const rows: { uf: string; acrilico: Cell; pvc: Cell }[] = [];
+    const ufs = Object.keys(UF_CEPS);
+    for (let i = 0; i < ufs.length; i += 5) {
+      const batch = await Promise.all(
+        ufs.slice(i, i + 5).map(async (uf) => {
+          const one = async (profile: "acrilico" | "pvc"): Promise<Cell> => {
+            const r = await calculateFreight({ destinationCep: UF_CEPS[uf]!, profile, quantity: 1 });
+            if (!r.ok) return { error: r.error.slice(0, 120) };
+            return { jadlog: cheapest(r.quotes, /jadlog/i), correios: cheapest(r.quotes, /correios/i) };
+          };
+          return { uf, acrilico: await one("acrilico"), pvc: await one("pvc") };
+        }),
+      );
+      rows.push(...batch);
+    }
+    return { rows };
+  });
