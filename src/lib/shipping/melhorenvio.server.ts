@@ -230,6 +230,8 @@ export async function calculateFreight(input: {
   destinationCep: string;
   profile: PackageProfileKey;
   quantity: number;
+  /** Eleva as medidas ao mínimo dos Correios (16x11x2 cm); abaixo disso eles nem cotam. */
+  padForCorreios?: boolean;
 }): Promise<{ ok: true; quotes: FreightQuote[] } | { ok: false; error: string }> {
   const token = await getValidAccessToken();
   if (!token) return { ok: false, error: "Melhor Envio não está conectado." };
@@ -250,9 +252,9 @@ export async function calculateFreight(input: {
       from: { postal_code: ORIGIN_POSTAL_CODE },
       to: { postal_code: destCep },
       package: {
-        height: p.heightCm * kits,
-        width: p.widthCm,
-        length: p.lengthCm,
+        height: Math.max(p.heightCm * kits, input.padForCorreios ? 2 : 0),
+        width: Math.max(p.widthCm, input.padForCorreios ? 11 : 0),
+        length: Math.max(p.lengthCm, input.padForCorreios ? 16 : 0),
         weight: p.weightKg * kits,
       },
     }),

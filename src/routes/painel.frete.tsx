@@ -32,11 +32,12 @@ function FretePorEstado() {
   }
 
   const limitCents = limit * 100;
-  const over = rows?.filter((r) => (best(r.acrilico) ?? 0) > limitCents || (best(r.pvc) ?? 0) > limitCents) ?? [];
+  const failed = rows?.filter((r) => "error" in r.acrilico || "error" in r.pvc) ?? [];
+  const over = rows?.filter((r) => !failed.includes(r) && ((best(r.acrilico) ?? 0) > limitCents || (best(r.pvc) ?? 0) > limitCents)) ?? [];
 
   const cell = (c: Cell) =>
     "error" in c ? (
-      <span className="text-xs text-red-700">erro</span>
+      <span className="text-xs text-red-700" title={c.error}>erro: {c.error.slice(0, 60)}</span>
     ) : (
       <span className={best(c) !== null && best(c)! > limitCents ? "font-bold text-red-700" : "font-semibold text-g-green"}>
         {brl(best(c))}
@@ -65,8 +66,9 @@ function FretePorEstado() {
       {rows && (
         <>
           <p className="mt-5 text-sm">
-            <strong>{rows.length - over.length}</strong> estados até {brl(limitCents)} · <strong className="text-red-700">{over.length}</strong> passam:{" "}
+            <strong>{rows.length - over.length - failed.length}</strong> estados até {brl(limitCents)} · <strong className="text-red-700">{over.length}</strong> passam:{" "}
             <span className="font-semibold">{over.map((r) => r.uf).join(", ") || "nenhum"}</span>
+            {failed.length > 0 && <> · <strong>{failed.length}</strong> sem cotação (tente de novo): {failed.map((r) => r.uf).join(", ")}</>}
           </p>
           <div className="mt-3 overflow-x-auto rounded-2xl border border-border bg-card">
             <table className="w-full min-w-[420px] text-sm">

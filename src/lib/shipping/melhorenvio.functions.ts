@@ -145,19 +145,21 @@ export const getFreightByState = createServerFn({ method: "POST" })
       return m.length ? Math.min(...m) : null;
     };
     const rows: { uf: string; acrilico: Cell; pvc: Cell }[] = [];
-    const ufs = Object.keys(UF_CEPS);
-    for (let i = 0; i < ufs.length; i += 5) {
-      const batch = await Promise.all(
-        ufs.slice(i, i + 5).map(async (uf) => {
-          const one = async (profile: "acrilico" | "pvc"): Promise<Cell> => {
-            const r = await calculateFreight({ destinationCep: UF_CEPS[uf]!, profile, quantity: 1 });
-            if (!r.ok) return { error: r.error.slice(0, 120) };
-            return { jadlog: cheapest(r.quotes, /jadlog/i), correios: cheapest(r.quotes, /correios/i) };
-          };
-          return { uf, acrilico: await one("acrilico"), pvc: await one("pvc") };
-        }),
-      );
-      rows.push(...batch);
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    // Sequencial + retry: em paralelo o Melhor Envio devolve 429 e vários estados vinham com erro.
+    const one = async (uf: string, profile: "acrilico" | "pvc"): Promise<Cell> => {
+      let last = "";
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await calculateFreight({ destinationCep: UF_CEPS[uf]!, profile, quantity: 1, padForCorreios: true });
+        if (r.ok) return { jadlog: cheapest(r.quotes, /jadlog/i), correios: cheapest(r.quotes, /correios/i) };
+        last = r.error;
+        await sleep(1200 * (attempt + 1));
+      }
+      return { error: last.slice(0, 140) };
+    };
+    for (const uf of Object.keys(UF_CEPS)) {
+      rows.push({ uf, acrilico: await one(uf, "acrilico"), pvc: await one(uf, "pvc") });
+      await sleep(300);
     }
     return { rows };
   });
