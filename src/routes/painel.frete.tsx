@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getFreightByState } from "@/lib/shipping/melhorenvio.functions";
+import { FREIGHT_UFS, getFreightForState } from "@/lib/shipping/melhorenvio.functions";
 
 export const Route = createFileRoute("/painel/frete")({ component: FretePorEstado });
 
@@ -15,17 +15,25 @@ const brl = (c: number | null) => (c === null ? "—" : (c / 100).toLocaleString
 const best = (c: Cell) => ("error" in c ? null : [c.jadlog, c.correios].filter((x): x is number => x !== null).sort((a, b) => a - b)[0] ?? null);
 
 function FretePorEstado() {
-  const run = useServerFn(getFreightByState);
+  const run = useServerFn(getFreightForState);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [limit, setLimit] = useState(25);
 
   async function load() {
     setLoading(true);
+    setRows([]);
     try {
-      setRows((await run()).rows);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não consegui cotar agora.");
+      for (const uf of FREIGHT_UFS) {
+        let row: Row;
+        try {
+          row = await run({ data: { uf } });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "falhou";
+          row = { uf, acrilico: { error: msg }, pvc: { error: msg } };
+        }
+        setRows((cur) => [...(cur ?? []), row]);
+      }
     } finally {
       setLoading(false);
     }
@@ -59,11 +67,11 @@ function FretePorEstado() {
           <Input id="lim" type="number" min={1} value={limit} onChange={(e) => setLimit(Math.max(1, Number(e.target.value) || 25))} className="mt-1 h-10 w-32" />
         </div>
         <Button onClick={() => void load()} disabled={loading} className="h-10 font-bold">
-          {loading ? "Cotando 27 estados…" : rows ? "Cotar de novo" : "Cotar todos os estados"}
+          {loading ? `Cotando… ${rows?.length ?? 0}/27` : rows ? "Cotar de novo" : "Cotar todos os estados"}
         </Button>
       </div>
 
-      {rows && (
+      {rows && rows.length > 0 && (
         <>
           <p className="mt-5 text-sm">
             <strong>{rows.length - over.length - failed.length}</strong> estados até {brl(limitCents)} · <strong className="text-red-700">{over.length}</strong> passam:{" "}

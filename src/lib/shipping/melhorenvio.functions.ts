@@ -127,39 +127,38 @@ export const buyOrderShippingLabel = createServerFn({ method: "POST" })
 
 // CEP central de cada capital: base de comparação por estado (interior costuma custar mais).
 const UF_CEPS: Record<string, string> = {
-  AC: "69900000", AL: "57010000", AP: "68900000", AM: "69005010", BA: "40020000", CE: "60025000", DF: "70040010",
-  ES: "29010000", GO: "74003010", MA: "65010000", MT: "78005000", MS: "79002000", MG: "30130000", PA: "66010000",
-  PB: "58010000", PR: "80010000", PE: "50010000", PI: "64000000", RJ: "20010000", RN: "59010000", RS: "90010000",
-  RO: "76801000", RR: "69301000", SC: "88010000", SP: "01001000", SE: "49010000", TO: "77001000",
+  AC: "69900076", AL: "57010000", AP: "68900073", AM: "69005010", BA: "40343470", CE: "60025000", DF: "70040010",
+  ES: "29010001", GO: "74003010", MA: "65010000", MT: "78005000", MS: "79002000", MG: "30130000", PA: "66010000",
+  PB: "58010000", PR: "80010000", PE: "50010000", PI: "64000590", RJ: "20010000", RN: "59010000", RS: "90010000",
+  RO: "76801000", RR: "69301000", SC: "88010000", SP: "01001000", SE: "49010000", TO: "77006014",
 };
 
-/** Só consulta preço (não gasta saldo): melhor Jadlog e melhor Correios por estado, pra 1 kit de placa e de cartão. */
-export const getFreightByState = createServerFn({ method: "POST" })
+export const FREIGHT_UFS = Object.keys(UF_CEPS);
+
+/** Só consulta preço (não gasta saldo): melhor Jadlog e melhor Correios de UM estado, pra 1 kit de placa e de cartão. A tela chama um estado por vez (uma chamada só pra todos estoura o tempo da função). */
+export const getFreightForState = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown) => z.object({ uf: z.string().length(2) }).parse(input))
+  .handler(async ({ data, context }) => {
     await assertTeam(context.userId);
+    const cep = UF_CEPS[data.uf];
+    if (!cep) throw new Error("UF inválida.");
     const { calculateFreight } = await import("./melhorenvio.server");
     type Cell = { jadlog: number | null; correios: number | null } | { error: string };
     const cheapest = (quotes: { company: string; priceCents: number }[], re: RegExp) => {
       const m = quotes.filter((q) => re.test(q.company)).map((q) => q.priceCents);
       return m.length ? Math.min(...m) : null;
     };
-    const rows: { uf: string; acrilico: Cell; pvc: Cell }[] = [];
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-    // Sequencial + retry: em paralelo o Melhor Envio devolve 429 e vários estados vinham com erro.
-    const one = async (uf: string, profile: "acrilico" | "pvc"): Promise<Cell> => {
+    const one = async (profile: "acrilico" | "pvc"): Promise<Cell> => {
       let last = "";
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const r = await calculateFreight({ destinationCep: UF_CEPS[uf]!, profile, quantity: 1, padForCorreios: true });
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const r = await calculateFreight({ destinationCep: cep, profile, quantity: 1, padForCorreios: true });
         if (r.ok) return { jadlog: cheapest(r.quotes, /jadlog/i), correios: cheapest(r.quotes, /correios/i) };
         last = r.error;
-        await sleep(1200 * (attempt + 1));
+        await sleep(1500);
       }
       return { error: last.slice(0, 140) };
     };
-    for (const uf of Object.keys(UF_CEPS)) {
-      rows.push({ uf, acrilico: await one(uf, "acrilico"), pvc: await one(uf, "pvc") });
-      await sleep(300);
-    }
-    return { rows };
+    return { uf: data.uf, acrilico: await one("acrilico"), pvc: await one("pvc") };
   });
