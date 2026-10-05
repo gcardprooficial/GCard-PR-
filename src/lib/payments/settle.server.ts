@@ -20,6 +20,14 @@ export async function recordSaleEntry(orderId: string) {
     .maybeSingle();
   if (!order || order.payment_status !== "pago") return { created: false };
 
+  // Todo caminho de "pago" (webhook, retorno, reconciliação, manual no painel) passa aqui.
+  try {
+    const { recordAffiliateCommission } = await import("@/lib/affiliates.server");
+    await recordAffiliateCommission(orderId);
+  } catch (error) {
+    console.error("Falha ao gerar comissão do parceiro", { orderId, error });
+  }
+
   const { data: existing } = await db
     .from("finance_entries")
     .select("id")

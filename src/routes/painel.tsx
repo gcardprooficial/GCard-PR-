@@ -16,6 +16,7 @@ import {
   Archive,
   MessageCircle,
   Truck,
+  Handshake,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
@@ -37,6 +38,7 @@ const TABS = [
   { to: "/painel/clientes", label: "Clientes", icon: Users },
   { to: "/painel/lotes", label: "Lotes", icon: Boxes },
   { to: "/painel/financeiro", label: "Financeiro", icon: Wallet },
+  { to: "/painel/afiliados", label: "Afiliados", icon: Handshake },
   { to: "/painel/calculadora", label: "Calculadora", icon: Calculator },
   { to: "/painel/placas", label: "Placas", icon: CreditCard },
   { to: "/painel/whatsapp", label: "WhatsApp", icon: MessageCircle },
