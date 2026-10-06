@@ -51,6 +51,7 @@ const NAV = [
   { label: "Produtos", to: "/produtos", hash: undefined },
   { label: "Seja um revendedor", to: "/", hash: "revendedor" },
   { label: "Como funciona", to: "/", hash: "como-funciona" },
+  { label: "Gerar link grátis", to: "/", hash: "gerar-link" },
   { label: "Para o seu negócio", to: "/", hash: "seu-negocio" },
   { label: "Dúvidas", to: "/", hash: "duvidas" },
   { label: "Contato", to: "/", hash: "contato" },
@@ -206,6 +207,11 @@ export function SiteFooter() {
                 <li>
                   <Link to="/comprar" search={{ caminho: "revenda" }} className={footerLink}>
                     Revender lotes
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/" hash="gerar-link" className={footerLink}>
+                    Gerar link de avaliação grátis
                   </Link>
                 </li>
                 <li>
