@@ -24,7 +24,7 @@ function toCsv(rows: Sale[]) {
   const head = ["Data pagamento", "Pedido", "Situação", "Valor (R$)", "Gateway", "Método", "ID no gateway", "Cupom", "Desconto cupom (R$)", "Cliente", "CPF/CNPJ", "E-mail"];
   const lines = rows.map((r) =>
     [
-      dt(r.paid_at),
+      dt(r.paid_at ?? r.created_at),
       r.order_number,
       r.payment_status,
       dec(r.total_cents),
@@ -79,13 +79,14 @@ function Contador() {
     const cur = byProvider.get(k) ?? { n: 0, cents: 0 };
     byProvider.set(k, { n: cur.n + 1, cents: cur.cents + r.total_cents });
   }
+  const semData = paid.filter((r) => !r.paid_at).length;
   const total = paid.reduce((s, r) => s + r.total_cents, 0);
 
   return (
     <>
       <h1 className="text-2xl">Contador</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        Vendas pagas do GCard-PRÓ no mês (pelo dia de pagamento, horário de Brasília), prontas para entregar ao contador. Não inclui o TOQY (Kiwify).
+        Vendas pagas do GCard-PRÓ no mês (pelo dia do pagamento, ou do pedido se faltar; horário de Brasília), prontas para entregar ao contador. Não inclui o TOQY (Kiwify).
       </p>
       <div className="mt-4 flex flex-wrap items-end gap-3">
         <div>
@@ -129,6 +130,11 @@ function Contador() {
             <p className="mt-2 text-xs text-red-700">Limite de 5.000 linhas atingido: a lista pode estar incompleta.</p>
           )}
           <p className="mt-3 text-xs text-muted-foreground">
+            {semData > 0 && (
+              <>
+                {semData} pedido(s) pago(s) não têm data de pagamento registrada (marcados à mão ou antigos): usei a data do pedido.{" "}
+              </>
+            )}
             Confira com o extrato de cada gateway: o contador usa o que entrou na conta, e este relatório é só a visão do site.
           </p>
         </>

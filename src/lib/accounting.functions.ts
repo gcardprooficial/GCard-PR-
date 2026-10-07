@@ -4,7 +4,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Row = {
   order_number: number;
-  paid_at: string;
+  paid_at: string | null;
+  created_at: string;
   payment_status: string;
   payment_provider: string | null;
   payment_method: string | null;
@@ -17,7 +18,7 @@ type Row = {
   customer_email: string;
 };
 
-/** Vendas pagas do mês (fuso de Brasília) por pedido, pra entregar ao contador. Só equipe. */
+/** Vendas pagas do mês (fuso de Brasília, pela data do pagamento ou, na falta dela, do pedido), pra entregar ao contador. Só equipe. */
 export const getMonthlySales = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).parse(input))
@@ -40,12 +41,14 @@ export const getMonthlySales = createServerFn({ method: "POST" })
     const { data: rows, error } = await db
       .from("orders")
       .select(
-        "order_number, paid_at, payment_status, payment_provider, payment_method, provider_payment_id, total_cents, coupon_code, coupon_discount_cents, customer_name, customer_document, customer_email",
+        "order_number, paid_at, created_at, payment_status, payment_provider, payment_method, provider_payment_id, total_cents, coupon_code, coupon_discount_cents, customer_name, customer_document, customer_email",
       )
       .in("payment_status", ["pago", "estornado"])
-      .gte("paid_at", start)
-      .lt("paid_at", end)
-      .order("paid_at", { ascending: true })
+      // Pedido pago sem paid_at (marcado à mão / antigo) cai pelo dia em que foi feito.
+      .or(
+        `and(paid_at.gte.${start},paid_at.lt.${end}),and(paid_at.is.null,created_at.gte.${start},created_at.lt.${end})`,
+      )
+      .order("created_at", { ascending: true })
       .limit(5000);
     if (error) throw error;
     return { rows: (rows ?? []) as Row[] };
