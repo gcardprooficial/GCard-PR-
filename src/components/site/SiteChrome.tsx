@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, UserRound } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { PIX_DISCOUNT_DEADLINE, PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
@@ -60,7 +61,19 @@ const NAV = [
 const navLinkClass =
   "whitespace-nowrap text-[13px] font-semibold text-white/70 transition-colors hover:text-white";
 
+/** E-mail da pessoa logada (ou null). Só no navegador. */
+function useLoggedEmail() {
+  const [email, setEmail] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setEmail(data.session?.user.email ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setEmail(s?.user.email ?? null));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  return email;
+}
+
 export function SiteHeader() {
+  const logged = useLoggedEmail();
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-foreground text-white">
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4 sm:gap-4 sm:px-5">
@@ -78,9 +91,19 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-1.5 sm:gap-2.5">
+          {logged ? (
+            <Link
+              to="/ativar"
+              title={`Logado como ${logged}`}
+              className="inline-flex h-11 max-w-[11rem] items-center gap-1.5 rounded-xl bg-primary px-3 text-[13px] font-bold text-primary-foreground sm:text-sm"
+            >
+              <UserRound className="size-4 shrink-0" />
+              <span className="truncate">{logged.split("@")[0]}</span>
+            </Link>
+          ) : null}
           <Link
             to="/ativar"
-            className="inline-flex h-11 items-center whitespace-nowrap rounded-xl bg-primary px-3.5 text-[13px] sm:text-sm font-bold text-primary-foreground transition-transform active:scale-[0.97] sm:px-5"
+            className={`${logged ? "hidden" : "inline-flex"} h-11 items-center whitespace-nowrap rounded-xl bg-primary px-3.5 text-[13px] sm:text-sm font-bold text-primary-foreground transition-transform active:scale-[0.97] sm:px-5`}
           >
             Acessar painel
           </Link>
@@ -146,6 +169,15 @@ export function SiteHeader() {
                     Acessar painel
                   </Link>
                 </SheetClose>
+                {logged ? (
+                  <button
+                    type="button"
+                    onClick={() => void supabase.auth.signOut()}
+                    className="block w-full text-center text-sm font-semibold text-white/70 underline"
+                  >
+                    Sair ({logged.split("@")[0]})
+                  </button>
+                ) : null}
                 {WHATSAPP_CONTACTS.map((c) => (
                   <a
                     key={c.number}

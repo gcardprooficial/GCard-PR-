@@ -2542,18 +2542,45 @@ function ContaStep({ session, sessionReady }: { session: Session | null; session
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } =
+    const { data, error } =
       mode === "login"
         ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password });
+        : await supabase.auth.signUp({
+            email,
+            password,
+            // Volta pra esta mesma tela depois de confirmar (senão o link cai na página inicial).
+            options: { emailRedirectTo: `${window.location.origin}/comprar?caminho=revenda` },
+          });
     setBusy(false);
     if (error) {
-      toast.error(mode === "login" ? "E-mail ou senha inválidos." : error.message);
+      if (mode === "login") {
+        toast.error(/confirm/i.test(error.message) ? "Esse e-mail ainda não foi confirmado. Abra o link que enviamos." : "E-mail ou senha inválidos.");
+      } else {
+        toast.error(error.message);
+      }
+      return;
+    }
+    // signUp de e-mail que já existe não dá erro: devolve usuário sem identidades.
+    if (mode === "signup" && data.user && (data.user.identities?.length ?? 0) === 0) {
+      toast.error("Esse e-mail já tem conta. Clique em “Já tenho conta” e entre com a sua senha.");
+      setMode("login");
       return;
     }
     // Sem sessão ainda = precisa confirmar o e-mail primeiro. Sem esse aviso o
     // usuário clica de novo achando que falhou, e cada clique reenvia o e-mail.
-    if (mode === "signup") setSignupSent(true);
+    if (mode === "signup" && !data.session) setSignupSent(true);
+  }
+
+  /** Confirmou o e-mail em outro navegador/app (ex.: Gmail)? Entra aqui com a mesma senha. */
+  async function alreadyConfirmed() {
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setBusy(false);
+    if (error) {
+      toast.error(/confirm/i.test(error.message) ? "Ainda não foi confirmado. Abra o link do e-mail e tente de novo." : "Não consegui entrar. Confira o e-mail e a senha.");
+      return;
+    }
+    setSignupSent(false);
   }
 
   if (!sessionReady) return <p className="text-sm text-muted-foreground">Carregando…</p>;
@@ -2584,8 +2611,12 @@ function ContaStep({ session, sessionReady }: { session: Session | null; session
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
           Mandamos um link de confirmação pra <strong className="text-foreground">{email}</strong>.
-          Abre o e-mail e clica no link — essa página atualiza sozinha assim que confirmar.
+          Abre o e-mail e clica no link. Se o link abriu em outro navegador ou no app do e-mail, volte
+          aqui e clique em “Já confirmei, entrar”.
         </p>
+        <Button className="mt-4 h-12 w-full max-w-sm rounded-2xl font-bold" disabled={busy} onClick={() => void alreadyConfirmed()}>
+          {busy ? "Entrando…" : "Já confirmei, entrar"}
+        </Button>
         <p className="mt-3 text-xs text-muted-foreground">
           Não chegou? Confere a caixa de spam antes de tentar de novo — pedir de novo reenvia o
           e-mail e pode demorar mais pra chegar.
@@ -2621,9 +2652,9 @@ function ContaStep({ session, sessionReady }: { session: Session | null; session
         <button
           type="button"
           onClick={() => setMode((m) => (m === "login" ? "signup" : "login"))}
-          className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+          className="h-11 w-full rounded-2xl border-2 border-foreground/30 text-center text-sm font-bold text-foreground transition-colors hover:border-foreground"
         >
-          {mode === "login" ? "Primeira vez? Criar conta" : "Já tenho conta"}
+          {mode === "login" ? "Primeira vez? Criar conta" : "Já tenho conta — entrar"}
         </button>
       </form>
     </div>

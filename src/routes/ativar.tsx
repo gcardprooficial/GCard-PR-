@@ -140,17 +140,27 @@ function Login() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const fn =
+    const { data, error } =
       mode === "login"
-        ? supabase.auth.signInWithPassword({ email, password })
-        : supabase.auth.signUp({ email, password });
-    const { error } = await fn;
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/ativar` } });
     setBusy(false);
     if (error) {
-      toast.error(mode === "login" ? "E-mail ou senha inválidos." : error.message);
+      if (mode === "login") {
+        toast.error(/confirm/i.test(error.message) ? "Esse e-mail ainda não foi confirmado. Abra o link que enviamos." : "E-mail ou senha inválidos.");
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
-    if (mode === "signup") toast.success("Conta criada. Pode entrar.");
+    if (mode === "signup") {
+      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        toast.error("Esse e-mail já tem conta. Entre com a sua senha.");
+      } else if (!data.session) {
+        toast.success("Conta criada! Confirme o e-mail (veja o spam) e depois volte e clique em “Entrar”.");
+      }
+      setMode("login");
+    }
   }
 
   async function forgotPassword() {
@@ -197,9 +207,9 @@ function Login() {
         <button
           type="button"
           onClick={() => setMode((m) => (m === "login" ? "signup" : "login"))}
-          className="mt-3 w-full text-center text-sm text-muted-foreground hover:text-foreground"
+          className="mt-3 h-11 w-full rounded-2xl border-2 border-foreground/30 text-center text-sm font-bold text-foreground transition-colors hover:border-foreground"
         >
-          {mode === "login" ? "Primeira vez? Criar conta" : "Já tenho conta"}
+          {mode === "login" ? "Primeira vez? Criar conta" : "Já tenho conta — entrar"}
         </button>
         {mode === "login" &&
           (resetSent ? (
