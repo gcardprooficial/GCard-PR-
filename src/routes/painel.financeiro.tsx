@@ -20,7 +20,7 @@ type Entry = {
   is_recurring: boolean;
   created_at: string;
   order_id: string | null;
-  orders: { order_number: number } | null;
+  orders: { order_number: number; payment_provider: string | null } | null;
 };
 type SortKey = "data_desc" | "data_asc" | "nome_az" | "nome_za" | "valor_desc" | "valor_asc";
 type Partner = { id: string; name: string; share_percent: number };
@@ -30,6 +30,21 @@ function parseBRL(input: string): number {
   const cleaned = input.replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".");
   const value = Number.parseFloat(cleaned);
   return Number.isFinite(value) ? Math.round(value * 100) : 0;
+}
+
+/** "frete", "Frete " e "FRETE" viram a mesma categoria: "Frete". */
+function normCat(input: string): string {
+  const t = input.trim().replace(/\s+/g, " ");
+  return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+}
+
+/** Por onde o dinheiro de uma venda entrou. Sem gateway = pago à mão (Pix direto) -- vira observação. */
+function gateway(x: Entry): { label: string; cls: string; manual: boolean } | null {
+  if (!x.order_id) return null;
+  const p = x.orders?.payment_provider;
+  if (p === "mercadopago") return { label: "Mercado Pago", cls: "bg-sky-100 text-sky-800", manual: false };
+  if (p === "infinitepay") return { label: "InfinitePay", cls: "bg-emerald-100 text-emerald-800", manual: false };
+  return { label: "Pix direto (manual)", cls: "bg-amber-100 text-amber-900", manual: true };
 }
 
 function monthRange(ym: string): { start: string; end: string } {
@@ -62,7 +77,7 @@ function Financeiro() {
     const [e, p] = await Promise.all([
       supabase
         .from("finance_entries")
-        .select("id, kind, category, description, amount_cents, entry_date, is_recurring, created_at, order_id, orders(order_number)")
+        .select("id, kind, category, description, amount_cents, entry_date, is_recurring, created_at, order_id, orders(order_number, payment_provider)")
         .gte("entry_date", start)
         .lt("entry_date", end)
         .order("entry_date", { ascending: false })
@@ -111,11 +126,28 @@ function Financeiro() {
   const byCategory = useMemo(() => {
     const m = new Map<string, { kind: "entrada" | "saida"; cents: number; n: number }>();
     for (const x of entries ?? []) {
-      const k = `${x.kind}|${x.category}`;
+      const k = `${x.kind}|${normCat(x.category)}`;
       const cur = m.get(k) ?? { kind: x.kind, cents: 0, n: 0 };
       m.set(k, { kind: x.kind, cents: cur.cents + x.amount_cents, n: cur.n + 1 });
     }
     return [...m].map(([k, v]) => ({ category: k.split("|").slice(1).join("|"), ...v })).sort((a, b) => b.cents - a.cents);
+  }, [entries]);
+
+  const categoryOptions = useMemo(
+    () => [...new Set((entries ?? []).map((x) => normCat(x.category)))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [entries],
+  );
+
+  // Entradas de vendas por gateway (o que entrou por Mercado Pago, InfinitePay ou à mão).
+  const byGateway = useMemo(() => {
+    const m = new Map<string, { cents: number; n: number; manual: boolean }>();
+    for (const x of entries ?? []) {
+      const g = x.kind === "entrada" ? gateway(x) : null;
+      if (!g) continue;
+      const cur = m.get(g.label) ?? { cents: 0, n: 0, manual: g.manual };
+      m.set(g.label, { cents: cur.cents + x.amount_cents, n: cur.n + 1, manual: g.manual });
+    }
+    return [...m];
   }, [entries]);
 
   async function add(ev: FormEvent) {
@@ -132,7 +164,7 @@ function Financeiro() {
     setBusy(true);
     const payload = {
       kind,
-      category: category.trim(),
+      category: normCat(category),
       description: description.trim() || null,
       amount_cents: cents,
       entry_date: date,
@@ -159,7 +191,7 @@ function Financeiro() {
   function startEdit(x: Entry) {
     setEditingId(x.id);
     setKind(x.kind);
-    setCategory(x.category);
+    setCategory(normCat(x.category));
     setDescription(x.description ?? "");
     setAmount((x.amount_cents / 100).toFixed(2).replace(".", ","));
     setDate(x.entry_date);
@@ -242,7 +274,13 @@ function Financeiro() {
               onChange={(e) => setCategory(e.target.value)}
               placeholder="Insumos, frete, venda…"
               className="mt-1 h-10"
+              list="financeiro-categorias"
             />
+            <datalist id="financeiro-categorias">
+              {categoryOptions.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </div>
           <div>
             <Label className="text-xs">Valor (R$)</Label>
@@ -291,6 +329,22 @@ function Financeiro() {
           </div>
         </div>
       </form>
+
+      {byGateway.length > 0 && (
+        <div className="mt-4 rounded-2xl bg-card p-5 card-soft">
+          <p className="text-sm font-semibold">Vendas por onde entraram</p>
+          <div className="mt-2 space-y-1 text-sm">
+            {byGateway.map(([label, v]) => (
+              <div key={label} className={`flex justify-between gap-3 rounded-lg px-2 py-1 ${v.manual ? "bg-amber-50 text-amber-900" : ""}`}>
+                <span>
+                  {label} ({v.n}){v.manual ? " — atenção: não passou por gateway" : ""}
+                </span>
+                <span className="font-medium">{money(v.cents)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {byCategory.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -360,7 +414,7 @@ function Financeiro() {
                     x.kind === "entrada" ? "bg-green-500" : "bg-red-500"
                   }`}
                 />
-                <span className="font-medium">{x.category}</span>
+                <span className="font-medium">{normCat(x.category)}</span>
                 {x.description ? (
                   <span className="text-muted-foreground"> — {x.description}</span>
                 ) : null}
@@ -369,6 +423,16 @@ function Financeiro() {
                 ) : null}
                 {x.order_id ? (
                   <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">automático</span>
+                ) : null}
+                {gateway(x) ? (
+                  <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${gateway(x)!.cls}`}>
+                    {gateway(x)!.label}
+                  </span>
+                ) : null}
+                {gateway(x)?.manual ? (
+                  <span className="mt-1 block rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900">
+                    Observação: venda paga por fora (Pix direto), sem Mercado Pago/InfinitePay — confira no extrato.
+                  </span>
                 ) : null}
                 <span className="ml-2 text-muted-foreground">
                   {new Date(x.entry_date + "T00:00:00").toLocaleDateString("pt-BR")}
