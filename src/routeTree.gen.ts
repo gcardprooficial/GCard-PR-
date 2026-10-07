@@ -28,6 +28,7 @@ import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelAfiliadosRouteImport } from './routes/painel.afiliados'
 import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculadora'
 import { Route as PainelClientesRouteImport } from './routes/painel.clientes'
+import { Route as PainelContadorRouteImport } from './routes/painel.contador'
 import { Route as PainelEstoqueRouteImport } from './routes/painel.estoque'
 import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
 import { Route as PainelFreteRouteImport } from './routes/painel.frete'
@@ -146,6 +147,11 @@ const PainelCalculadoraRoute = PainelCalculadoraRouteImport.update({
 const PainelClientesRoute = PainelClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelContadorRoute = PainelContadorRouteImport.update({
+  id: '/contador',
+  path: '/contador',
   getParentRoute: () => PainelRoute,
 } as any)
 const PainelEstoqueRoute = PainelEstoqueRouteImport.update({
@@ -267,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/painel/afiliados': typeof PainelAfiliadosRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
+  '/painel/contador': typeof PainelContadorRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/frete': typeof PainelFreteRoute
@@ -306,6 +313,7 @@ export interface FileRoutesByTo {
   '/painel/afiliados': typeof PainelAfiliadosRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
+  '/painel/contador': typeof PainelContadorRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/frete': typeof PainelFreteRoute
@@ -348,6 +356,7 @@ export interface FileRoutesById {
   '/painel/afiliados': typeof PainelAfiliadosRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
   '/painel/clientes': typeof PainelClientesRoute
+  '/painel/contador': typeof PainelContadorRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/frete': typeof PainelFreteRoute
@@ -391,6 +400,7 @@ export interface FileRouteTypes {
     | '/painel/afiliados'
     | '/painel/calculadora'
     | '/painel/clientes'
+    | '/painel/contador'
     | '/painel/estoque'
     | '/painel/financeiro'
     | '/painel/frete'
@@ -430,6 +440,7 @@ export interface FileRouteTypes {
     | '/painel/afiliados'
     | '/painel/calculadora'
     | '/painel/clientes'
+    | '/painel/contador'
     | '/painel/estoque'
     | '/painel/financeiro'
     | '/painel/frete'
@@ -471,6 +482,7 @@ export interface FileRouteTypes {
     | '/painel/afiliados'
     | '/painel/calculadora'
     | '/painel/clientes'
+    | '/painel/contador'
     | '/painel/estoque'
     | '/painel/financeiro'
     | '/painel/frete'
@@ -653,6 +665,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelClientesRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/contador': {
+      id: '/painel/contador'
+      path: '/contador'
+      fullPath: '/painel/contador'
+      preLoaderRoute: typeof PainelContadorRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/estoque': {
       id: '/painel/estoque'
       path: '/estoque'
@@ -819,6 +838,7 @@ interface PainelRouteChildren {
   PainelAfiliadosRoute: typeof PainelAfiliadosRoute
   PainelCalculadoraRoute: typeof PainelCalculadoraRoute
   PainelClientesRoute: typeof PainelClientesRoute
+  PainelContadorRoute: typeof PainelContadorRoute
   PainelEstoqueRoute: typeof PainelEstoqueRoute
   PainelFinanceiroRoute: typeof PainelFinanceiroRoute
   PainelFreteRoute: typeof PainelFreteRoute
@@ -836,6 +856,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelAfiliadosRoute: PainelAfiliadosRoute,
   PainelCalculadoraRoute: PainelCalculadoraRoute,
   PainelClientesRoute: PainelClientesRoute,
+  PainelContadorRoute: PainelContadorRoute,
   PainelEstoqueRoute: PainelEstoqueRoute,
   PainelFinanceiroRoute: PainelFinanceiroRoute,
   PainelFreteRoute: PainelFreteRoute,

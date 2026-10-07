@@ -16,6 +16,7 @@ import {
   Archive,
   MessageCircle,
   Truck,
+  FileSpreadsheet,
   Handshake,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +46,7 @@ const TABS = [
   { to: "/painel/estoque", label: "Estoque", icon: Archive },
   { to: "/painel/scans", label: "Scans", icon: ScanLine },
   { to: "/painel/frete", label: "Frete por estado", icon: Truck },
+  { to: "/painel/contador", label: "Contador", icon: FileSpreadsheet },
   { to: "/painel/integracoes", label: "Integrações", icon: Plug },
 ] as const;
 
