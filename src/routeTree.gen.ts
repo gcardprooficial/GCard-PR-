@@ -47,6 +47,7 @@ import { Route as ApiWebhooksInfinitepayRouteImport } from './routes/api/webhook
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks/whatsapp'
 import { Route as ApiWebhooksZapiRouteImport } from './routes/api/webhooks/zapi'
+import { Route as PainelDossieOrderIdRouteImport } from './routes/painel.dossie.$orderId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -242,6 +243,11 @@ const ApiWebhooksZapiRoute = ApiWebhooksZapiRouteImport.update({
   path: '/api/webhooks/zapi',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PainelDossieOrderIdRoute = PainelDossieOrderIdRouteImport.update({
+  id: '/dossie/$orderId',
+  path: '/dossie/$orderId',
+  getParentRoute: () => PainelRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
+  '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -320,6 +327,7 @@ export interface FileRoutesByTo {
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
+  '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -361,6 +369,7 @@ export interface FileRoutesById {
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
+  '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -403,6 +412,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
+    | '/painel/dossie/$orderId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -441,6 +451,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
+    | '/painel/dossie/$orderId'
   id:
     | '__root__'
     | '/'
@@ -481,6 +492,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
+    | '/painel/dossie/$orderId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -774,6 +786,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksZapiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/painel/dossie/$orderId': {
+      id: '/painel/dossie/$orderId'
+      path: '/dossie/$orderId'
+      fullPath: '/painel/dossie/$orderId'
+      preLoaderRoute: typeof PainelDossieOrderIdRouteImport
+      parentRoute: typeof PainelRoute
+    }
   }
 }
 
@@ -810,6 +829,7 @@ interface PainelRouteChildren {
   PainelVisaoGeralRoute: typeof PainelVisaoGeralRoute
   PainelWhatsappRoute: typeof PainelWhatsappRoute
   PainelIndexRoute: typeof PainelIndexRoute
+  PainelDossieOrderIdRoute: typeof PainelDossieOrderIdRoute
 }
 
 const PainelRouteChildren: PainelRouteChildren = {
@@ -826,6 +846,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelVisaoGeralRoute: PainelVisaoGeralRoute,
   PainelWhatsappRoute: PainelWhatsappRoute,
   PainelIndexRoute: PainelIndexRoute,
+  PainelDossieOrderIdRoute: PainelDossieOrderIdRoute,
 }
 
 const PainelRouteWithChildren =

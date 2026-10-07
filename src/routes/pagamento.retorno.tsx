@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { verifyReturnedPayment } from "@/lib/payments/reconcile.functions";
-import { verifyInfinitePayReturn } from "@/lib/payments/infinitepay.functions";
+import { createInfinitePayCheckout, verifyInfinitePayReturn } from "@/lib/payments/infinitepay.functions";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { PixFallback } from "@/components/PixFallback";
 
@@ -39,6 +39,8 @@ function PagamentoRetorno() {
   const paymentId = search.payment_id || search.collection_id;
   const verifyMp = useServerFn(verifyReturnedPayment);
   const verifyIp = useServerFn(verifyInfinitePayReturn);
+  const createIp = useServerFn(createInfinitePayCheckout);
+  const [ipBusy, setIpBusy] = useState(false);
   const isIp = Boolean(search.order_nsu && search.transaction_nsu && search.slug);
   const [view, setView] = useState<View>(paymentId || isIp ? { kind: "loading" } : { kind: "desconhecido" });
 
@@ -104,6 +106,27 @@ function PagamentoRetorno() {
           {content.body}
         </p>
 
+        {view.kind === "falhou" && orderNumber ? (
+          <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-left">
+            <p className="text-sm font-bold">Tentar por outro meio de pagamento</p>
+            <p className="mt-1 text-xs text-muted-foreground">Pague este mesmo pedido por Pix ou cartão pela InfinitePay.</p>
+            <Button
+              className="mt-3 w-full rounded-xl font-bold"
+              disabled={ipBusy}
+              onClick={() => {
+                setIpBusy(true);
+                createIp({ data: { orderNumber } })
+                  .then((r) => {
+                    if (r.ok) window.location.href = r.url;
+                    else setIpBusy(false);
+                  })
+                  .catch(() => setIpBusy(false));
+              }}
+            >
+              {ipBusy ? "Abrindo…" : "Pagar com InfinitePay"}
+            </Button>
+          </div>
+        ) : null}
         {view.kind === "falhou" && orderNumber ? <PixFallback orderNumber={orderNumber} /> : null}
 
         <div className="mt-8 grid gap-3">

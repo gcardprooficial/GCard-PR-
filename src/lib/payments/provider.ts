@@ -12,6 +12,11 @@ export type OrderForCheckout = {
   customer_name: string;
   /** CPF/CNPJ (somente dígitos). Alguns métodos de pagamento na MP exigem para registrar. */
   customer_document: string | null;
+  /** Dados extras que a análise antifraude do Mercado Pago usa (todos opcionais). */
+  customer_phone?: string | null;
+  ship?: { zip: string | null; street: string | null; number: string | null; complement: string | null } | null;
+  /** Texto curto com os produtos do pedido (vai em items.description). */
+  items_description?: string | null;
 };
 
 export type CheckoutPreference = {

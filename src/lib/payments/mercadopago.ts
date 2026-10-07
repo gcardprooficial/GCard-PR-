@@ -81,6 +81,12 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
             ? { type: "CNPJ", number: docDigits }
             : null;
       const [firstName, ...rest] = order.customer_name.trim().split(/\s+/);
+      // Telefone BR: 2 dígitos de DDD + número (ignora o 55 do país se vier).
+      const phoneDigits = (order.customer_phone ?? "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+      const phone =
+        phoneDigits.length >= 10 ? { area_code: phoneDigits.slice(0, 2), number: phoneDigits.slice(2) } : null;
+      const zip = (order.ship?.zip ?? "").replace(/\D/g, "");
+      const hasAddress = zip.length === 8 && !!order.ship?.street;
       const res = await fetch(`${API}/checkout/preferences`, {
         method: "POST",
         headers: { ...auth, "Content-Type": "application/json" },
@@ -92,6 +98,9 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
               quantity: order.quantity,
               unit_price: unitPrice,
               currency_id: "BRL",
+              // Mais contexto do que está sendo vendido reduz recusa e análise de risco.
+              ...(order.items_description ? { description: order.items_description.slice(0, 250) } : {}),
+              category_id: "others",
             },
           ],
           // Nome e CPF ajudam a MP a registrar o pagamento. O e-mail fica de fora de
@@ -100,7 +109,23 @@ export function createMercadoPagoProvider(accessToken: string, webhookSecret: st
             name: firstName || order.customer_name,
             surname: rest.join(" ") || undefined,
             ...(identification ? { identification } : {}),
+            ...(phone ? { phone } : {}),
+            ...(hasAddress
+              ? { address: { zip_code: zip, street_name: order.ship!.street!, street_number: order.ship!.number ?? "" } }
+              : {}),
           },
+          ...(hasAddress
+            ? {
+                shipments: {
+                  receiver_address: {
+                    zip_code: zip,
+                    street_name: order.ship!.street!,
+                    street_number: order.ship!.number ?? "",
+                    ...(order.ship!.complement ? { apartment: order.ship!.complement.slice(0, 20) } : {}),
+                  },
+                },
+              }
+            : {}),
           external_reference: order.id,
           back_urls: {
             success: `${origin}/pagamento/retorno`,

@@ -1271,7 +1271,14 @@ function Orders() {
                       Salvar
                     </Button>
                   </div>
-                  <div className="mt-1.5 flex items-center gap-2">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    <Link
+                      to="/painel/dossie/$orderId"
+                      params={{ orderId: r.id }}
+                      className="inline-flex h-7 items-center rounded-md px-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                    >
+                      📄 Dossiê (PDF)
+                    </Link>
                     <Button
                       size="sm"
                       variant="ghost"

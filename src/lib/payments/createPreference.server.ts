@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
+import { getRequest } from "@tanstack/react-start/server";
 
 const schema = z.object({
   orderNumber: z.number().int().positive(),
@@ -10,6 +12,11 @@ const schema = z.object({
 export const createCheckoutPreference = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => schema.parse(input))
   .handler(async ({ data }) => {
+    // Muitas tentativas seguidas (mesmo IP ou mesmo pedido) parecem teste de cartão e pesam na
+    // análise de segurança do Mercado Pago -- corta aqui e manda o cliente pro Pix/InfinitePay.
+    if (!rateLimit(`mp-pref-ip:${clientKey(getRequest())}`, 8, 600_000) || !rateLimit(`mp-pref-order:${data.orderNumber}`, 4, 3_600_000)) {
+      return { ok: false as const, error: "too_many_attempts" };
+    }
     const { getPaymentProvider } = await import("@/lib/payments");
     const provider = getPaymentProvider();
     if (!provider) {
@@ -20,7 +27,7 @@ export const createCheckoutPreference = createServerFn({ method: "POST" })
     const { data: order } = await supabaseAdmin
       .from("orders")
       .select(
-        "id, order_number, total_cents, subtotal_cents, quantity, payment_status, customer_email, customer_name, customer_document, pix_discount_applied",
+        "id, order_number, total_cents, subtotal_cents, quantity, payment_status, customer_email, customer_name, customer_document, customer_phone, ship_zip, ship_street, ship_number, ship_complement, pix_discount_applied, order_items(product_name, quantity)",
       )
       .eq("order_number", data.orderNumber)
       .maybeSingle();
@@ -56,6 +63,12 @@ export const createCheckoutPreference = createServerFn({ method: "POST" })
       customer_email: order.customer_email,
       customer_name: order.customer_name,
       customer_document: order.customer_document ?? null,
+      customer_phone: order.customer_phone ?? null,
+      ship: { zip: order.ship_zip ?? null, street: order.ship_street ?? null, number: order.ship_number ?? null, complement: order.ship_complement ?? null },
+      items_description:
+        ((order.order_items ?? []) as { product_name: string; quantity: number }[])
+          .map((i) => `${i.quantity}x ${i.product_name}`)
+          .join("; ") || null,
     };
 
     const origin = process.env["PUBLIC_APP_URL"] ?? "https://gcardpro.com.br";

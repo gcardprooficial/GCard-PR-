@@ -695,6 +695,12 @@ function Comprar() {
           window.location.href = pref.url;
           return;
         }
+        if ((pref as { error?: string } | undefined)?.error === "too_many_attempts") {
+          toast.error(
+            "Muitas tentativas seguidas. Aguarde alguns minutos ou escolha a InfinitePay (Pix/cartão) no pagamento, ou chame a gente no WhatsApp.",
+          );
+          return;
+        }
         // Pedido foi criado, mas não tem link de pagamento (provedor não configurado
         // ou erro). Sem isso o comprador fica preso achando que já pagou.
         console.error("create preference sem url", pref);
