@@ -18,7 +18,11 @@ type Entry = {
   amount_cents: number;
   entry_date: string;
   is_recurring: boolean;
+  created_at: string;
+  order_id: string | null;
+  orders: { order_number: number } | null;
 };
+type SortKey = "data_desc" | "data_asc" | "nome_az" | "nome_za" | "valor_desc" | "valor_asc";
 type Partner = { id: string; name: string; share_percent: number };
 
 /** "1.234,56" | "1234.56" | "1234,5" -> cents */
@@ -40,6 +44,9 @@ function Financeiro() {
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [sortBy, setSortBy] = useState<SortKey>("data_desc");
+  const [kindFilter, setKindFilter] = useState<"todos" | "entrada" | "saida">("todos");
+  const [q, setQ] = useState("");
 
   const [kind, setKind] = useState<"entrada" | "saida">("saida");
   const [category, setCategory] = useState("");
@@ -55,10 +62,11 @@ function Financeiro() {
     const [e, p] = await Promise.all([
       supabase
         .from("finance_entries")
-        .select("id, kind, category, description, amount_cents, entry_date, is_recurring")
+        .select("id, kind, category, description, amount_cents, entry_date, is_recurring, created_at, order_id, orders(order_number)")
         .gte("entry_date", start)
         .lt("entry_date", end)
-        .order("entry_date", { ascending: false }),
+        .order("entry_date", { ascending: false })
+        .order("created_at", { ascending: false }),
       supabase.from("finance_partners").select("id, name, share_percent").eq("is_active", true),
     ]);
     if (e.error) {
@@ -77,6 +85,37 @@ function Financeiro() {
     const inc = (entries ?? []).filter((x) => x.kind === "entrada").reduce((s, x) => s + x.amount_cents, 0);
     const out = (entries ?? []).filter((x) => x.kind === "saida").reduce((s, x) => s + x.amount_cents, 0);
     return { inc, out, net: inc - out };
+  }, [entries]);
+
+  // Lista ordenada/filtrada na tela. Mesma data? desempata pelo horário do lançamento.
+  const shown = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    const list = (entries ?? []).filter(
+      (x) =>
+        (kindFilter === "todos" || x.kind === kindFilter) &&
+        (!t || `${x.category} ${x.description ?? ""} ${x.orders?.order_number ?? ""}`.toLowerCase().includes(t)),
+    );
+    const byDate = (a: Entry, b: Entry) => a.entry_date.localeCompare(b.entry_date) || a.created_at.localeCompare(b.created_at);
+    const name = (x: Entry) => `${x.category} ${x.description ?? ""}`;
+    const cmp: Record<SortKey, (a: Entry, b: Entry) => number> = {
+      data_desc: (a, b) => byDate(b, a),
+      data_asc: byDate,
+      nome_az: (a, b) => name(a).localeCompare(name(b), "pt-BR") || byDate(b, a),
+      nome_za: (a, b) => name(b).localeCompare(name(a), "pt-BR") || byDate(b, a),
+      valor_desc: (a, b) => b.amount_cents - a.amount_cents,
+      valor_asc: (a, b) => a.amount_cents - b.amount_cents,
+    };
+    return [...list].sort(cmp[sortBy]);
+  }, [entries, sortBy, kindFilter, q]);
+
+  const byCategory = useMemo(() => {
+    const m = new Map<string, { kind: "entrada" | "saida"; cents: number; n: number }>();
+    for (const x of entries ?? []) {
+      const k = `${x.kind}|${x.category}`;
+      const cur = m.get(k) ?? { kind: x.kind, cents: 0, n: 0 };
+      m.set(k, { kind: x.kind, cents: cur.cents + x.amount_cents, n: cur.n + 1 });
+    }
+    return [...m].map(([k, v]) => ({ category: k.split("|").slice(1).join("|"), ...v })).sort((a, b) => b.cents - a.cents);
   }, [entries]);
 
   async function add(ev: FormEvent) {
@@ -253,13 +292,64 @@ function Financeiro() {
         </div>
       </form>
 
-      <div className="mt-6 space-y-2">
+      {byCategory.length > 0 && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {(["entrada", "saida"] as const).map((k) => (
+            <div key={k} className="rounded-2xl bg-card p-5 card-soft">
+              <p className="text-sm font-semibold">{k === "entrada" ? "Entradas por categoria" : "Saídas por categoria"}</p>
+              <div className="mt-2 space-y-1 text-sm">
+                {byCategory.filter((c) => c.kind === k).map((c) => (
+                  <div key={c.category} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">{c.category} ({c.n})</span>
+                    <span className="font-medium">{money(c.cents)}</span>
+                  </div>
+                ))}
+                {!byCategory.some((c) => c.kind === k) && <p className="text-muted-foreground">Nenhuma</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-6 flex flex-wrap items-end gap-3">
+        <div>
+          <Label className="text-xs">Ordenar por</Label>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortKey)}
+            className="mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="data_desc">Data (mais recente primeiro)</option>
+            <option value="data_asc">Data (mais antigo primeiro)</option>
+            <option value="nome_az">Nome / categoria (A–Z)</option>
+            <option value="nome_za">Nome / categoria (Z–A)</option>
+            <option value="valor_desc">Valor (maior primeiro)</option>
+            <option value="valor_asc">Valor (menor primeiro)</option>
+          </select>
+        </div>
+        <div className="flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+          {([["todos", "Todos"], ["entrada", "Entradas"], ["saida", "Saídas"]] as const).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setKindFilter(k)}
+              className={`rounded-full px-3 py-1.5 ${kindFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar categoria, descrição, nº do pedido" className="h-10 w-full sm:w-72" />
+        <span className="text-xs text-muted-foreground">{shown.length} lançamento(s)</span>
+      </div>
+
+      <div className="mt-3 space-y-2">
         {entries === null ? (
           <p className="text-sm text-muted-foreground">Carregando…</p>
-        ) : entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum lançamento neste mês.</p>
+        ) : shown.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum lançamento {entries.length ? "com esse filtro" : "neste mês"}.</p>
         ) : (
-          entries.map((x) => (
+          shown.map((x) => (
             <div
               key={x.id}
               className="flex items-center justify-between gap-4 rounded-xl bg-card px-4 py-3 text-sm card-soft"
@@ -276,6 +366,9 @@ function Financeiro() {
                 ) : null}
                 {x.is_recurring ? (
                   <span className="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs">mensal</span>
+                ) : null}
+                {x.order_id ? (
+                  <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">automático</span>
                 ) : null}
                 <span className="ml-2 text-muted-foreground">
                   {new Date(x.entry_date + "T00:00:00").toLocaleDateString("pt-BR")}
