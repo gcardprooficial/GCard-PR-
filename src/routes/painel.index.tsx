@@ -36,10 +36,11 @@ export const Route = createFileRoute("/painel/")({
   component: Orders,
 });
 
-const FULFILLMENT = ["recebido", "em_producao", "enviado", "entregue", "cancelado"] as const;
+const FULFILLMENT = ["recebido", "em_producao", "pronto", "enviado", "entregue", "cancelado"] as const;
 const FULFILLMENT_LABEL: Record<string, string> = {
   recebido: "Recebido",
   em_producao: "Em produção",
+  pronto: "Pronto (produzido)",
   enviado: "Enviado",
   entregue: "Entregue",
   cancelado: "Cancelado",
@@ -126,6 +127,7 @@ type Stage =
   | "aguardando"
   | "a_produzir"
   | "em_producao"
+  | "prontos"
   | "enviados"
   | "entregues"
   | "nao_pagos"
@@ -134,6 +136,7 @@ const STAGES: { key: Stage; label: string }[] = [
   { key: "aguardando", label: "Aguardando pagamento" },
   { key: "a_produzir", label: "Pagos · a produzir" },
   { key: "em_producao", label: "Em produção" },
+  { key: "prontos", label: "Prontos" },
   { key: "enviados", label: "Enviados" },
   { key: "entregues", label: "Entregues" },
   { key: "nao_pagos", label: "Não pagos" },
@@ -147,6 +150,7 @@ function stageOf(r: { payment_status: string; fulfillment_status: string }): Sta
   if (r.payment_status !== "pago") return "aguardando";
   if (r.fulfillment_status === "entregue") return "entregues";
   if (r.fulfillment_status === "enviado") return "enviados";
+  if (r.fulfillment_status === "pronto") return "prontos";
   if (r.fulfillment_status === "em_producao") return "em_producao";
   return "a_produzir";
 }
@@ -748,6 +752,7 @@ function Orders() {
     aguardando: 0,
     a_produzir: 0,
     em_producao: 0,
+    prontos: 0,
     enviados: 0,
     entregues: 0,
     nao_pagos: 0,

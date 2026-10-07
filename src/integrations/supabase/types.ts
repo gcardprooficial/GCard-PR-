@@ -800,6 +800,7 @@ export type Database = {
       fulfillment_status:
         | "recebido"
         | "em_producao"
+        | "pronto"
         | "enviado"
         | "entregue"
         | "cancelado"
@@ -945,6 +946,7 @@ export const Constants = {
       fulfillment_status: [
         "recebido",
         "em_producao",
+        "pronto",
         "enviado",
         "entregue",
         "cancelado",

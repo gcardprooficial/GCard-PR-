@@ -24,6 +24,7 @@ type LowStockProduct = { id: string; name: string; count: number; threshold: num
 const statusLabels: Record<string, string> = {
   recebido: "Recebido",
   em_producao: "Em produção",
+  pronto: "Pronto",
   enviado: "Enviado",
   entregue: "Entregue",
   cancelado: "Cancelado",
@@ -115,6 +116,7 @@ function Overview() {
         list.filter((x) => x.fulfillment_status === "em_producao").length,
         "bg-primary",
       ],
+      ["Prontos", list.filter((x) => x.fulfillment_status === "pronto").length, "bg-amber-400"],
       ["Enviados", list.filter((x) => x.fulfillment_status === "enviado").length, "bg-g-blue"],
       ["Entregues", list.filter((x) => x.fulfillment_status === "entregue").length, "bg-g-green"],
     ] as const;
