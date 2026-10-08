@@ -692,7 +692,13 @@ function Orders() {
   }
 
   async function patch(row: OrderRow, changes: Partial<OrderRow>) {
-    const { error } = await supabase.from("orders").update(changes).eq("id", row.id);
+    // Marcar "Pago" à mão = recebido fora do gateway (Pix direto etc.). Sem isso o pedido mantém o
+    // gateway/ID da tentativa recusada (ex.: cartão recusado no Mercado Pago) e vira "Mercado Pago" no Financeiro.
+    const manualPaid = changes.payment_status === "pago" && row.payment_status !== "pago";
+    const toSave = manualPaid
+      ? ({ ...changes, payment_provider: "manual", payment_method: "pix manual", paid_at: new Date().toISOString() } as Partial<OrderRow>)
+      : changes;
+    const { error } = await supabase.from("orders").update(toSave as never).eq("id", row.id);
     if (error) {
       toast.error("Não foi possível salvar.");
       return;
@@ -728,9 +734,9 @@ function Orders() {
       action: "update_order",
       entity: "orders",
       entity_id: row.id,
-      details: changes as Record<string, unknown>,
+      details: toSave as Record<string, unknown>,
     });
-    setRows((prev) => prev?.map((r) => (r.id === row.id ? { ...r, ...changes } : r)) ?? null);
+    setRows((prev) => prev?.map((r) => (r.id === row.id ? { ...r, ...toSave } : r)) ?? null);
     toast.success(`Pedido #${row.order_number} atualizado.`);
   }
 
