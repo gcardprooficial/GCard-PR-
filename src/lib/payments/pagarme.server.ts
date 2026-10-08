@@ -34,15 +34,46 @@ export async function createPagarmePix(input: {
   customerEmail: string;
   customerDocument: string | null;
   customerPhone: string | null;
+  items: { name: string; quantity: number; unitCents: number }[];
+  ship: { zip: string | null; street: string | null; number: string | null; complement: string | null; district: string | null; city: string | null; state: string | null };
 }): Promise<PgOrder> {
   if (!key()) throw new Error("pagarme_not_configured");
   const doc = (input.customerDocument ?? "").replace(/\D/g, "");
   let phone = (input.customerPhone ?? "").replace(/\D/g, "");
   if (phone.startsWith("55") && phone.length > 11) phone = phone.slice(2);
+  // Itens reais (nome, qtd, valor unitário) quando a soma bate com o total cobrado (cupom/desconto Pix fazem diferir);
+  // senão um item único com a descrição do pedido, pra nunca recusar por soma errada.
+  const itemsSum = input.items.reduce((t, i) => t + i.unitCents * i.quantity, 0);
+  const items =
+    input.items.length > 0 && itemsSum === input.totalCents
+      ? input.items.map((i, n) => ({ amount: i.unitCents, description: i.name.slice(0, 256), quantity: i.quantity, code: `${input.orderNumber}-${n + 1}` }))
+      : [
+          {
+            amount: input.totalCents,
+            description: (`Pedido GCard-PRO #${input.orderNumber}` + (input.items.length ? `: ${input.items.map((i) => `${i.quantity}x ${i.name}`).join("; ")}` : "")).slice(0, 256),
+            quantity: 1,
+            code: String(input.orderNumber),
+          },
+        ];
+  const zip = (input.ship.zip ?? "").replace(/\D/g, "");
+  const address =
+    zip.length === 8 && input.ship.street && input.ship.city && input.ship.state?.length === 2
+      ? {
+          country: "BR",
+          state: input.ship.state.toUpperCase(),
+          city: input.ship.city,
+          zip_code: zip,
+          line_1: [input.ship.number, input.ship.street, input.ship.district].filter(Boolean).join(", ").slice(0, 256),
+          ...(input.ship.complement ? { line_2: input.ship.complement.slice(0, 128) } : {}),
+        }
+      : null;
   const body = {
     code: input.orderId,
-    items: [{ amount: input.totalCents, description: `Pedido GCard-PRO #${input.orderNumber}`.slice(0, 256), quantity: 1, code: String(input.orderNumber) }],
+    metadata: { order_id: input.orderId, order_number: String(input.orderNumber) },
+    items,
+    ...(address ? { shipping: { amount: 0, description: "Envio GCard-PRO", recipient_name: input.customerName, address } } : {}),
     customer: {
+      ...(address ? { address } : {}),
       name: input.customerName,
       email: input.customerEmail.slice(0, 64),
       code: input.orderId.slice(0, 52),

@@ -32,7 +32,7 @@ export const getPagarmePix = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin
       .from("orders")
-      .select("id, order_number, total_cents, payment_status, customer_email, customer_name, customer_document, customer_phone")
+      .select("id, order_number, total_cents, payment_status, customer_email, customer_name, customer_document, customer_phone, ship_zip, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, order_items(product_name, quantity, unit_price_cents)")
       .eq("id", data.orderId)
       .maybeSingle();
     if (!order) return { ok: false as const, error: "order_not_found" };
@@ -53,6 +53,20 @@ export const getPagarmePix = createServerFn({ method: "POST" })
           customerEmail: order.customer_email,
           customerDocument: order.customer_document ?? null,
           customerPhone: order.customer_phone ?? null,
+          items: ((order.order_items ?? []) as { product_name: string; quantity: number; unit_price_cents: number }[]).map((i) => ({
+            name: i.product_name,
+            quantity: i.quantity,
+            unitCents: i.unit_price_cents,
+          })),
+          ship: {
+            zip: order.ship_zip ?? null,
+            street: order.ship_street ?? null,
+            number: order.ship_number ?? null,
+            complement: order.ship_complement ?? null,
+            district: order.ship_district ?? null,
+            city: order.ship_city ?? null,
+            state: order.ship_state ?? null,
+          },
         }));
       const t = pg.charges?.[0]?.last_transaction;
       if (!t?.qr_code) return { ok: false as const, error: "provider_error" };
