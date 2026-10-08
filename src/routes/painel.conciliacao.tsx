@@ -175,6 +175,31 @@ function Conciliacao() {
             {!balance && <p className="mt-2 text-xs text-muted-foreground">O Mercado Pago não liberou o saldo pela API: digite o saldo que aparece no seu app.</p>}
           </div>
 
+          {(() => {
+            const flagged = lines.filter(
+              (l) => l.refunds.length > 0 || l.refundedCents > 0 || ["refunded", "charged_back", "in_mediation"].includes(l.status) || (l.releaseStatus && !["released"].includes(l.releaseStatus) && l.status === "approved"),
+            );
+            return (
+              <div className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-5">
+                <p className="text-sm font-bold text-amber-900">Devoluções, contestações e retenções registradas pelo Mercado Pago</p>
+                {flagged.length === 0 ? (
+                  <p className="mt-1 text-sm text-amber-900">Nenhum pagamento deste mês com devolução, contestação ou retenção na API. Se o seu saldo teve “débito por dívida”, a causa não está nos pagamentos deste mês — tente o mês anterior.</p>
+                ) : (
+                  <ul className="mt-2 space-y-1 text-sm text-amber-900">
+                    {flagged.map((l) => (
+                      <li key={l.id}>
+                        <strong>{l.orderNumber ? `Pedido #${l.orderNumber}` : `Pagamento ${l.id}`}</strong> ({brl(l.grossCents)}, aprovado {dt(l.approvedAt)}): situação <strong>{l.status}</strong>
+                        {l.statusDetail ? ` (${l.statusDetail})` : ""}
+                        {l.releaseStatus && l.releaseStatus !== "released" ? `, dinheiro: ${l.releaseStatus}` : ""}
+                        {l.refunds.length ? `, devolvido ${l.refunds.map((r) => `${brl(r.cents)} em ${dt(r.at)}`).join(" + ")}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })()}
+
           {diff && (
             <div className="mt-5 rounded-2xl border border-border bg-card p-5">
               <p className="text-sm font-bold">Pedido a pedido: Mercado Pago × Financeiro do site</p>

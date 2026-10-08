@@ -15,6 +15,9 @@ type MpPay = {
   payment_type_id?: string;
   fee_details?: { type: string; amount: number }[];
   transaction_details?: { net_received_amount?: number };
+  status_detail?: string;
+  money_release_status?: string;
+  refunds?: { amount?: number; date_created?: string }[];
 };
 
 export type MpLine = {
@@ -28,6 +31,9 @@ export type MpLine = {
   feeCents: number;
   netCents: number;
   refundedCents: number;
+  statusDetail: string | null;
+  releaseStatus: string | null;
+  refunds: { cents: number; at: string | null }[];
 };
 
 const cents = (n: number | undefined | null) => Math.round((n ?? 0) * 100);
@@ -49,17 +55,22 @@ async function fetchMonthPayments(month: string): Promise<MpLine[]> {
   const begin = `${month}-01T00:00:00.000-03:00`;
   const end = `${month}-${String(last).padStart(2, "0")}T23:59:59.999-03:00`;
 
-  const raw: MpPay[] = [];
-  for (let offset = 0; offset < 500; offset += 100) {
-    const url =
-      `${API}/v1/payments/search?sort=date_approved&criteria=asc&range=date_approved` +
-      `&begin_date=${encodeURIComponent(begin)}&end_date=${encodeURIComponent(end)}&limit=100&offset=${offset}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20_000) });
-    if (!res.ok) throw new Error(`Mercado Pago recusou a consulta [${res.status}]`);
-    const json = (await res.json()) as { results?: MpPay[]; paging?: { total?: number } };
-    raw.push(...(json.results ?? []));
-    if (raw.length >= (json.paging?.total ?? 0) || !(json.results ?? []).length) break;
+  // Pagamentos aprovados no mês E pagamentos que mudaram no mês (devolução, contestação, retenção de
+  // uma venda antiga) -- é daí que costumam vir os "débitos por dívida".
+  const byId = new Map<number, MpPay>();
+  for (const range of ["date_approved", "date_last_updated"] as const) {
+    for (let offset = 0; offset < 500; offset += 100) {
+      const url =
+        `${API}/v1/payments/search?sort=${range}&criteria=asc&range=${range}` +
+        `&begin_date=${encodeURIComponent(begin)}&end_date=${encodeURIComponent(end)}&limit=100&offset=${offset}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20_000) });
+      if (!res.ok) throw new Error(`Mercado Pago recusou a consulta [${res.status}]`);
+      const json = (await res.json()) as { results?: MpPay[]; paging?: { total?: number } };
+      for (const p of json.results ?? []) byId.set(p.id, p);
+      if (!(json.results ?? []).length || offset + 100 >= (json.paging?.total ?? 0)) break;
+    }
   }
+  const raw = [...byId.values()];
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,6 +97,9 @@ async function fetchMonthPayments(month: string): Promise<MpLine[]> {
         feeCents: cents(fee),
         netCents: cents(p.transaction_details?.net_received_amount ?? p.transaction_amount - fee),
         refundedCents: cents(p.transaction_amount_refunded),
+        statusDetail: p.status_detail ?? null,
+        releaseStatus: p.money_release_status ?? null,
+        refunds: (p.refunds ?? []).map((r) => ({ cents: cents(r.amount), at: r.date_created ?? null })),
       };
     });
 }
