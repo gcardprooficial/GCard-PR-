@@ -56,6 +56,9 @@ function Conciliacao() {
       );
       setLines(r.lines);
       setBalance(r.balance);
+      // Pix recebidos na sua chave (depósitos de InfinitePay/Pix pessoal) = entradas sem pedido.
+      const dep = r.lines.filter((l) => l.status === "approved" && !l.orderNumber).reduce((s, l) => s + l.grossCents, 0);
+      if (dep > 0) setDeposits((dep / 100).toFixed(2).replace(".", ","));
       if (r.balance) setCurrent(((r.balance.available + r.balance.unavailable) / 100).toFixed(2).replace(".", ","));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não consegui consultar o Mercado Pago.");
@@ -265,7 +268,7 @@ function Conciliacao() {
                 {lines.map((l) => (
                   <tr key={l.id} className="border-t border-border">
                     <td className="px-3 py-2">{dt(l.approvedAt)}</td>
-                    <td className="px-3 py-2">{l.orderNumber ? `#${l.orderNumber}` : "—"}</td>
+                    <td className="px-3 py-2">{l.orderNumber ? `#${l.orderNumber}` : <span className="text-muted-foreground">Pix na chave / sem pedido</span>}</td>
                     <td className="px-3 py-2">{l.status}</td>
                     <td className="px-3 py-2 text-right">{brl(l.grossCents)}</td>
                     <td className="px-3 py-2 text-right text-red-700">{brl(l.feeCents)}</td>

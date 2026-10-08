@@ -15,6 +15,7 @@ type MpPay = {
   payment_type_id?: string;
   fee_details?: { type: string; amount: number }[];
   transaction_details?: { net_received_amount?: number };
+  collector_id?: number | null;
   status_detail?: string;
   money_release_status?: string;
   refunds?: { amount?: number; date_created?: string }[];
@@ -55,6 +56,16 @@ async function fetchMonthPayments(month: string): Promise<MpLine[]> {
   const begin = `${month}-01T00:00:00.000-03:00`;
   const end = `${month}-${String(last).padStart(2, "0")}T23:59:59.999-03:00`;
 
+  // A busca devolve pagamentos em que você é quem PAGOU também (Claude, Google, fatura...).
+  // Só os que você RECEBEU (collector = você) entram aqui.
+  let myId: number | null = null;
+  try {
+    const me = await fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000) });
+    if (me.ok) myId = ((await me.json()) as { id?: number }).id ?? null;
+  } catch {
+    /* sem filtro de recebedor */
+  }
+
   // Pagamentos aprovados no mês E pagamentos que mudaram no mês (devolução, contestação, retenção de
   // uma venda antiga) -- é daí que costumam vir os "débitos por dívida".
   const byId = new Map<number, MpPay>();
@@ -70,12 +81,14 @@ async function fetchMonthPayments(month: string): Promise<MpLine[]> {
       if (!(json.results ?? []).length || offset + 100 >= (json.paging?.total ?? 0)) break;
     }
   }
-  const raw = [...byId.values()];
+  const raw = [...byId.values()].filter((p) => myId === null || p.collector_id === myId);
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabaseAdmin as any;
-  const refs = [...new Set(raw.map((p) => p.external_reference).filter((x): x is string => !!x))];
+  // Só UUIDs: uma referência qualquer (Pix na chave, etc.) derrubava a consulta inteira e nenhum pedido era achado.
+  const isUuid = (x: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
+  const refs = [...new Set(raw.map((p) => p.external_reference).filter((x): x is string => !!x && isUuid(x)))];
   const orderNo = new Map<string, number>();
   if (refs.length) {
     const { data } = await db.from("orders").select("id, order_number").in("id", refs);
