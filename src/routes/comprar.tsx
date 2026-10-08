@@ -12,7 +12,7 @@ import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.function
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
 import { createPagarmeCheckout } from "@/lib/payments/pagarme.functions";
-import { GATEWAY_OPTIONS, type Gateway } from "@/lib/gateways";
+import { gatewayOptions, type Gateway } from "@/lib/gateways";
 import { checkCoupon } from "@/lib/affiliates.functions";
 import { captureReferralFromUrl, clearReferral, getStoredReferral, storeReferral } from "@/lib/referral";
 import { unitPriceForQuantity, money, resolveUnitPrice as resolveUnitPriceShared } from "@/lib/pricing";
@@ -317,7 +317,13 @@ function Comprar() {
   const createPref = useServerFn(createCheckoutPreference);
   const createInfinitePay = useServerFn(createInfinitePayCheckout);
   const createPagarme = useServerFn(createPagarmeCheckout);
-  const [gateway, setGateway] = useState<Gateway>(GATEWAY_OPTIONS[0]!.key);
+  // /comprar?pagarme=1 mostra a opção da Stone só pra teste (ela ainda não está liberada pra todo mundo).
+  const testPagarme = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("pagarme");
+  const gateways = gatewayOptions(testPagarme);
+  const [gateway, setGateway] = useState<Gateway>(gatewayOptions(false)[0]!.key);
+  useEffect(() => {
+    if (testPagarme) setGateway("pagarme");
+  }, [testPagarme]);
   const [wantsPixDiscount, setWantsPixDiscount] = useState(true);
   const pixPromoLive = pixDiscountActive();
   const runCheckCoupon = useServerFn(checkCoupon);
@@ -2296,7 +2302,7 @@ function Comprar() {
               <fieldset className="mt-4">
                 <legend className="text-sm font-black">Como você quer pagar?</legend>
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                  {GATEWAY_OPTIONS.map(({ key: k, title: t, hint: d }) => (
+                  {gateways.map(({ key: k, title: t, hint: d }) => (
                     <label
                       key={k}
                       className={`flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-4 transition-colors ${
