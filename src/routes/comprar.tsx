@@ -955,8 +955,8 @@ function Comprar() {
                 </strong>
               </p>
               <p className="relative mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-                O pagamento pelo Mercado Pago entra no ar em breve. Vamos te chamar no WhatsApp para
-                concluir e enviar o código de rastreio.
+                Não conseguimos abrir o pagamento agora. Vamos te chamar no WhatsApp para concluir
+                e enviar o código de rastreio.
               </p>
 
               <div className="relative mt-8 grid gap-3">
