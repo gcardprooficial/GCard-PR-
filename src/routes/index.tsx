@@ -198,7 +198,7 @@ function Home() {
       <section className="border-b border-border bg-card">
         <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-x-4 gap-y-5 px-5 py-6 md:grid-cols-4">
           {[
-            ["Compra segura", "Mercado Pago ou InfinitePay · Pix e cartão"],
+            ["Compra segura", "Stone ou InfinitePay · Pix e cartão"],
             ["Frete grátis", "Todo o Brasil pelos Correios"],
             ["Sem mensalidade", "Pague uma vez e use para sempre"],
             ["Suporte no WhatsApp", "Direto com quem fabrica"],

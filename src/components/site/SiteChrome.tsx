@@ -295,7 +295,7 @@ export function SiteFooter() {
 
         <ul className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/10 pt-6 text-xs font-semibold text-white/60">
           {[
-            "Compra segura: Mercado Pago ou InfinitePay",
+            "Compra segura: Stone ou InfinitePay",
             "Pix, cartão e boleto",
             "Site protegido por HTTPS",
             "Seus dados protegidos (LGPD)",

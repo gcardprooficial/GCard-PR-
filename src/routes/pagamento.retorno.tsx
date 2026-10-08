@@ -91,7 +91,7 @@ function PagamentoRetorno() {
     },
     desconhecido: {
       title: "Não conseguimos confirmar agora",
-      body: "Se você acabou de pagar, fique tranquilo: assim que o Mercado Pago avisar, atualizamos o pedido e você recebe um e-mail. Qualquer dúvida, chama a gente no WhatsApp.",
+      body: "Se você acabou de pagar, fique tranquilo: assim que o pagamento for confirmado, atualizamos o pedido e você recebe um e-mail. Qualquer dúvida, chama a gente no WhatsApp.",
     },
   }[view.kind];
 

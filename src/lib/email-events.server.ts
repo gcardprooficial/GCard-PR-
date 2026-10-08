@@ -294,7 +294,7 @@ export async function dispatchOrderEmailEvent(
         body +=
           `<p>Recebemos o seu pedido. Aqui está o resumo:</p>${summary}` +
           `<p>Assim que o pagamento for confirmado, avisamos por aqui com os próximos passos. ` +
-          `Se a tela do Mercado Pago não abriu pra você, é só responder este e-mail ou chamar no WhatsApp que a gente resolve.</p>`;
+          `Se a tela de pagamento não abriu pra você, é só responder este e-mail ou chamar no WhatsApp que a gente resolve.</p>`;
         break;
 
       case "pagamento_pendente":
@@ -302,7 +302,7 @@ export async function dispatchOrderEmailEvent(
           `<p>Seu pedido <strong>#${escapeHtml(order.order_number)}</strong> foi registrado, mas o pagamento ainda não foi concluído.</p>${summary}` +
           (extra?.paymentUrl
             ? ctaButton(extra.paymentUrl, "Finalizar pagamento") +
-              `<p style="font-size:13px;color:#6B6B6B;">Não precisa ter conta no Mercado Pago: dá pra pagar com Pix, cartão ou boleto como convidado.</p>`
+              `<p style="font-size:13px;color:#6B6B6B;">Não precisa ter conta: é só pagar com Pix ou cartão.</p>`
             : `<p>Se quiser, responda este e-mail ou chame no WhatsApp que enviamos um novo link de pagamento.</p>`);
         break;
 

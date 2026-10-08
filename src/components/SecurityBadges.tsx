@@ -2,7 +2,7 @@ import { BadgeCheck, FileCheck2, Lock, ShieldCheck, Undo2 } from "lucide-react";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
 
 const BADGES = [
-  { icon: ShieldCheck, label: "Compra segura", detail: "Mercado Pago ou InfinitePay" },
+  { icon: ShieldCheck, label: "Compra segura", detail: "Stone ou InfinitePay" },
   { icon: Lock, label: "Conexão criptografada", detail: "HTTPS" },
   { icon: FileCheck2, label: "Dados protegidos", detail: "LGPD" },
   { icon: Undo2, label: "7 dias para desistir", detail: "CDC, art. 49" },

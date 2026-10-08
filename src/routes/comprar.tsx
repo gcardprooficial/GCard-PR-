@@ -2461,10 +2461,10 @@ function Comprar() {
               </svg>
             </span>
             <p className="leading-relaxed text-muted-foreground">
-              Pagamento processado com segurança pelo{" "}
-              <strong className="text-foreground">Mercado Pago</strong> ou pela{" "}
-              <strong className="text-foreground">InfinitePay</strong>, à sua escolha. Seus dados de cartão não
-              ficam armazenados na GCard-PRÓ.
+              Pagamento processado com segurança pela{" "}
+              <strong className="text-foreground">Stone</strong> (Pix) ou pela{" "}
+              <strong className="text-foreground">InfinitePay</strong> (Pix e cartão), à sua escolha. Seus dados de
+              cartão não ficam armazenados na GCard-PRÓ.
             </p>
           </div>
 
