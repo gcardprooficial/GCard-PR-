@@ -31,6 +31,7 @@ function Conciliacao() {
   const [opening, setOpening] = useState("0");
   const [current, setCurrent] = useState("");
   const [mpOut, setMpOut] = useState("");
+  const [deposits, setDeposits] = useState("");
   // Entradas de venda que o Financeiro do site tem no mês (pelo pedido), p/ comparar com o Mercado Pago.
   const [fin, setFin] = useState<{ order: number; cents: number; provider: string | null }[] | null>(null);
 
@@ -89,7 +90,7 @@ function Conciliacao() {
   }, [lines]);
 
   const outflow = lines ? num(opening) + t.net - t.refunded - num(current) : 0;
-  const expected = num(opening) + t.net - t.refunded - num(mpOut);
+  const expected = num(opening) + t.net + num(deposits) - t.refunded - num(mpOut);
 
   // Pedido a pedido: o que o Mercado Pago aprovou x o que o Financeiro lançou como Mercado Pago.
   const diff = useMemo(() => {
@@ -192,7 +193,7 @@ function Conciliacao() {
                   {diff.valueDiff.length ? diff.valueDiff.map((x) => `#${x.o} (MP ${brl(x.mp)} × site ${brl(x.gc)})`).join(", ") : "nenhum ✓"}
                 </li>
                 <li className="text-muted-foreground">
-                  Entradas do Financeiro que <strong>não são Mercado Pago</strong> (InfinitePay, Pix, manual): {diff.notMpProviders.length} lançamento(s), {brl(diff.notMpProviders.reduce((s, e) => s + e.cents, 0))} — estas não existem no extrato do Mercado Pago.
+                  Entradas do Financeiro que <strong>não são Mercado Pago</strong> (InfinitePay, Pix, manual): {diff.notMpProviders.length} lançamento(s), {brl(diff.notMpProviders.reduce((s, e) => s + e.cents, 0))}. Se você transferiu esse dinheiro para o Mercado Pago, informe abaixo em “Depósitos no Mercado Pago”.
                 </li>
               </ul>
             </div>
@@ -205,13 +206,17 @@ function Conciliacao() {
             </p>
             <div className="mt-3 flex flex-wrap items-end gap-3">
               <div>
+                <label className="text-xs font-semibold text-muted-foreground" htmlFor="d">Depósitos no Mercado Pago no mês: InfinitePay + Pix que você enviou (R$)</label>
+                <Input id="d" value={deposits} onChange={(e) => setDeposits(e.target.value)} inputMode="decimal" placeholder="Ex.: 1643,50" className="mt-1 h-10 w-64" />
+              </div>
+              <div>
                 <label className="text-xs font-semibold text-muted-foreground" htmlFor="s">Total de saídas no Mercado Pago (R$)</label>
                 <Input id="s" value={mpOut} onChange={(e) => setMpOut(e.target.value)} inputMode="decimal" className="mt-1 h-10 w-48" />
               </div>
             </div>
             {mpOut && current ? (
               <p className="mt-3 text-sm">
-                Saldo esperado = {brl(num(opening))} + {brl(t.net)} − {brl(t.refunded)} − {brl(num(mpOut))} = <strong>{brl(expected)}</strong>. Saldo real: <strong>{brl(num(current))}</strong>. Diferença:{" "}
+                Saldo esperado = {brl(num(opening))} (início) + {brl(t.net)} (vendas líquidas) + {brl(num(deposits))} (depósitos) − {brl(t.refunded)} (devoluções) − {brl(num(mpOut))} (saídas) = <strong>{brl(expected)}</strong>. Saldo real: <strong>{brl(num(current))}</strong>. Diferença:{" "}
                 <strong className={Math.abs(expected - num(current)) < 100 ? "text-green-700" : "text-red-700"}>{brl(expected - num(current))}</strong>
                 {Math.abs(expected - num(current)) < 100 ? " — bate (diferença só de centavos/arredondamento)." : " — não bate: confira o saldo do início do mês e se há entradas no extrato que não são vendas (depósitos, reembolsos)."}
               </p>
