@@ -47,6 +47,7 @@ const TABS = [
   { to: "/painel/scans", label: "Scans", icon: ScanLine },
   { to: "/painel/frete", label: "Frete por estado", icon: Truck },
   { to: "/painel/contador", label: "Contador", icon: FileSpreadsheet },
+  { to: "/painel/conciliacao", label: "Conciliação MP", icon: Wallet },
   { to: "/painel/integracoes", label: "Integrações", icon: Plug },
 ] as const;
 
