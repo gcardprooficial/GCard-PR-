@@ -6,7 +6,8 @@ async function adminDb() {
   return supabaseAdmin as any;
 }
 
-const STONE_PIX_FEE_RATE = 0.0099;
+// Tarifas Stone e-commerce (tabela da conta, 2026-10-08): Pix 0,99%; crédito à vista 4,04%.
+const STONE_FEE_RATE: Record<string, number> = { pix: 0.0099, credit_card: 0.0404 };
 
 function brazilDay(date: Date) {
   return date.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
@@ -49,15 +50,16 @@ export async function recordSaleEntry(orderId: string) {
   // 23505 = outra chamada (webhook x retorno x cron) lançou primeiro; o índice único garante 1 só.
   if (error && error.code !== "23505") throw error;
 
-  // Stone cobra tarifa de Pix por fora (extrato da conta), ~0,99%: lança como saída junto com a venda.
-  // ponytail: taxa estimada (R$149 -> R$1,47 conferido); se a Stone mudar a tarifa, ajuste STONE_PIX_FEE_RATE.
-  if (!error && order.payment_provider === "pagarme" && order.payment_method === "pix") {
-    const fee = Math.floor(order.total_cents * STONE_PIX_FEE_RATE);
+  // Stone cobra a tarifa por fora (desconta do repasse): lança como saída junto com a venda.
+  // ponytail: taxa pela tabela acima; se a Stone mudar a tarifa, ajuste STONE_FEE_RATE.
+  const rate = order.payment_provider === "pagarme" ? STONE_FEE_RATE[order.payment_method ?? ""] : undefined;
+  if (!error && rate) {
+    const fee = Math.floor(order.total_cents * rate);
     if (fee > 0) {
       const { error: feeError } = await db.from("finance_entries").insert({
         kind: "saida",
         category: "Taxas Stone",
-        description: `Taxa Stone Pix pedido #${order.order_number}`,
+        description: `Taxa Stone ${order.payment_method === "pix" ? "Pix" : "cartão"} pedido #${order.order_number}`,
         amount_cents: fee,
         entry_date: brazilDay(order.paid_at ? new Date(order.paid_at) : new Date()),
       });
