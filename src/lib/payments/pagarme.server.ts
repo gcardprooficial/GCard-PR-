@@ -10,9 +10,9 @@ function key() {
   return process.env["PAGARME_SECRET_KEY"] || null;
 }
 
-/** Chave de teste (sk_test_) fala com o ambiente de testes; a de produção, com a API real. */
+/** Teste e produção usam a mesma API: quem decide é a chave (sk_test_ x sk_live_). Testado: sk_test_ responde 200 em api.pagar.me. */
 function base() {
-  return process.env["PAGARME_API_URL"] ?? (key()?.startsWith("sk_test") ? "https://sdx-api.pagar.me/core/v5" : "https://api.pagar.me/core/v5");
+  return process.env["PAGARME_API_URL"] ?? "https://api.pagar.me/core/v5";
 }
 
 function headers() {
