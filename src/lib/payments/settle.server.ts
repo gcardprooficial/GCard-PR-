@@ -6,6 +6,8 @@ async function adminDb() {
   return supabaseAdmin as any;
 }
 
+const STONE_PIX_FEE_RATE = 0.0099;
+
 function brazilDay(date: Date) {
   return date.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
@@ -15,7 +17,7 @@ export async function recordSaleEntry(orderId: string) {
   const db = await adminDb();
   const { data: order } = await db
     .from("orders")
-    .select("id, order_number, total_cents, payment_status, paid_at")
+    .select("id, order_number, total_cents, payment_status, paid_at, payment_provider")
     .eq("id", orderId)
     .maybeSingle();
   if (!order || order.payment_status !== "pago") return { created: false };
@@ -46,6 +48,22 @@ export async function recordSaleEntry(orderId: string) {
   });
   // 23505 = outra chamada (webhook x retorno x cron) lançou primeiro; o índice único garante 1 só.
   if (error && error.code !== "23505") throw error;
+
+  // Stone cobra tarifa de Pix por fora (extrato da conta), ~0,99%: lança como saída junto com a venda.
+  // ponytail: taxa estimada (R$149 -> R$1,47 conferido); se a Stone mudar a tarifa, ajuste STONE_PIX_FEE_RATE.
+  if (!error && order.payment_provider === "pagarme") {
+    const fee = Math.floor(order.total_cents * STONE_PIX_FEE_RATE);
+    if (fee > 0) {
+      const { error: feeError } = await db.from("finance_entries").insert({
+        kind: "saida",
+        category: "Taxas Stone",
+        description: `Taxa Stone Pix pedido #${order.order_number}`,
+        amount_cents: fee,
+        entry_date: brazilDay(order.paid_at ? new Date(order.paid_at) : new Date()),
+      });
+      if (feeError) console.error("Falha ao lançar taxa Stone", { orderId, feeError });
+    }
+  }
   return { created: !error };
 }
 
