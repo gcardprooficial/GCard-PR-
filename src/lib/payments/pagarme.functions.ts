@@ -38,7 +38,9 @@ export const createPagarmeCardCheckout = createServerFn({ method: "POST" })
     if (!order) return { ok: false as const, error: "order_not_found" };
     if (order.payment_status === "pago") return { ok: false as const, error: "already_paid" };
     try {
+      const { loadOrderDetails } = await import("./order-details.server");
       const { url } = await createPagarmeLink({
+        details: await loadOrderDetails(order.id),
         orderId: order.id,
         orderNumber: order.order_number,
         totalCents: order.total_cents,

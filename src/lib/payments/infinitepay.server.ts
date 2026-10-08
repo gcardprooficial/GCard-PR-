@@ -26,26 +26,52 @@ export async function createInfinitePayLink(input: {
   customerName: string;
   customerEmail: string;
   origin: string;
+  details?: import("./order-details.server").OrderDetails;
 }): Promise<string> {
   const handle = infinitePayHandle();
   if (!handle) throw new Error("infinitepay_not_configured");
   const secret = process.env["INFINITEPAY_WEBHOOK_SECRET"];
-  const res = await fetch(`${API}/links`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      handle,
-      order_nsu: input.orderId,
-      redirect_url: `${input.origin}/pagamento/retorno`,
-      ...(secret ? { webhook_url: `${input.origin}/api/webhooks/infinitepay?secret=${encodeURIComponent(secret)}` } : {}),
-      customer: { name: input.customerName, email: input.customerEmail },
-      items: [{ quantity: 1, price: input.totalCents, description: `Pedido GCard-PRO #${input.orderNumber}` }],
-    }),
-    signal: AbortSignal.timeout(15_000),
-  });
-  const json = (await res.json().catch(() => null)) as { url?: string } | null;
-  if (!res.ok || !json?.url) throw new Error(`infinitepay_link_failed_${res.status}`);
-  return json.url;
+  const base = {
+    handle,
+    order_nsu: input.orderId,
+    redirect_url: `${input.origin}/pagamento/retorno`,
+    ...(secret ? { webhook_url: `${input.origin}/api/webhooks/infinitepay?secret=${encodeURIComponent(secret)}` } : {}),
+  };
+  const d = input.details;
+  const { chargeItems, brPhone } = await import("./order-details.server");
+  const phone = brPhone(d?.phone ?? null);
+  const zip = (d?.ship.zip ?? "").replace(/\D/g, "");
+  // Tudo que identifica o pedido (produto, qtd, telefone, endereço) vai junto; se a API recusar algum campo extra, tenta de novo só com o básico.
+  const full = {
+    ...base,
+    customer: { name: input.customerName, email: input.customerEmail, ...(phone ? { phone_number: `+55${phone}` } : {}) },
+    items: (d ? chargeItems(d.items, input.totalCents, input.orderNumber) : [{ name: `Pedido GCard-PRO #${input.orderNumber}`, quantity: 1, unitCents: input.totalCents }]).map((i) => ({
+      quantity: i.quantity,
+      price: i.unitCents,
+      description: i.name,
+    })),
+    ...(d && zip.length === 8 && d.ship.street
+      ? { address: { cep: zip, street: d.ship.street, neighborhood: d.ship.district ?? "", number: d.ship.number ?? "", complement: d.ship.complement ?? "" } }
+      : {}),
+  };
+  const basic = {
+    ...base,
+    customer: { name: input.customerName, email: input.customerEmail },
+    items: [{ quantity: 1, price: input.totalCents, description: `Pedido GCard-PRO #${input.orderNumber}` }],
+  };
+  for (const body of [full, basic]) {
+    const res = await fetch(`${API}/links`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15_000),
+    });
+    const json = (await res.json().catch(() => null)) as { url?: string } | null;
+    if (res.ok && json?.url) return json.url;
+    console.error("InfinitePay link falhou", { status: res.status, full: body === full, body: JSON.stringify(json)?.slice(0, 300) });
+    if (res.status < 400 || res.status >= 500) break;
+  }
+  throw new Error("infinitepay_link_failed");
 }
 
 type Checked = PaymentResult & { paidCents: number };

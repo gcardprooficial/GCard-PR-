@@ -104,6 +104,7 @@ export async function createPagarmeLink(input: {
   customerEmail: string;
   customerDocument: string | null;
   origin: string;
+  details?: import("./order-details.server").OrderDetails;
 }): Promise<{ url: string; linkId: string | null }> {
   if (!key()) throw new Error("pagarme_not_configured");
   const doc = (input.customerDocument ?? "").replace(/\D/g, "");
@@ -135,13 +136,48 @@ export async function createPagarmeLink(input: {
       },
     },
   };
-  const res = await fetch(`${base()}/paymentlinks`, { method: "POST", headers: headers(), body: JSON.stringify(body), signal: AbortSignal.timeout(20_000) });
-  const json = (await res.json().catch(() => null)) as { url?: string; id?: string } | null;
-  if (!res.ok || !json?.url) {
-    console.error("Pagar.me link falhou", res.status, JSON.stringify(json)?.slice(0, 400));
-    throw new Error(`pagarme_link_failed_${res.status}`);
+  // Versão completa: produtos reais (nome, qtd, valor), telefone e endereço. Se a API recusar algum campo extra, cai no corpo básico acima.
+  const d = input.details;
+  let full: typeof body | null = null;
+  if (d) {
+    const { chargeItems, brPhone } = await import("./order-details.server");
+    const phone = brPhone(d.phone);
+    const zip = (d.ship.zip ?? "").replace(/\D/g, "");
+    const address =
+      zip.length === 8 && d.ship.street && d.ship.city && d.ship.state?.length === 2
+        ? {
+            country: "BR",
+            state: d.ship.state.toUpperCase(),
+            city: d.ship.city,
+            zip_code: zip,
+            line_1: [d.ship.number, d.ship.street, d.ship.district].filter(Boolean).join(", ").slice(0, 256),
+            ...(d.ship.complement ? { line_2: d.ship.complement.slice(0, 128) } : {}),
+          }
+        : null;
+    full = {
+      ...body,
+      cart_settings: {
+        items: chargeItems(d.items, input.totalCents, input.orderNumber).map((i) => ({ name: i.name.slice(0, 64), amount: i.unitCents, default_quantity: i.quantity })),
+      },
+      customer_settings: {
+        customer: {
+          ...body.customer_settings.customer,
+          ...(address ? { address } : {}),
+          ...(phone ? { phones: { mobile_phone: { country_code: "55", area_code: phone.slice(0, 2), number: phone.slice(2) } } } : {}),
+        },
+      },
+    } as typeof body;
   }
-  return { url: json.url, linkId: json.id ?? null };
+  let lastStatus = 0;
+  for (const b of full ? [full, body] : [body]) {
+    const res = await fetch(`${base()}/paymentlinks`, { method: "POST", headers: headers(), body: JSON.stringify(b), signal: AbortSignal.timeout(20_000) });
+    const json = (await res.json().catch(() => null)) as { url?: string; id?: string } | null;
+    if (res.ok && json?.url) return { url: json.url, linkId: json.id ?? null };
+    lastStatus = res.status;
+    console.error("Pagar.me link falhou", res.status, b === full ? "(completo)" : "(básico)", JSON.stringify(json)?.slice(0, 400));
+    if (res.status < 400 || res.status >= 500) break;
+  }
+  throw new Error(`pagarme_link_failed_${lastStatus}`);
 }
 
 export type PgOrder = {
