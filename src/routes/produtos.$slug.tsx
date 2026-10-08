@@ -89,7 +89,7 @@ function Produto() {
               {!p.is_blank && <p className="mt-3 text-xs text-muted-foreground">Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente.</p>}
             </div>
           )}
-          {p.is_blank && <p className="mt-4 text-sm text-muted-foreground">Sem impressão. Cores: cristal, branco e preto. Você aplica a sua arte ou adesivo.</p>}
+          {p.is_blank && <p className="mt-4 text-sm text-muted-foreground">Sem impressão. Cores: cristal, branco, preto e azul. Você aplica a sua arte ou adesivo.</p>}
           {soon ? (
             <Button disabled size="lg" className="mt-8 h-14 w-full rounded-xl">Em breve</Button>
           ) : (

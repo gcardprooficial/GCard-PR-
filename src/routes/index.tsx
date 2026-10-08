@@ -353,7 +353,7 @@ function Home() {
               {[
                 "Mínimo de 10 unidades por pedido, frete grátis",
                 "Preço cai conforme a quantidade — cada produto tem sua própria tabela",
-                "Acrílico sem arte disponível nas cores cristal, branco e preto",
+                "Acrílico sem arte disponível nas cores cristal, branco, preto e azul",
                 "Você ativa cada código no seu painel de revendedor",
               ].map((f) => (
                 <li key={f} className="flex items-start gap-3 text-foreground/80">
@@ -468,7 +468,7 @@ function Home() {
             {
               tag: "Acrílico sem arte",
               title: "Só o material, pra você personalizar",
-              specs: ["Sem impressão, sem QR Code, sem NFC", "Cores: cristal (transparente), branco e preto"],
+              specs: ["Sem impressão, sem QR Code, sem NFC", "Cores: cristal (transparente), branco, preto e azul"],
               art: "Para quem já tem a própria arte ou quer aplicar adesivo.",
               blank: "Vendido em kit a partir de 10 unidades, com frete grátis (revenda).",
             },

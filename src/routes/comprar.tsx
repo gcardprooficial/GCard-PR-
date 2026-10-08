@@ -29,18 +29,22 @@ import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import acrilico10x10Cristal from "@/assets/acrilico-10x10-cristal.jpg";
 import acrilico10x10Branco from "@/assets/acrilico-10x10-branco.jpg";
 import acrilico10x10Preto from "@/assets/acrilico-10x10-preto.jpg";
+import acrilico10x10Azul from "@/assets/acrilico-10x10-azul.jpg";
 import acrilicoLCristal from "@/assets/acrilico-l-cristal.jpg";
 import acrilicoLBranco from "@/assets/acrilico-l-branco.jpg";
 import acrilicoLPreto from "@/assets/acrilico-l-preto.jpg";
+import acrilicoLAzul from "@/assets/acrilico-l-azul.jpg";
 
 /** Foto por produto+cor, pra etapa de escolha de cor do acrílico puro. */
 const COLOR_IMAGES: Record<string, string> = {
   "acrilico-10x10-sem-arte:cristal": acrilico10x10Cristal,
   "acrilico-10x10-sem-arte:branco": acrilico10x10Branco,
   "acrilico-10x10-sem-arte:preto": acrilico10x10Preto,
+  "acrilico-10x10-sem-arte:azul": acrilico10x10Azul,
   "acrilico-15x10-l-sem-arte:cristal": acrilicoLCristal,
   "acrilico-15x10-l-sem-arte:branco": acrilicoLBranco,
   "acrilico-15x10-l-sem-arte:preto": acrilicoLPreto,
+  "acrilico-15x10-l-sem-arte:azul": acrilicoLAzul,
 };
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
