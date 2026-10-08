@@ -2,6 +2,8 @@ import type { PaymentResult } from "./provider";
 
 export const PAGARME = "pagarme";
 
+// ponytail: cartão só à vista. Parcelar encarece a taxa -- ajuste aqui se quiser oferecer.
+const INSTALLMENTS_MAX = 1;
 const PIX_EXPIRES_SECONDS = 30 * 60;
 
 function key() {
@@ -91,6 +93,55 @@ export async function createPagarmePix(input: {
     throw new Error(`pagarme_pix_failed_${res.status}`);
   }
   return json;
+}
+
+/** Cria o link de pagamento só de cartão (à vista; Pix é transparente em createPagarmePix). order_code = id do pedido. Devolve a URL do checkout hospedado. */
+export async function createPagarmeLink(input: {
+  orderId: string;
+  orderNumber: number;
+  totalCents: number;
+  customerName: string;
+  customerEmail: string;
+  customerDocument: string | null;
+  origin: string;
+}): Promise<{ url: string; linkId: string | null }> {
+  if (!key()) throw new Error("pagarme_not_configured");
+  const doc = (input.customerDocument ?? "").replace(/\D/g, "");
+  const body = {
+    type: "order",
+    name: `Pedido GCard-PRO #${input.orderNumber}`.slice(0, 64),
+    order_code: input.orderId,
+    max_paid_sessions: 1,
+    flow_settings: { success_url: `${input.origin}/pagamento/retorno?gw=pagarme&ref=${input.orderId}` },
+    payment_settings: {
+      accepted_payment_methods: ["credit_card"],
+      statement_descriptor: "GCARDPRO",
+      credit_card_settings: {
+        operation_type: "auth_and_capture",
+        installments: Array.from({ length: INSTALLMENTS_MAX }, (_, i) => ({ number: i + 1, total: input.totalCents })),
+      },
+    },
+    cart_settings: {
+      items: [{ name: `Pedido GCard-PRO #${input.orderNumber}`.slice(0, 64), amount: input.totalCents, default_quantity: 1 }],
+    },
+    customer_settings: {
+      customer: {
+        name: input.customerName,
+        email: input.customerEmail.slice(0, 64),
+        ...(doc.length === 11 || doc.length === 14
+          ? { type: doc.length === 11 ? "individual" : "company", document: doc, document_type: doc.length === 11 ? "CPF" : "CNPJ" }
+          : {}),
+        code: input.orderId.slice(0, 52),
+      },
+    },
+  };
+  const res = await fetch(`${base()}/paymentlinks`, { method: "POST", headers: headers(), body: JSON.stringify(body), signal: AbortSignal.timeout(20_000) });
+  const json = (await res.json().catch(() => null)) as { url?: string; id?: string } | null;
+  if (!res.ok || !json?.url) {
+    console.error("Pagar.me link falhou", res.status, JSON.stringify(json)?.slice(0, 400));
+    throw new Error(`pagarme_link_failed_${res.status}`);
+  }
+  return { url: json.url, linkId: json.id ?? null };
 }
 
 export type PgOrder = {

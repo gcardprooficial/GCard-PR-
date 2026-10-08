@@ -11,7 +11,7 @@ import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
-import { createPagarmeCheckout } from "@/lib/payments/pagarme.functions";
+import { createPagarmeCardCheckout, createPagarmeCheckout } from "@/lib/payments/pagarme.functions";
 import { gatewayOptions, type Gateway } from "@/lib/gateways";
 import { checkCoupon } from "@/lib/affiliates.functions";
 import { captureReferralFromUrl, clearReferral, getStoredReferral, storeReferral } from "@/lib/referral";
@@ -317,6 +317,7 @@ function Comprar() {
   const createPref = useServerFn(createCheckoutPreference);
   const createInfinitePay = useServerFn(createInfinitePayCheckout);
   const createPagarme = useServerFn(createPagarmeCheckout);
+  const createPagarmeCard = useServerFn(createPagarmeCardCheckout);
   // /comprar?pagarme=1 mostra a opção da Stone só pra teste (ela ainda não está liberada pra todo mundo).
   const testPagarme = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("pagarme");
   const gateways = gatewayOptions(testPagarme);
@@ -695,7 +696,9 @@ function Comprar() {
         const pref =
           gateway === "pagarme"
             ? await createPagarme({ data: { orderNumber: res.orderNumber } })
-            : gateway === "infinitepay"
+            : gateway === "pagarmecard"
+              ? await createPagarmeCard({ data: { orderNumber: res.orderNumber } })
+              : gateway === "infinitepay"
               ? await createInfinitePay({ data: { orderNumber: res.orderNumber } })
               : await createPref({
                   data: { orderNumber: res.orderNumber, pixDiscount: pixPromoLive && wantsPixDiscount },

@@ -17,7 +17,7 @@ export async function recordSaleEntry(orderId: string) {
   const db = await adminDb();
   const { data: order } = await db
     .from("orders")
-    .select("id, order_number, total_cents, payment_status, paid_at, payment_provider")
+    .select("id, order_number, total_cents, payment_status, paid_at, payment_provider, payment_method")
     .eq("id", orderId)
     .maybeSingle();
   if (!order || order.payment_status !== "pago") return { created: false };
@@ -51,7 +51,7 @@ export async function recordSaleEntry(orderId: string) {
 
   // Stone cobra tarifa de Pix por fora (extrato da conta), ~0,99%: lança como saída junto com a venda.
   // ponytail: taxa estimada (R$149 -> R$1,47 conferido); se a Stone mudar a tarifa, ajuste STONE_PIX_FEE_RATE.
-  if (!error && order.payment_provider === "pagarme") {
+  if (!error && order.payment_provider === "pagarme" && order.payment_method === "pix") {
     const fee = Math.floor(order.total_cents * STONE_PIX_FEE_RATE);
     if (fee > 0) {
       const { error: feeError } = await db.from("finance_entries").insert({
