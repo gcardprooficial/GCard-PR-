@@ -43,6 +43,7 @@ function gateway(x: Entry): { label: string; cls: string; manual: boolean } | nu
   if (!x.order_id) return null;
   const p = x.orders?.payment_provider;
   if (p === "mercadopago") return { label: "Mercado Pago", cls: "bg-sky-100 text-sky-800", manual: false };
+  if (p === "pagarme") return { label: "Pagar.me (Stone)", cls: "bg-green-100 text-green-800", manual: false };
   if (p === "infinitepay") return { label: "InfinitePay", cls: "bg-emerald-100 text-emerald-800", manual: false };
   return { label: "Pix direto (manual)", cls: "bg-amber-100 text-amber-900", manual: true };
 }

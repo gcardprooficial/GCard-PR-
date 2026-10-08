@@ -11,6 +11,8 @@ import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
+import { createPagarmeCheckout } from "@/lib/payments/pagarme.functions";
+import { GATEWAY_OPTIONS, type Gateway } from "@/lib/gateways";
 import { checkCoupon } from "@/lib/affiliates.functions";
 import { captureReferralFromUrl, clearReferral, getStoredReferral, storeReferral } from "@/lib/referral";
 import { unitPriceForQuantity, money, resolveUnitPrice as resolveUnitPriceShared } from "@/lib/pricing";
@@ -314,7 +316,8 @@ function Comprar() {
   const submitCart = useServerFn(createCartOrder);
   const createPref = useServerFn(createCheckoutPreference);
   const createInfinitePay = useServerFn(createInfinitePayCheckout);
-  const [gateway, setGateway] = useState<"mercadopago" | "infinitepay">("mercadopago");
+  const createPagarme = useServerFn(createPagarmeCheckout);
+  const [gateway, setGateway] = useState<Gateway>(GATEWAY_OPTIONS[0]!.key);
   const [wantsPixDiscount, setWantsPixDiscount] = useState(true);
   const pixPromoLive = pixDiscountActive();
   const runCheckCoupon = useServerFn(checkCoupon);
@@ -684,11 +687,13 @@ function Comprar() {
       // Try to create a checkout preference (only works if provider configured)
       try {
         const pref =
-          gateway === "infinitepay"
-            ? await createInfinitePay({ data: { orderNumber: res.orderNumber } })
-            : await createPref({
-                data: { orderNumber: res.orderNumber, pixDiscount: pixPromoLive && wantsPixDiscount },
-              });
+          gateway === "pagarme"
+            ? await createPagarme({ data: { orderNumber: res.orderNumber } })
+            : gateway === "infinitepay"
+              ? await createInfinitePay({ data: { orderNumber: res.orderNumber } })
+              : await createPref({
+                  data: { orderNumber: res.orderNumber, pixDiscount: pixPromoLive && wantsPixDiscount },
+                });
         if (pref?.url) {
           // Redirect the buyer to the hosted checkout
           window.location.href = pref.url;
@@ -696,7 +701,7 @@ function Comprar() {
         }
         if ((pref as { error?: string } | undefined)?.error === "too_many_attempts") {
           toast.error(
-            "Muitas tentativas seguidas. Aguarde alguns minutos ou escolha a InfinitePay (Pix/cartão) no pagamento, ou chame a gente no WhatsApp.",
+            "Muitas tentativas seguidas. Aguarde alguns minutos ou tente outro meio de pagamento, ou chame a gente no WhatsApp.",
           );
           return;
         }
@@ -2291,12 +2296,7 @@ function Comprar() {
               <fieldset className="mt-4">
                 <legend className="text-sm font-black">Como você quer pagar?</legend>
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                  {(
-                    [
-                      ["mercadopago", "Mercado Pago", "Pix, cartão e boleto"],
-                      ["infinitepay", "InfinitePay", "Pix e cartão (alternativa se o outro recusar)"],
-                    ] as const
-                  ).map(([k, t, d]) => (
+                  {GATEWAY_OPTIONS.map(({ key: k, title: t, hint: d }) => (
                     <label
                       key={k}
                       className={`flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-4 transition-colors ${

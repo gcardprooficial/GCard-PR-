@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { verifyReturnedPayment } from "@/lib/payments/reconcile.functions";
 import { createInfinitePayCheckout, verifyInfinitePayReturn } from "@/lib/payments/infinitepay.functions";
+import { verifyPagarmeReturn } from "@/lib/payments/pagarme.functions";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 
 // O Mercado Pago volta com payment_id (ou collection_id) na URL. Só usamos isso pra
@@ -14,6 +15,9 @@ const searchSchema = z.object({
   collection_id: z.coerce.string().optional().catch(undefined),
   // InfinitePay volta com order_nsu (id do pedido), transaction_nsu e slug.
   order_nsu: z.string().optional().catch(undefined),
+  // Pagar.me (Stone) volta com ?gw=pagarme&ref=<id do pedido>.
+  gw: z.string().optional().catch(undefined),
+  ref: z.string().optional().catch(undefined),
   transaction_nsu: z.string().optional().catch(undefined),
   slug: z.string().optional().catch(undefined),
 });
@@ -38,15 +42,19 @@ function PagamentoRetorno() {
   const paymentId = search.payment_id || search.collection_id;
   const verifyMp = useServerFn(verifyReturnedPayment);
   const verifyIp = useServerFn(verifyInfinitePayReturn);
+  const verifyPg = useServerFn(verifyPagarmeReturn);
+  const isPg = search.gw === "pagarme" && Boolean(search.ref);
   const createIp = useServerFn(createInfinitePayCheckout);
   const [ipBusy, setIpBusy] = useState(false);
   const isIp = Boolean(search.order_nsu && search.transaction_nsu && search.slug);
-  const [view, setView] = useState<View>(paymentId || isIp ? { kind: "loading" } : { kind: "desconhecido" });
+  const [view, setView] = useState<View>(paymentId || isIp || isPg ? { kind: "loading" } : { kind: "desconhecido" });
 
   useEffect(() => {
-    if (!paymentId && !isIp) return;
+    if (!paymentId && !isIp && !isPg) return;
     let cancelled = false;
-    const call = isIp
+    const call = isPg
+      ? verifyPg({ data: { orderId: search.ref! } })
+      : isIp
       ? verifyIp({ data: { orderId: search.order_nsu!, transactionNsu: search.transaction_nsu!, slug: search.slug! } })
       : verifyMp({ data: { paymentId: paymentId! } });
     call
@@ -62,7 +70,7 @@ function PagamentoRetorno() {
     return () => {
       cancelled = true;
     };
-  }, [paymentId, isIp, search.order_nsu, search.transaction_nsu, search.slug, verifyMp, verifyIp]);
+  }, [paymentId, isIp, isPg, search.ref, verifyPg, search.order_nsu, search.transaction_nsu, search.slug, verifyMp, verifyIp]);
 
   const content = {
     loading: {
