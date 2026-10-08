@@ -23,6 +23,7 @@ import { Route as GuiaCartaoDeVisitaPorAproximacaoRouteImport } from './routes/g
 import { Route as GuiaCartaoNfcVsCartaoDigitalRouteImport } from './routes/guia.cartao-nfc-vs-cartao-digital'
 import { Route as GuiaComoConfigurarPlacaGcardRouteImport } from './routes/guia.como-configurar-placa-gcard'
 import { Route as GuiaMelhorCartaoDigitalParaEmpresaRouteImport } from './routes/guia.melhor-cartao-digital-para-empresa'
+import { Route as PagamentoPixRouteImport } from './routes/pagamento.pix'
 import { Route as PagamentoRetornoRouteImport } from './routes/pagamento.retorno'
 import { Route as PainelIndexRouteImport } from './routes/painel.index'
 import { Route as PainelAfiliadosRouteImport } from './routes/painel.afiliados'
@@ -126,6 +127,11 @@ const GuiaMelhorCartaoDigitalParaEmpresaRoute =
     path: '/melhor-cartao-digital-para-empresa',
     getParentRoute: () => GuiaRoute,
   } as any)
+const PagamentoPixRoute = PagamentoPixRouteImport.update({
+  id: '/pagamento/pix',
+  path: '/pagamento/pix',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PagamentoRetornoRoute = PagamentoRetornoRouteImport.update({
   id: '/pagamento/retorno',
   path: '/pagamento/retorno',
@@ -281,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/como-configurar-placa-gcard': typeof GuiaComoConfigurarPlacaGcardRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
+  '/pagamento/pix': typeof PagamentoPixRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/afiliados': typeof PainelAfiliadosRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
@@ -323,6 +330,7 @@ export interface FileRoutesByTo {
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/como-configurar-placa-gcard': typeof GuiaComoConfigurarPlacaGcardRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
+  '/pagamento/pix': typeof PagamentoPixRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/afiliados': typeof PainelAfiliadosRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
@@ -368,6 +376,7 @@ export interface FileRoutesById {
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
   '/guia/como-configurar-placa-gcard': typeof GuiaComoConfigurarPlacaGcardRoute
   '/guia/melhor-cartao-digital-para-empresa': typeof GuiaMelhorCartaoDigitalParaEmpresaRoute
+  '/pagamento/pix': typeof PagamentoPixRoute
   '/pagamento/retorno': typeof PagamentoRetornoRoute
   '/painel/afiliados': typeof PainelAfiliadosRoute
   '/painel/calculadora': typeof PainelCalculadoraRoute
@@ -414,6 +423,7 @@ export interface FileRouteTypes {
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/como-configurar-placa-gcard'
     | '/guia/melhor-cartao-digital-para-empresa'
+    | '/pagamento/pix'
     | '/pagamento/retorno'
     | '/painel/afiliados'
     | '/painel/calculadora'
@@ -456,6 +466,7 @@ export interface FileRouteTypes {
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/como-configurar-placa-gcard'
     | '/guia/melhor-cartao-digital-para-empresa'
+    | '/pagamento/pix'
     | '/pagamento/retorno'
     | '/painel/afiliados'
     | '/painel/calculadora'
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/guia/cartao-nfc-vs-cartao-digital'
     | '/guia/como-configurar-placa-gcard'
     | '/guia/melhor-cartao-digital-para-empresa'
+    | '/pagamento/pix'
     | '/pagamento/retorno'
     | '/painel/afiliados'
     | '/painel/calculadora'
@@ -541,6 +553,7 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   ApiUnsubscribeRoute: typeof ApiUnsubscribeRoute
   CCodeRoute: typeof CCodeRoute
+  PagamentoPixRoute: typeof PagamentoPixRoute
   PagamentoRetornoRoute: typeof PagamentoRetornoRoute
   ParceiroTokenRoute: typeof ParceiroTokenRoute
   ProdutosSlugRoute: typeof ProdutosSlugRoute
@@ -654,6 +667,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/guia/melhor-cartao-digital-para-empresa'
       preLoaderRoute: typeof GuiaMelhorCartaoDigitalParaEmpresaRouteImport
       parentRoute: typeof GuiaRoute
+    }
+    '/pagamento/pix': {
+      id: '/pagamento/pix'
+      path: '/pagamento/pix'
+      fullPath: '/pagamento/pix'
+      preLoaderRoute: typeof PagamentoPixRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/pagamento/retorno': {
       id: '/pagamento/retorno'
@@ -924,6 +944,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   ApiUnsubscribeRoute: ApiUnsubscribeRoute,
   CCodeRoute: CCodeRoute,
+  PagamentoPixRoute: PagamentoPixRoute,
   PagamentoRetornoRoute: PagamentoRetornoRoute,
   ParceiroTokenRoute: ParceiroTokenRoute,
   ProdutosSlugRoute: ProdutosSlugRoute,

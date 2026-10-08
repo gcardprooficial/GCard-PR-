@@ -2,8 +2,6 @@ import type { PaymentResult } from "./provider";
 
 export const PAGARME = "pagarme";
 
-// ponytail: à vista + Pix. Parcelar encarece a taxa (2x 7,26% · 3x 9,40%) -- ajuste aqui se quiser oferecer.
-const INSTALLMENTS_MAX = 1;
 const PIX_EXPIRES_SECONDS = 30 * 60;
 
 function key() {
@@ -27,64 +25,57 @@ export function pagarmeConfigured() {
 const isUuid = (x: unknown): x is string =>
   typeof x === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 
-/** Cria o link de pagamento (Pix + cartão à vista). order_code = id do pedido. Devolve a URL do checkout hospedado. */
-export async function createPagarmeLink(input: {
+/** Cria pedido Pix (QR + copia-e-cola no nosso site). code = id do pedido. A conta não libera checkout hospedado/link, mas libera Pix por API. */
+export async function createPagarmePix(input: {
   orderId: string;
   orderNumber: number;
   totalCents: number;
   customerName: string;
   customerEmail: string;
   customerDocument: string | null;
-  origin: string;
-}): Promise<{ url: string; linkId: string | null }> {
+  customerPhone: string | null;
+}): Promise<PgOrder> {
   if (!key()) throw new Error("pagarme_not_configured");
   const doc = (input.customerDocument ?? "").replace(/\D/g, "");
+  let phone = (input.customerPhone ?? "").replace(/\D/g, "");
+  if (phone.startsWith("55") && phone.length > 11) phone = phone.slice(2);
   const body = {
-    type: "order",
-    name: `Pedido GCard-PRO #${input.orderNumber}`.slice(0, 64),
-    order_code: input.orderId,
-    max_paid_sessions: 1,
-    flow_settings: { success_url: `${input.origin}/pagamento/retorno?gw=pagarme&ref=${input.orderId}` },
-    payment_settings: {
-      accepted_payment_methods: ["credit_card", "pix"],
-      statement_descriptor: "GCARDPRO",
-      credit_card_settings: {
-        operation_type: "auth_and_capture",
-        installments: Array.from({ length: INSTALLMENTS_MAX }, (_, i) => ({ number: i + 1, total: input.totalCents })),
-      },
-      pix_settings: { expires_in: PIX_EXPIRES_SECONDS },
+    code: input.orderId,
+    items: [{ amount: input.totalCents, description: `Pedido GCard-PRO #${input.orderNumber}`.slice(0, 256), quantity: 1, code: String(input.orderNumber) }],
+    customer: {
+      name: input.customerName,
+      email: input.customerEmail.slice(0, 64),
+      code: input.orderId.slice(0, 52),
+      ...(doc.length === 11 || doc.length === 14
+        ? { type: doc.length === 11 ? "individual" : "company", document: doc, document_type: doc.length === 11 ? "CPF" : "CNPJ" }
+        : {}),
+      ...(phone.length >= 10 ? { phones: { mobile_phone: { country_code: "55", area_code: phone.slice(0, 2), number: phone.slice(2) } } } : {}),
     },
-    cart_settings: {
-      items: [{ name: `Pedido GCard-PRO #${input.orderNumber}`.slice(0, 64), amount: input.totalCents, default_quantity: 1 }],
-    },
-    customer_settings: {
-      customer: {
-        name: input.customerName,
-        email: input.customerEmail.slice(0, 64),
-        ...(doc.length === 11 || doc.length === 14
-          ? { type: doc.length === 11 ? "individual" : "company", document: doc, document_type: doc.length === 11 ? "CPF" : "CNPJ" }
-          : {}),
-        code: input.orderId.slice(0, 52),
-      },
-    },
+    payments: [{ payment_method: "pix", pix: { expires_in: PIX_EXPIRES_SECONDS } }],
   };
-  const res = await fetch(`${base()}/paymentlinks`, { method: "POST", headers: headers(), body: JSON.stringify(body), signal: AbortSignal.timeout(20_000) });
-  const json = (await res.json().catch(() => null)) as { url?: string; id?: string } | null;
-  if (!res.ok || !json?.url) {
-    console.error("Pagar.me link falhou", res.status, JSON.stringify(json)?.slice(0, 400));
-    throw new Error(`pagarme_link_failed_${res.status}`);
+  const res = await fetch(`${base()}/orders`, { method: "POST", headers: headers(), body: JSON.stringify(body), signal: AbortSignal.timeout(20_000) });
+  const json = (await res.json().catch(() => null)) as PgOrder | null;
+  if (!res.ok || !json?.id) {
+    console.error("Pagar.me pix falhou", res.status, JSON.stringify(json)?.slice(0, 400));
+    throw new Error(`pagarme_pix_failed_${res.status}`);
   }
-  return { url: json.url, linkId: json.id ?? null };
+  return json;
 }
 
-type PgOrder = {
+export type PgOrder = {
   id?: string;
   code?: string | null;
   status?: string;
   amount?: number;
   metadata?: Record<string, unknown> | null;
   customer?: { code?: string | null } | null;
-  charges?: { status?: string; amount?: number; payment_method?: string; metadata?: Record<string, unknown> | null }[];
+  charges?: {
+    status?: string;
+    amount?: number;
+    payment_method?: string;
+    metadata?: Record<string, unknown> | null;
+    last_transaction?: { qr_code?: string; qr_code_url?: string; expires_at?: string } | null;
+  }[];
 };
 
 export async function fetchPagarmeOrder(pagarmeOrderId: string): Promise<PgOrder | null> {

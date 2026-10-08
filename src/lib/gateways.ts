@@ -5,10 +5,10 @@ export type Gateway = "pagarme" | "infinitepay" | "mercadopago";
 export const SHOW_MERCADOPAGO = false;
 // Stone/Pagar.me ainda não ativou o checkout na conta ("Checkout is disabled"). Quando ativar, mude para true.
 // Enquanto isso dá pra testar abrindo /comprar?pagarme=1 (a opção aparece só pra quem usa esse endereço).
-export const SHOW_PAGARME = false;
+export const SHOW_PAGARME = true;
 
 const ALL: { key: Gateway; title: string; hint: string }[] = [
-  { key: "pagarme", title: "Pix ou cartão", hint: "Pagamento seguro pela Stone (Pagar.me)" },
+  { key: "pagarme", title: "Pix", hint: "QR Code e copia-e-cola, confirma na hora" },
   { key: "infinitepay", title: "InfinitePay", hint: "Pix e cartão" },
   { key: "mercadopago", title: "Mercado Pago", hint: "Pix, cartão e boleto" },
 ];

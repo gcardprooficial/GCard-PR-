@@ -3,39 +3,69 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { rateLimit, clientKey } from "@/lib/rateLimit";
 
-/** Gera o link de pagamento da Pagar.me (Stone): Pix + cartão. */
+/** Marca o pedido como Pagar.me e devolve a página do Pix (o QR é gerado/recuperado lá). */
 export const createPagarmeCheckout = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ orderNumber: z.number().int().positive() }).parse(input))
   .handler(async ({ data }) => {
     if (!rateLimit(`pg-link:${clientKey(getRequest())}`, 15, 60_000)) return { ok: false as const, error: "too_many_attempts" };
-    const { createPagarmeLink, pagarmeConfigured, PAGARME } = await import("./pagarme.server");
+    const { pagarmeConfigured, PAGARME } = await import("./pagarme.server");
+    if (!pagarmeConfigured()) return { ok: false as const, error: "payment_provider_not_configured" };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order } = await supabaseAdmin.from("orders").select("id, payment_status").eq("order_number", data.orderNumber).maybeSingle();
+    if (!order) return { ok: false as const, error: "order_not_found" };
+    if (order.payment_status === "pago") return { ok: false as const, error: "already_paid" };
+    await supabaseAdmin
+      .from("orders")
+      .update({ payment_provider: PAGARME, external_reference: order.id } as never)
+      .eq("id", order.id)
+      .eq("payment_status", "pendente");
+    return { ok: true as const, url: `/pagamento/pix?ref=${order.id}` };
+  });
+
+/** Pix do pedido: reaproveita o QR pendente (ainda válido) ou cria um novo. */
+export const getPagarmePix = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    if (!rateLimit(`pg-pix:${clientKey(getRequest())}`, 20, 60_000)) return { ok: false as const, error: "too_many_attempts" };
+    const { createPagarmePix, findPagarmeOrdersByCode, pagarmeConfigured } = await import("./pagarme.server");
     if (!pagarmeConfigured()) return { ok: false as const, error: "payment_provider_not_configured" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order } = await supabaseAdmin
       .from("orders")
-      .select("id, order_number, total_cents, payment_status, customer_email, customer_name, customer_document")
-      .eq("order_number", data.orderNumber)
+      .select("id, order_number, total_cents, payment_status, customer_email, customer_name, customer_document, customer_phone")
+      .eq("id", data.orderId)
       .maybeSingle();
     if (!order) return { ok: false as const, error: "order_not_found" };
     if (order.payment_status === "pago") return { ok: false as const, error: "already_paid" };
     try {
-      const { url } = await createPagarmeLink({
-        orderId: order.id,
-        orderNumber: order.order_number,
-        totalCents: order.total_cents,
-        customerName: order.customer_name,
-        customerEmail: order.customer_email,
-        customerDocument: order.customer_document ?? null,
-        origin: process.env["PUBLIC_APP_URL"] ?? "https://gcardpro.com.br",
+      const now = Date.now();
+      const live = (await findPagarmeOrdersByCode(order.id)).find((o) => {
+        const t = o.charges?.[0]?.last_transaction;
+        return o.status === "pending" && t?.qr_code && (!t.expires_at || new Date(t.expires_at).getTime() > now + 60_000);
       });
-      await supabaseAdmin
-        .from("orders")
-        .update({ payment_provider: PAGARME, external_reference: order.id } as never)
-        .eq("id", order.id)
-        .eq("payment_status", "pendente");
-      return { ok: true as const, url };
+      const pg =
+        live ??
+        (await createPagarmePix({
+          orderId: order.id,
+          orderNumber: order.order_number,
+          totalCents: order.total_cents,
+          customerName: order.customer_name,
+          customerEmail: order.customer_email,
+          customerDocument: order.customer_document ?? null,
+          customerPhone: order.customer_phone ?? null,
+        }));
+      const t = pg.charges?.[0]?.last_transaction;
+      if (!t?.qr_code) return { ok: false as const, error: "provider_error" };
+      return {
+        ok: true as const,
+        orderNumber: order.order_number as number,
+        totalCents: order.total_cents as number,
+        qrCode: t.qr_code,
+        qrUrl: t.qr_code_url ?? null,
+        expiresAt: t.expires_at ?? null,
+      };
     } catch (error) {
-      console.error("createPagarmeCheckout falhou", { orderId: order.id, error });
+      console.error("getPagarmePix falhou", { orderId: order.id, error });
       return { ok: false as const, error: "provider_error" };
     }
   });
