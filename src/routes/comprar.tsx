@@ -441,9 +441,9 @@ function Comprar() {
   // Acrílico puro pula negócio/Google (não tem link pra gravar) e ganha a etapa
   // de cor no lugar.
   const isBlank = product?.is_blank ?? false;
-  // Acrílico sem arte não tem QR/NFC -- não precisa assistir tutorial de configuração.
-  // Quem já comprou (pago) antes também não precisa ver de novo.
-  const skipVideos = isReturningCustomer === true;
+  // Tutorial de QR/NFC só nas placas com arte do Google (10x10/10x15, has_qr). Acrílico liso
+  // e cartão só NFC não têm QR pra configurar. Quem já comprou (pago) antes também pula.
+  const skipVideos = isReturningCustomer === true || !product?.has_qr;
   const steps = isBlank
     ? isResale
       ? (["estilo", "cor", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
