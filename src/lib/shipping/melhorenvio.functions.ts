@@ -162,3 +162,31 @@ export const getFreightForState = createServerFn({ method: "POST" })
     };
     return { uf: data.uf, acrilico: await one("acrilico"), pvc: await one("pvc") };
   });
+
+/** Mesma comparação na SuperFrete: preço mais barato (qualquer serviço) de 1 kit de placa e de 1 de cartão. Só consulta. */
+export const getSuperFreteForState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ uf: z.string().length(2) }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeam(context.userId);
+    const cep = UF_CEPS[data.uf];
+    if (!cep) throw new Error("UF inválida.");
+    const { calculateSuperFrete, superFreteConfigured } = await import("./superfrete.server");
+    type SfCell = { cents: number | null; service: string | null } | { error: string };
+    if (!superFreteConfigured()) {
+      const error = "falta SUPERFRETE_TOKEN";
+      return { uf: data.uf, acrilico: { error } as SfCell, pvc: { error } as SfCell };
+    }
+    // Mesmas medidas de 1 kit usadas no Melhor Envio (e o mínimo de 16x11x2 cm dos Correios).
+    const profiles = {
+      acrilico: { heightCm: 4, widthCm: 11, lengthCm: 16, weightKg: 0.5 },
+      pvc: { heightCm: 2, widthCm: 11, lengthCm: 16, weightKg: 0.3 },
+    };
+    const one = async (p: keyof typeof profiles): Promise<SfCell> => {
+      const r = await calculateSuperFrete({ destinationCep: cep, ...profiles[p] });
+      if (!r.ok) return { error: r.error.slice(0, 140) };
+      const q = r.quotes[0];
+      return { cents: q?.priceCents ?? null, service: q?.name ?? null };
+    };
+    return { uf: data.uf, acrilico: await one("acrilico"), pvc: await one("pvc") };
+  });
