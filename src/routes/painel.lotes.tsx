@@ -7,6 +7,30 @@ import { money } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ROLO, roloMaxPlates, buildRoloPdf, type RoloKey } from "@/lib/plate/rolo-pdf";
+
+/** Mesmo QR do .zip e do PDF de rolo: short_code pequeno no centro (erro nível H aguenta ~30% coberto). */
+async function renderPlateQrCanvas(p: { token: string; short_code: string }, width: number) {
+  const QRCode = await import("qrcode");
+  const canvas = document.createElement("canvas");
+  await QRCode.toCanvas(canvas, `${location.origin}/r/${p.token}`, { width, margin: 2, errorCorrectionLevel: "H" });
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const size = canvas.width;
+    const fontSize = Math.round(size * 0.032); // pequeno, quase imperceptível
+    ctx.font = `${fontSize}px monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const textWidth = ctx.measureText(p.short_code).width;
+    const padX = fontSize * 0.5;
+    const padY = fontSize * 0.25;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(size / 2 - textWidth / 2 - padX, size / 2 - fontSize / 2 - padY, textWidth + padX * 2, fontSize + padY * 2);
+    ctx.fillStyle = "#000000";
+    ctx.fillText(p.short_code, size / 2, size / 2 + 1);
+  }
+  return canvas;
+}
 
 export const Route = createFileRoute("/painel/lotes")({ component: Lotes });
 
@@ -70,6 +94,55 @@ function Lotes() {
   const [groupNameDraft, setGroupNameDraft] = useState("");
   const [renameDraft, setRenameDraft] = useState("");
   const [groupBusy, setGroupBusy] = useState(false);
+  const [roloKey, setRoloKey] = useState<RoloKey>("10x10");
+  const [roloQty, setRoloQty] = useState(81);
+  const [roloBusy, setRoloBusy] = useState(false);
+
+  /** Monta no navegador o PDF de rolo (arte + QR de cada placa do grupo) e baixa. */
+  async function downloadRoloPdf(productId: string, group: string) {
+    const spec = ROLO[roloKey];
+    const qty = Math.floor(roloQty);
+    if (!(qty >= 1) || qty > roloMaxPlates(spec)) {
+      toast.error(`Quantidade entre 1 e ${roloMaxPlates(spec)}.`);
+      return;
+    }
+    setRoloBusy(true);
+    try {
+      const { data, error } = await supabase
+        .from("plates")
+        .select("token, short_code")
+        .is("batch_id", null)
+        .eq("product_id", productId)
+        .eq("print_group", group)
+        .order("short_code", { ascending: true })
+        .limit(qty);
+      if (error || !data || data.length === 0) throw new Error("sem placas no grupo");
+      if (data.length < qty) toast.info(`O grupo só tem ${data.length} placas; gerando ${data.length}.`);
+      toast.info(`Gerando PDF com ${data.length} artes...`);
+      const cellRes = await fetch(spec.cellPdf);
+      if (!cellRes.ok) throw new Error("arte base não encontrada");
+      const cell = new Uint8Array(await cellRes.arrayBuffer());
+      const pngs: Uint8Array[] = [];
+      for (const p of data) {
+        const canvas = await renderPlateQrCanvas(p, 630);
+        const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/png"));
+        if (!blob) throw new Error("falha ao gerar QR");
+        pngs.push(new Uint8Array(await blob.arrayBuffer()));
+      }
+      const pdf = await buildRoloPdf(spec, cell, pngs);
+      const url = URL.createObjectURL(new Blob([pdf as BlobPart], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `ARTE ${roloKey.toUpperCase()} ROLO - ${group} (${data.length}).pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF de impressão gerado.");
+    } catch (e) {
+      toast.error(`Não foi possível gerar o PDF: ${e instanceof Error ? e.message : "erro"}`);
+    } finally {
+      setRoloBusy(false);
+    }
+  }
 
   async function loadStockPlates(productId: string) {
     setStockPlatesLoading(true);
@@ -413,32 +486,10 @@ function Lotes() {
    */
   async function downloadQrZip(plates: { token: string; short_code: string }[], filename: string) {
     toast.info(`Gerando ${plates.length} QR codes...`);
-    const [{ default: JSZip }, QRCode] = await Promise.all([import("jszip"), import("qrcode")]);
+    const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
     for (const p of plates) {
-      const url = `${location.origin}/r/${p.token}`;
-      const canvas = document.createElement("canvas");
-      await QRCode.toCanvas(canvas, url, { width: 1000, margin: 2, errorCorrectionLevel: "H" });
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        const size = canvas.width;
-        const fontSize = Math.round(size * 0.032); // pequeno, quase imperceptível
-        ctx.font = `${fontSize}px monospace`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        const textWidth = ctx.measureText(p.short_code).width;
-        const padX = fontSize * 0.5;
-        const padY = fontSize * 0.25;
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(
-          size / 2 - textWidth / 2 - padX,
-          size / 2 - fontSize / 2 - padY,
-          textWidth + padX * 2,
-          fontSize + padY * 2,
-        );
-        ctx.fillStyle = "#000000";
-        ctx.fillText(p.short_code, size / 2, size / 2 + 1);
-      }
+      const canvas = await renderPlateQrCanvas(p, 1000);
       const pngBlob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
       if (pngBlob) zip.file(`${p.short_code}.png`, pngBlob);
     }
@@ -663,6 +714,45 @@ function Lotes() {
                       className="h-8 text-xs"
                     >
                       Renomear grupo
+                    </Button>
+                  </div>
+                )}
+
+                {groupFilter !== "all" && groupFilter !== "none" && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-border px-3 py-2">
+                    <Label className="text-xs">PDF de impressão</Label>
+                    <select
+                      value={roloKey}
+                      onChange={(e) => {
+                        const k = e.target.value as RoloKey;
+                        setRoloKey(k);
+                        setRoloQty(ROLO[k].cols * ROLO[k].fullRows);
+                      }}
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                    >
+                      {(Object.keys(ROLO) as RoloKey[]).map((k) => (
+                        <option key={k} value={k}>
+                          {ROLO[k].label}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={roloMaxPlates(ROLO[roloKey])}
+                      value={roloQty}
+                      onChange={(e) => setRoloQty(Number(e.target.value))}
+                      className="h-8 w-24 text-xs"
+                    />
+                    <span className="text-xs text-muted-foreground">artes</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={roloBusy}
+                      onClick={() => void downloadRoloPdf(expandedStock!, groupFilter)}
+                      className="h-8 text-xs"
+                    >
+                      {roloBusy ? "Gerando..." : "Gerar PDF de impressão"}
                     </Button>
                   </div>
                 )}
