@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { verifyReturnedPayment } from "@/lib/payments/reconcile.functions";
 import { createInfinitePayCheckout, verifyInfinitePayReturn } from "@/lib/payments/infinitepay.functions";
 import { verifyPagarmeReturn } from "@/lib/payments/pagarme.functions";
+import { ProductionNotice } from "@/components/ProductionNotice";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 
 // O Mercado Pago volta com payment_id (ou collection_id) na URL. Só usamos isso pra
@@ -112,6 +113,7 @@ function PagamentoRetorno() {
         <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
           {content.body}
         </p>
+        {view.kind === "pago" || view.kind === "pendente" ? <ProductionNotice className="mt-5" /> : null}
 
         {view.kind === "falhou" && orderNumber ? (
           <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-left">

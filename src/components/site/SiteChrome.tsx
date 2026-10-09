@@ -8,6 +8,7 @@ import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
 import logoMarca from "@/assets/logo/header-marca.png";
 import logoIcone from "@/assets/logo/header-icone.png";
+import { BUSINESS_HOURS } from "@/lib/business-hours";
 
 function useCountdown(deadline: string) {
   const [msLeft, setMsLeft] = useState(() => new Date(deadline).getTime() - Date.now());
@@ -214,7 +215,8 @@ export function SiteFooter() {
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/65">
               Fornecedor de cartões NFC e placas QR Code/NFC que levam seus clientes direto à avaliação do Google.
             </p>
-            <p className="mt-4 text-xs text-white/45">© {new Date().getFullYear()} GCard-PRÓ</p>
+            <p className="mt-4 text-xs font-semibold text-white/70">Atendimento e produção: {BUSINESS_HOURS}. Fechado aos sábados, domingos e feriados.</p>
+            <p className="mt-2 text-xs text-white/45">© {new Date().getFullYear()} GCard-PRÓ</p>
             <p className="mt-1 max-w-xs text-xs leading-relaxed text-white/45">
               {COMPANY.legalName} · CNPJ {COMPANY.cnpj}
               <br />

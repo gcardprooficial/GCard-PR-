@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { getPagarmePix, verifyPagarmeReturn } from "@/lib/payments/pagarme.functions";
+import { ProductionNotice } from "@/components/ProductionNotice";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 
 export const Route = createFileRoute("/pagamento/pix")({
@@ -94,6 +95,7 @@ function PagamentoPix() {
           <p className="mt-6 text-sm text-muted-foreground">
             Assim que o pagamento cair, esta tela confirma sozinha. O código vale por 30 minutos.
           </p>
+          <ProductionNotice className="mt-6" />
         </>
       )}
     </main>

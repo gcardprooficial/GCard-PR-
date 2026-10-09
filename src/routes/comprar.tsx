@@ -11,6 +11,7 @@ import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
+import { ProductionNotice } from "@/components/ProductionNotice";
 import { createPagarmeCardCheckout, createPagarmeCheckout } from "@/lib/payments/pagarme.functions";
 import { gatewayOptions, type Gateway } from "@/lib/gateways";
 import { checkCoupon } from "@/lib/affiliates.functions";
@@ -2068,6 +2069,7 @@ function Comprar() {
                   Frete grátis para todo o Brasil. Produção + envio é de 5 a 10 dias úteis.
                 </p>
               </div>
+              <ProductionNotice className="mt-3" />
             </div>
           )}
 
@@ -2305,6 +2307,8 @@ function Comprar() {
                   Tem cupom de desconto?
                 </button>
               )}
+
+              <ProductionNotice className="mt-4" />
 
               <fieldset className="mt-4">
                 <legend className="text-sm font-black">Como você quer pagar?</legend>

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY_ADDRESS, COMPANY_ID_LINE, GOOGLE_REVIEW_URL } from "@/lib/company";
 import { carrierLabel, trackingUrl } from "@/lib/shipping";
+import { BUSINESS_HOURS } from "@/lib/business-hours";
 
 export type OrderEmailEvent =
   | "pedido_recebido"
@@ -31,6 +32,11 @@ const TITLES: Record<OrderEmailEvent, string> = {
   pedido_enviado: "Pedido enviado",
   pedido_entregue: "Pedido entregue",
 };
+
+const PRODUCTION_NOTE_HTML =
+  `<p style="margin:16px 0;padding:12px 14px;border:2px solid #F59E0B;border-radius:12px;background:#FFFBEB;color:#78350F;font-size:14px;">` +
+  `<strong>Horário de produção: ${BUSINESS_HOURS}.</strong> Não produzimos nem enviamos aos sábados, domingos e feriados. ` +
+  `Pedido pago no fim de semana entra na fila na segunda-feira, e o código de rastreio só chega depois do despacho, em dia útil.</p>`;
 
 function siteUrl() {
   return (process.env["PUBLIC_APP_URL"] ?? "https://www.gcardpro.com.br").replace(/\/$/, "");
@@ -294,7 +300,8 @@ export async function dispatchOrderEmailEvent(
         body +=
           `<p>Recebemos o seu pedido. Aqui está o resumo:</p>${summary}` +
           `<p>Assim que o pagamento for confirmado, avisamos por aqui com os próximos passos. ` +
-          `Se a tela de pagamento não abriu pra você, é só responder este e-mail ou chamar no WhatsApp que a gente resolve.</p>`;
+          `Se a tela de pagamento não abriu pra você, é só responder este e-mail ou chamar no WhatsApp que a gente resolve.</p>` +
+          PRODUCTION_NOTE_HTML;
         break;
 
       case "pagamento_pendente":
@@ -307,7 +314,7 @@ export async function dispatchOrderEmailEvent(
         break;
 
       case "pagamento_confirmado":
-        body += `<p>Recebemos o pagamento do seu pedido. Obrigado!</p>${summary}`;
+        body += `<p>Recebemos o pagamento do seu pedido. Obrigado!</p>${summary}${PRODUCTION_NOTE_HTML}`;
         if (isBlank) {
           body +=
             `<p>Seu pedido é de <strong>acrílico puro</strong>, sem impressão, QR Code ou NFC: é o material cortado pra você aplicar a sua própria arte. ` +

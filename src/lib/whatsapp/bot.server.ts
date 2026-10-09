@@ -344,7 +344,8 @@ O QUE É: cartões e placas de acrílico com NFC e QR Code que levam o cliente d
 SEM MENSALIDADE: paga uma vez e usa pra sempre. Nenhum custo recorrente.
 FRETE: grátis para todo o Brasil, pelos Correios (PAC ou Sedex conforme o prazo disponível).
 PRAZO: produção + envio de 5 a 10 dias úteis. O código de rastreio vai por e-mail quando o pedido é despachado.
-PAGAMENTO: Mercado Pago (cartão ou Pix) no site. Compra em https://www.gcardpro.com.br/comprar
+HORÁRIO: produção e despacho de segunda a sexta, das 9h às 17h. Não trabalhamos aos sábados, domingos e feriados; pedido pago no fim de semana entra na fila na segunda-feira e o rastreio só sai depois do despacho, em dia útil.
+PAGAMENTO: Pix (Stone) ou cartão (Stone ou InfinitePay) no site. Compra em https://www.gcardpro.com.br/comprar
 COMPATIBILIDADE NFC: iPhone XS ou mais novo e a maioria dos Androids com NFC. O QR Code funciona em qualquer celular com câmera.
 CONFIGURAR (uso no próprio negócio): o cliente informa o negócio na compra e a GCard grava o link antes de enviar; chega pronto.
 CONFIGURAR (revenda/troca de link): escanear o QR da placa mostra o código dela (ex.: GCARD-00061); entrar em https://www.gcardpro.com.br/ativar com o e-mail da compra; achar a placa pelo código; colar o link de avaliação do Google do cliente.
