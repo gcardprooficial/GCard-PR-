@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { money } from "@/lib/pricing";
-import { ReviewLinkGenerator } from "@/components/ReviewLinkGenerator";
 import { COMPANY } from "@/lib/company";
 import { Testimonials } from "@/components/Testimonials";
 import { PromoBar, SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
@@ -497,7 +496,16 @@ function Home() {
         </div>
       </section>
 
-      <ReviewLinkGenerator />
+      <section id="gerar-link" className="mx-auto max-w-4xl scroll-mt-20 px-5 py-14 text-center md:py-16">
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Ferramenta grátis</p>
+        <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">Gerar link de avaliação do Google</h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
+          Ache o seu negócio no Google e pegue o link de avaliação. É grátis: basta entrar ou criar a sua conta.
+        </p>
+        <Button asChild size="lg" className="mt-6 rounded-2xl font-bold">
+          <Link to="/gerador">Gerar meu link grátis</Link>
+        </Button>
+      </section>
 
       <Testimonials />
 

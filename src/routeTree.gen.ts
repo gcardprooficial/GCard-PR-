@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtivarRouteImport } from './routes/ativar'
 import { Route as ComprarRouteImport } from './routes/comprar'
+import { Route as GeradorRouteImport } from './routes/gerador'
 import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
@@ -66,6 +67,11 @@ const AtivarRoute = AtivarRouteImport.update({
 const ComprarRoute = ComprarRouteImport.update({
   id: '/comprar',
   path: '/comprar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeradorRoute = GeradorRouteImport.update({
+  id: '/gerador',
+  path: '/gerador',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuiaRoute = GuiaRouteImport.update({
@@ -277,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/gerador': typeof GeradorRoute
   '/guia': typeof GuiaRouteWithChildren
   '/painel': typeof PainelRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
@@ -322,6 +329,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/gerador': typeof GeradorRoute
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
@@ -366,6 +374,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/gerador': typeof GeradorRoute
   '/guia': typeof GuiaRouteWithChildren
   '/painel': typeof PainelRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
@@ -413,6 +422,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
+    | '/gerador'
     | '/guia'
     | '/painel'
     | '/privacidade'
@@ -458,6 +468,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
+    | '/gerador'
     | '/privacidade'
     | '/termos'
     | '/api/unsubscribe'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
+    | '/gerador'
     | '/guia'
     | '/painel'
     | '/privacidade'
@@ -547,6 +559,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AtivarRoute: typeof AtivarRoute
   ComprarRoute: typeof ComprarRoute
+  GeradorRoute: typeof GeradorRoute
   GuiaRoute: typeof GuiaRouteWithChildren
   PainelRoute: typeof PainelRouteWithChildren
   PrivacidadeRoute: typeof PrivacidadeRoute
@@ -589,6 +602,13 @@ declare module '@tanstack/react-router' {
       path: '/comprar'
       fullPath: '/comprar'
       preLoaderRoute: typeof ComprarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gerador': {
+      id: '/gerador'
+      path: '/gerador'
+      fullPath: '/gerador'
+      preLoaderRoute: typeof GeradorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guia': {
@@ -938,6 +958,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtivarRoute: AtivarRoute,
   ComprarRoute: ComprarRoute,
+  GeradorRoute: GeradorRoute,
   GuiaRoute: GuiaRouteWithChildren,
   PainelRoute: PainelRouteWithChildren,
   PrivacidadeRoute: PrivacidadeRoute,

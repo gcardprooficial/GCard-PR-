@@ -110,6 +110,12 @@
   0%   { background-position: -400px 0; }
   100% { background-position: 400px 0; }
 }
+@keyframes blink-notice {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.25; }
+}
+.blink-notice { animation: blink-notice 1.1s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .blink-notice { animation: none; } }
 @keyframes bounce-subtle {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-6px); }

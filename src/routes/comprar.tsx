@@ -12,6 +12,8 @@ import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.function
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
 import { ProductionNotice } from "@/components/ProductionNotice";
+import { nonBusinessDayNotice } from "@/lib/business-hours";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { createPagarmeCardCheckout, createPagarmeCheckout } from "@/lib/payments/pagarme.functions";
 import { gatewayOptions, type Gateway } from "@/lib/gateways";
 import { checkCoupon } from "@/lib/affiliates.functions";
@@ -669,6 +671,14 @@ function Comprar() {
     }
   }
 
+  // Sábado, domingo ou feriado (Brasília): avisa antes de fechar o pedido que a produção é no próximo dia útil.
+  const [productionNotice, setProductionNotice] = useState<{ nextBusinessDay: string } | null>(null);
+  function askToFinish() {
+    const notice = nonBusinessDayNotice();
+    if (notice) setProductionNotice(notice);
+    else void finish();
+  }
+
   async function finish() {
     if (!plan || effectiveLines.length === 0) return;
     setSaving(true);
@@ -1043,6 +1053,30 @@ function Comprar() {
         aria-hidden
         className="pointer-events-none absolute -top-24 -left-24 size-[480px] rounded-full bg-primary/12 blur-3xl"
       />
+
+      <AlertDialog open={productionNotice !== null} onOpenChange={(o) => !o && setProductionNotice(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Seu pedido será produzido no próximo dia útil</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hoje não é dia útil (sábado, domingo ou feriado) e não produzimos nem enviamos. Compras feitas agora serão
+              produzidas na <strong>{productionNotice?.nextBusinessDay}</strong>, e o código de rastreio só chega depois do
+              despacho, em dia útil.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setProductionNotice(null);
+                void finish();
+              }}
+            >
+              Entendi, quero finalizar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <SiteHeader />
       <div className="mx-auto max-w-4xl px-5 pt-4">
@@ -2386,7 +2420,7 @@ function Comprar() {
             {step === "revisao" ? (
               <Button
                 size="lg"
-                onClick={() => void finish()}
+                onClick={askToFinish}
                 disabled={saving || isTransitioning}
                 className="btn-press btn-primary-shadow shine-border h-14 rounded-2xl px-7 text-base font-black"
               >

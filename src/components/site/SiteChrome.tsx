@@ -48,12 +48,23 @@ export function PromoBar() {
   );
 }
 
+/** Aviso fixo de prazo, piscando, no topo do site. */
+export function NoticeBar() {
+  return (
+    <div role="alert" className="bg-amber-400 text-amber-950">
+      <p className="blink-notice mx-auto max-w-7xl px-3 py-1.5 text-center text-[11px] font-extrabold leading-snug sm:text-sm">
+        ⚠️ Atenção aos prazos: Compras realizadas aos sábados, domingos ou feriados serão produzidas no dia útil seguinte.
+      </p>
+    </div>
+  );
+}
+
 const NAV = [
   { label: "Início", to: "/", hash: undefined },
   { label: "Produtos", to: "/produtos", hash: undefined },
   { label: "Seja um revendedor", to: "/", hash: "revendedor" },
   { label: "Como funciona", to: "/", hash: "como-funciona" },
-  { label: "Gerar link grátis", to: "/", hash: "gerar-link" },
+  { label: "Gerar link grátis", to: "/gerador", hash: undefined },
   { label: "Para o seu negócio", to: "/", hash: "seu-negocio" },
   { label: "Dúvidas", to: "/", hash: "duvidas" },
   { label: "Contato", to: "/", hash: "contato" },
@@ -77,6 +88,7 @@ export function SiteHeader() {
   const logged = useLoggedEmail();
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-foreground text-white">
+      <NoticeBar />
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4 sm:gap-4 sm:px-5">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="GCard-PRÓ — início">
           <img src={logoIcone} alt="" className="h-9 w-auto sm:h-10" draggable={false} />
@@ -244,7 +256,7 @@ export function SiteFooter() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/" hash="gerar-link" className={footerLink}>
+                  <Link to="/gerador" className={footerLink}>
                     Gerar link de avaliação grátis
                   </Link>
                 </li>
