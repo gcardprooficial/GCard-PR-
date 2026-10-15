@@ -7,7 +7,7 @@ import { money } from "@/lib/pricing";
 import {
   reconcileOrdersNow,
   saveOrderTracking,
-  sendOrderEmail,
+  confirmOrderPayment, sendOrderEmail,
   sendPaymentLinkEmail,
 } from "@/lib/panel.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
@@ -387,6 +387,7 @@ function Orders() {
   const search = Route.useSearch();
   const runSaveTracking = useServerFn(saveOrderTracking);
   const runSendOrderEmail = useServerFn(sendOrderEmail);
+  const runConfirmPayment = useServerFn(confirmOrderPayment);
   const runSendPaymentLinkEmail = useServerFn(sendPaymentLinkEmail);
   const runCreatePreference = useServerFn(createCheckoutPreference);
   const runReconcile = useServerFn(reconcileOrdersNow);
@@ -703,6 +704,17 @@ function Orders() {
     if (error) {
       toast.error("Não foi possível salvar.");
       return;
+    }
+    if (manualPaid) {
+      // Pago à mão tem que fazer o mesmo que o pagamento pelo gateway: lançar no Financeiro e emitir os códigos
+      // (QR do acrílico liso, placas da loja própria). Idempotente: repetir não duplica.
+      try {
+        const emitted = await runConfirmPayment({ data: { orderId: row.id } });
+        if (emitted.created > 0) toast.success(`${emitted.created} código(s) criado(s) para o cliente.`);
+      } catch (emitError) {
+        console.error("Falha ao emitir códigos do pedido", emitError);
+        toast.error("Pedido salvo como pago, mas não consegui emitir os códigos. Tente de novo.");
+      }
     }
     if (changes.payment_status === "pago" && row.payment_status !== "pago") {
       try {
