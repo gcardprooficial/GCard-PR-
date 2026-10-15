@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { money, resolveUnitPrice, type PriceTier } from "@/lib/pricing";
 import { pixDiscountActive, PIX_DISCOUNT_PCT } from "@/lib/promo";
-import { sendAudio, sendImage, sendText } from "./transport.server";
+import { outboundEnabled, sendAudio, sendImage, sendText } from "./transport.server";
 
 export type Conv = { id: string; wa_id: string; name: string | null; status: string };
 type QuickReply = {
@@ -186,6 +186,10 @@ function mimeFor(path: string): string {
 }
 
 export async function deliverAudio(conv: Conv, audioPath: string, sender: "bot" | "humano") {
+  if (!outboundEnabled()) {
+    if (sender === "humano") throw new Error("O envio de WhatsApp está desligado (número banido).");
+    return;
+  }
   const db = await admin();
   const { data, error } = await db.storage.from("wa-audio").download(audioPath);
   if (error || !data) throw new Error("Áudio não encontrado no armazenamento.");
@@ -195,6 +199,11 @@ export async function deliverAudio(conv: Conv, audioPath: string, sender: "bot" 
 }
 
 export async function say(conv: Conv, text: string, sender: "bot" | "humano" = "bot") {
+  // Envio desligado (número banido): não manda e não grava como enviada. Mensagem manual do painel avisa o erro.
+  if (!outboundEnabled()) {
+    if (sender === "humano") throw new Error("O envio de WhatsApp está desligado (número banido).");
+    return;
+  }
   const id = await sendText(conv.wa_id, text);
   await record(conv.id, sender, "text", text, id);
 }

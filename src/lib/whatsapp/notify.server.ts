@@ -2,7 +2,7 @@
 import { GOOGLE_REVIEW_URL } from "@/lib/company";
 import { carrierLabel, trackingUrl } from "@/lib/shipping";
 import { phoneExists } from "./zapi.server";
-import { provider, sendText } from "./transport.server";
+import { outboundEnabled, provider, sendText } from "./transport.server";
 
 /**
  * Espelho dos e-mails de pedido no WhatsApp: mesmos eventos, mesmas informações e links, texto curto.
@@ -180,6 +180,7 @@ export async function dispatchOrderWhatsApp(
   event: NotifyEvent,
   extra?: { paymentUrl?: string; force?: boolean },
 ): Promise<{ sent: boolean; reason?: string }> {
+  if (!outboundEnabled()) return { sent: false, reason: "whatsapp_desligado" };
   if (provider() !== "zapi") return { sent: false, reason: "sem_zapi" };
   const db = await admin();
 
@@ -258,6 +259,7 @@ export async function sendPaymentLinkWhatsApp(
   order: { order_number: number; customer_name: string; customer_phone?: string | null; total_cents: number },
   paymentUrl: string,
 ): Promise<{ sent: boolean; reason?: string }> {
+  if (!outboundEnabled()) return { sent: false, reason: "whatsapp_desligado" };
   if (provider() !== "zapi") return { sent: false, reason: "sem_zapi" };
   const waId = normalizeBrPhone(order.customer_phone);
   if (!waId) return { sent: false, reason: "telefone_invalido" };
