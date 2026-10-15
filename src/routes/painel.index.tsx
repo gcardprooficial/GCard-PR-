@@ -113,6 +113,7 @@ type OrderRow = {
   ship_state: string | null;
   ship_zip: string | null;
   internal_notes: string | null;
+  first_touch: { utm_source?: string; utm_medium?: string; utm_campaign?: string; referrer_host?: string } | null;
   businesses: { name: string; review_url: string } | null;
   order_items: {
     product_name: string;
@@ -411,7 +412,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr, is_customizable))",
+        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_zip, internal_notes, first_touch, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr, is_customizable))",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -1012,6 +1013,12 @@ function Orders() {
                     <dd>{r.customer_phone || "—"}</dd>
                     <dt className="text-muted-foreground">CPF:</dt>
                     <dd>{formatCpf(r.customer_document)}</dd>
+                    <dt className="text-muted-foreground">Origem:</dt>
+                    <dd>
+                      {r.first_touch?.utm_source
+                        ? `${r.first_touch.utm_source}${r.first_touch.utm_medium ? ` / ${r.first_touch.utm_medium}` : ""}${r.first_touch.utm_campaign ? ` / ${r.first_touch.utm_campaign}` : ""}`
+                        : (r.first_touch?.referrer_host ?? "direto / não identificada")}
+                    </dd>
                   </dl>
                   {r.businesses && (
                     <p className="mt-1 text-sm text-muted-foreground">
