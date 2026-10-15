@@ -153,6 +153,11 @@ FROM public.plate_scan_events
 GROUP BY plate_id, day;
 GRANT SELECT ON public.plate_scan_daily TO authenticated;
 
+-- O dono da placa vê as leituras da própria placa (a RLS de plates já filtra por dono/equipe).
+DROP POLICY IF EXISTS "scans owner read" ON public.plate_scan_events;
+CREATE POLICY "scans owner read" ON public.plate_scan_events FOR SELECT TO authenticated
+  USING (plate_id IN (SELECT id FROM public.plates));
+
 -- 3) Denúncias de abuso ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.abuse_reports (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
