@@ -42,6 +42,7 @@ import { Route as PainelFreteRouteImport } from './routes/painel.frete'
 import { Route as PainelIntegracoesRouteImport } from './routes/painel.integracoes'
 import { Route as PainelLotesRouteImport } from './routes/painel.lotes'
 import { Route as PainelPlacasRouteImport } from './routes/painel.placas'
+import { Route as PainelRelatoriosRouteImport } from './routes/painel.relatorios'
 import { Route as PainelScansRouteImport } from './routes/painel.scans'
 import { Route as PainelVisaoGeralRouteImport } from './routes/painel.visao-geral'
 import { Route as PainelWhatsappRouteImport } from './routes/painel.whatsapp'
@@ -227,6 +228,11 @@ const PainelPlacasRoute = PainelPlacasRouteImport.update({
   path: '/placas',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelRelatoriosRoute = PainelRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelScansRoute = PainelScansRouteImport.update({
   id: '/scans',
   path: '/scans',
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/painel/integracoes': typeof PainelIntegracoesRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
+  '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/scans': typeof PainelScansRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/painel/integracoes': typeof PainelIntegracoesRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
+  '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/scans': typeof PainelScansRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
@@ -434,6 +442,7 @@ export interface FileRoutesById {
   '/painel/integracoes': typeof PainelIntegracoesRoute
   '/painel/lotes': typeof PainelLotesRoute
   '/painel/placas': typeof PainelPlacasRoute
+  '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/scans': typeof PainelScansRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
@@ -486,6 +495,7 @@ export interface FileRouteTypes {
     | '/painel/integracoes'
     | '/painel/lotes'
     | '/painel/placas'
+    | '/painel/relatorios'
     | '/painel/scans'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
@@ -534,6 +544,7 @@ export interface FileRouteTypes {
     | '/painel/integracoes'
     | '/painel/lotes'
     | '/painel/placas'
+    | '/painel/relatorios'
     | '/painel/scans'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
@@ -584,6 +595,7 @@ export interface FileRouteTypes {
     | '/painel/integracoes'
     | '/painel/lotes'
     | '/painel/placas'
+    | '/painel/relatorios'
     | '/painel/scans'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
@@ -865,6 +877,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelPlacasRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/relatorios': {
+      id: '/painel/relatorios'
+      path: '/relatorios'
+      fullPath: '/painel/relatorios'
+      preLoaderRoute: typeof PainelRelatoriosRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/scans': {
       id: '/painel/scans'
       path: '/scans'
@@ -1005,6 +1024,7 @@ interface PainelRouteChildren {
   PainelIntegracoesRoute: typeof PainelIntegracoesRoute
   PainelLotesRoute: typeof PainelLotesRoute
   PainelPlacasRoute: typeof PainelPlacasRoute
+  PainelRelatoriosRoute: typeof PainelRelatoriosRoute
   PainelScansRoute: typeof PainelScansRoute
   PainelVisaoGeralRoute: typeof PainelVisaoGeralRoute
   PainelWhatsappRoute: typeof PainelWhatsappRoute
@@ -1025,6 +1045,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelIntegracoesRoute: PainelIntegracoesRoute,
   PainelLotesRoute: PainelLotesRoute,
   PainelPlacasRoute: PainelPlacasRoute,
+  PainelRelatoriosRoute: PainelRelatoriosRoute,
   PainelScansRoute: PainelScansRoute,
   PainelVisaoGeralRoute: PainelVisaoGeralRoute,
   PainelWhatsappRoute: PainelWhatsappRoute,

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import { rateLimit, clientKey } from "@/lib/rateLimit";
+import { rateLimitShared, clientKey } from "@/lib/rateLimit";
 import { untyped } from "@/lib/db-untyped";
 
 const schema = z.object({
@@ -15,7 +15,7 @@ const schema = z.object({
 export const reportAbuse = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => schema.parse(input))
   .handler(async ({ data }) => {
-    if (!rateLimit(`abuse:${clientKey(getRequest())}`, 5, 600_000)) {
+    if (!(await rateLimitShared(`abuse:${clientKey(getRequest())}`, 5, 600_000))) {
       return { ok: false as const, error: "Muitas denúncias seguidas. Aguarde alguns minutos." };
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
