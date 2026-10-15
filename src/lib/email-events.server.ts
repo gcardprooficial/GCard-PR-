@@ -175,7 +175,31 @@ function usageTips() {
   );
 }
 
-async function sendWithResend(input: { to: string; subject: string; html: string }) {
+/**
+ * Token de descadastro do e-mail (cria o contato sem consentimento se ainda não existir). Usado nos cabeçalhos
+ * List-Unsubscribe de todo e-mail enviado a cliente, para o botão "cancelar inscrição" do Gmail/Outlook funcionar.
+ */
+async function unsubscribeTokenFor(email: string): Promise<string | null> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabaseAdmin as any;
+    const key = email.toLowerCase();
+    const { data: existing } = await db.from("marketing_contacts").select("unsubscribe_token").eq("email", key).maybeSingle();
+    if (existing?.unsubscribe_token) return existing.unsubscribe_token as string;
+    const { data: created } = await db
+      .from("marketing_contacts")
+      .upsert({ email: key }, { onConflict: "email" })
+      .select("unsubscribe_token")
+      .single();
+    return (created?.unsubscribe_token as string | undefined) ?? null;
+  } catch (error) {
+    console.error("token de descadastro indisponível", error);
+    return null;
+  }
+}
+
+async function sendWithResend(input: { to: string; subject: string; html: string; unsubscribeToken?: string | null }) {
   const apiKey = process.env["RESEND_API_KEY"];
   if (!apiKey) return { sent: false, reason: "RESEND_API_KEY ausente" };
   const from =
@@ -185,7 +209,21 @@ async function sendWithResend(input: { to: string; subject: string; html: string
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: [input.to], subject: input.subject, html: input.html }),
+    body: JSON.stringify({
+      from,
+      to: [input.to],
+      subject: input.subject,
+      html: input.html,
+      // RFC 8058: o provedor de e-mail faz POST no link (one-click). O GET desse mesmo link só abre a página /sair.
+      ...(input.unsubscribeToken
+        ? {
+            headers: {
+              "List-Unsubscribe": `<${unsubscribeUrl(input.unsubscribeToken)}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
+          }
+        : {}),
+    }),
   });
   if (!response.ok) throw new Error(`Resend falhou [${response.status}]: ${await response.text()}`);
   return { sent: true };
@@ -394,6 +432,7 @@ export async function dispatchOrderEmailEvent(
       to: order.customer_email,
       subject: SUBJECTS[event],
       html,
+      unsubscribeToken: await unsubscribeTokenFor(order.customer_email),
     });
     await db
       .from("email_events")
@@ -441,7 +480,7 @@ export async function notifyAdminPaymentFailure(order: {
     title: "Link de pagamento falhou",
     bodyHtml:
       `<p>O pedido <strong>#${escapeHtml(order.order_number)}</strong> de ${escapeHtml(order.customer_name)} ` +
-      `(${escapeHtml(order.customer_email)}) não conseguiu gerar o link do Mercado Pago, mesmo depois de retry automático.</p>` +
+      `(${escapeHtml(order.customer_email)}) não conseguiu gerar o link de pagamento, mesmo depois de retry automático.</p>` +
       `<p>Entra no painel e usa o botão <strong>"Gerar e copiar link"</strong> no pedido pra mandar manualmente pro cliente.</p>`,
   });
   try {
@@ -457,6 +496,29 @@ export async function notifyAdminPaymentFailure(order: {
 }
 
 /** Avisa o dono quando alguém deixa o WhatsApp na ferramenta grátis, pra ele seguir manualmente. */
+/** E-mail do gerador grátis: o link de avaliação para a pessoa guardar. As dicas só vão com o aceite de novidades. */
+export async function sendReviewLinkEmail(input: { to: string; businessName: string; reviewUrl: string; withTips: boolean }) {
+  const tips = input.withTips
+    ? `<p style="margin:16px 0 4px;font-weight:700;">Dicas para ter mais avaliações:</p>` +
+      `<ul style="margin:0;padding-left:20px;"><li>Peça a avaliação na hora, quando o cliente acabou de gostar do atendimento.</li>` +
+      `<li>Deixe o link à mão: no WhatsApp, no balcão e na assinatura do e-mail.</li>` +
+      `<li>Responda todas as avaliações, as boas e as ruins.</li></ul>`
+    : "";
+  const html = emailShell({
+    title: "Seu link de avaliação do Google",
+    bodyHtml:
+      `<p>Aqui está o link de avaliação de <strong>${escapeHtml(input.businessName)}</strong>:</p>` +
+      ctaButton(input.reviewUrl, "Abrir meu link de avaliação") +
+      `<p style="word-break:break-all;font-size:12px;color:#666;">${escapeHtml(input.reviewUrl)}</p>${tips}`,
+  });
+  return sendWithResend({
+    to: input.to,
+    subject: `Seu link de avaliação do Google: ${input.businessName}`,
+    html,
+    unsubscribeToken: await unsubscribeTokenFor(input.to),
+  });
+}
+
 export async function notifyAdminNewLead(lead: { businessName: string; whatsapp: string | null }) {
   const to = process.env["ADMIN_NOTIFY_EMAIL"];
   if (!to) return { skipped: true, reason: "ADMIN_NOTIFY_EMAIL ausente" };
@@ -499,6 +561,7 @@ export async function sendPaymentLinkEmail(
     to: order.customer_email,
     subject: `Finalize o pagamento do pedido #${order.order_number}`,
     html,
+    unsubscribeToken: await unsubscribeTokenFor(order.customer_email),
   });
 }
 
@@ -565,6 +628,7 @@ export async function queueStrategicUpdate(input: {
     to: input.email,
     subject: input.subject,
     html: `${input.html}<p style="font-size:12px"><a href="${unsubscribeUrl(contact.unsubscribe_token)}">Descadastrar</a></p>`,
+    unsubscribeToken: contact.unsubscribe_token,
   });
   return { sent: result.sent, queued: !result.sent };
 }
