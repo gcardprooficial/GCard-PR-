@@ -299,7 +299,7 @@ export function SiteFooter() {
                 </li>
                 <li>
                   <Link to="/ativar" className={footerLink}>
-                    Ativar meus códigos (revendedor)
+                    Ativar meus códigos
                   </Link>
                 </li>
               </ul>

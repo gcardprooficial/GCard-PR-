@@ -48,6 +48,8 @@ function PagamentoRetorno() {
   const createIp = useServerFn(createInfinitePayCheckout);
   const [ipBusy, setIpBusy] = useState(false);
   const isIp = Boolean(search.order_nsu && search.transaction_nsu && search.slug);
+  // UUID do pedido que a URL de retorno traz (Pagar.me: ref; InfinitePay: order_nsu). No retorno do Mercado Pago não há.
+  const knownOrderId = isPg ? (search.ref ?? null) : isIp ? (search.order_nsu ?? null) : null;
   const [view, setView] = useState<View>(paymentId || isIp || isPg ? { kind: "loading" } : { kind: "desconhecido" });
 
   useEffect(() => {
@@ -115,7 +117,7 @@ function PagamentoRetorno() {
         </p>
         {view.kind === "pago" || view.kind === "pendente" ? <ProductionNotice className="mt-5" /> : null}
 
-        {view.kind === "falhou" && orderNumber ? (
+        {view.kind === "falhou" && orderNumber && knownOrderId ? (
           <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-left">
             <p className="text-sm font-bold">Tentar por outro meio de pagamento</p>
             <p className="mt-1 text-xs text-muted-foreground">Pague este mesmo pedido por Pix ou cartão pela InfinitePay.</p>
@@ -124,7 +126,7 @@ function PagamentoRetorno() {
               disabled={ipBusy}
               onClick={() => {
                 setIpBusy(true);
-                createIp({ data: { orderNumber } })
+                createIp({ data: { orderId: knownOrderId } })
                   .then((r) => {
                     if (r.ok) window.location.href = r.url;
                     else setIpBusy(false);

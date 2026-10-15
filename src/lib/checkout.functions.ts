@@ -317,6 +317,7 @@ export const createPendingOrder = createServerFn({ method: "POST" })
 
     return {
       orderNumber: order.order_number,
+      orderId: order.id,
       totalCents: subtotal,
       unitPriceCents: unitPrice,
       quantity: data.quantity,
@@ -525,6 +526,7 @@ export const createCartOrder = createServerFn({ method: "POST" })
 
     return {
       orderNumber: order.order_number,
+      orderId: order.id,
       totalCents,
       couponCode: coupon?.affiliate.code ?? null,
       couponDiscountCents: coupon?.discountCents ?? 0,
