@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtivarRouteImport } from './routes/ativar'
 import { Route as ComprarRouteImport } from './routes/comprar'
+import { Route as DenunciarRouteImport } from './routes/denunciar'
 import { Route as GeradorRouteImport } from './routes/gerador'
 import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as PainelRouteImport } from './routes/painel'
@@ -32,6 +33,7 @@ import { Route as PainelCalculadoraRouteImport } from './routes/painel.calculado
 import { Route as PainelClientesRouteImport } from './routes/painel.clientes'
 import { Route as PainelConciliacaoRouteImport } from './routes/painel.conciliacao'
 import { Route as PainelContadorRouteImport } from './routes/painel.contador'
+import { Route as PainelDenunciasRouteImport } from './routes/painel.denuncias'
 import { Route as PainelEstoqueRouteImport } from './routes/painel.estoque'
 import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
 import { Route as PainelFreteRouteImport } from './routes/painel.frete'
@@ -67,6 +69,11 @@ const AtivarRoute = AtivarRouteImport.update({
 const ComprarRoute = ComprarRouteImport.update({
   id: '/comprar',
   path: '/comprar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DenunciarRoute = DenunciarRouteImport.update({
+  id: '/denunciar',
+  path: '/denunciar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GeradorRoute = GeradorRouteImport.update({
@@ -171,6 +178,11 @@ const PainelConciliacaoRoute = PainelConciliacaoRouteImport.update({
 const PainelContadorRoute = PainelContadorRouteImport.update({
   id: '/contador',
   path: '/contador',
+  getParentRoute: () => PainelRoute,
+} as any)
+const PainelDenunciasRoute = PainelDenunciasRouteImport.update({
+  id: '/denuncias',
+  path: '/denuncias',
   getParentRoute: () => PainelRoute,
 } as any)
 const PainelEstoqueRoute = PainelEstoqueRouteImport.update({
@@ -283,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/denunciar': typeof DenunciarRoute
   '/gerador': typeof GeradorRoute
   '/guia': typeof GuiaRouteWithChildren
   '/painel': typeof PainelRouteWithChildren
@@ -301,6 +314,7 @@ export interface FileRoutesByFullPath {
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/conciliacao': typeof PainelConciliacaoRoute
   '/painel/contador': typeof PainelContadorRoute
+  '/painel/denuncias': typeof PainelDenunciasRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/frete': typeof PainelFreteRoute
@@ -329,6 +343,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/denunciar': typeof DenunciarRoute
   '/gerador': typeof GeradorRoute
   '/privacidade': typeof PrivacidadeRoute
   '/termos': typeof TermosRoute
@@ -345,6 +360,7 @@ export interface FileRoutesByTo {
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/conciliacao': typeof PainelConciliacaoRoute
   '/painel/contador': typeof PainelContadorRoute
+  '/painel/denuncias': typeof PainelDenunciasRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/frete': typeof PainelFreteRoute
@@ -374,6 +390,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
   '/comprar': typeof ComprarRoute
+  '/denunciar': typeof DenunciarRoute
   '/gerador': typeof GeradorRoute
   '/guia': typeof GuiaRouteWithChildren
   '/painel': typeof PainelRouteWithChildren
@@ -392,6 +409,7 @@ export interface FileRoutesById {
   '/painel/clientes': typeof PainelClientesRoute
   '/painel/conciliacao': typeof PainelConciliacaoRoute
   '/painel/contador': typeof PainelContadorRoute
+  '/painel/denuncias': typeof PainelDenunciasRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/frete': typeof PainelFreteRoute
@@ -422,6 +440,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
+    | '/denunciar'
     | '/gerador'
     | '/guia'
     | '/painel'
@@ -440,6 +459,7 @@ export interface FileRouteTypes {
     | '/painel/clientes'
     | '/painel/conciliacao'
     | '/painel/contador'
+    | '/painel/denuncias'
     | '/painel/estoque'
     | '/painel/financeiro'
     | '/painel/frete'
@@ -468,6 +488,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
+    | '/denunciar'
     | '/gerador'
     | '/privacidade'
     | '/termos'
@@ -484,6 +505,7 @@ export interface FileRouteTypes {
     | '/painel/clientes'
     | '/painel/conciliacao'
     | '/painel/contador'
+    | '/painel/denuncias'
     | '/painel/estoque'
     | '/painel/financeiro'
     | '/painel/frete'
@@ -512,6 +534,7 @@ export interface FileRouteTypes {
     | '/'
     | '/ativar'
     | '/comprar'
+    | '/denunciar'
     | '/gerador'
     | '/guia'
     | '/painel'
@@ -530,6 +553,7 @@ export interface FileRouteTypes {
     | '/painel/clientes'
     | '/painel/conciliacao'
     | '/painel/contador'
+    | '/painel/denuncias'
     | '/painel/estoque'
     | '/painel/financeiro'
     | '/painel/frete'
@@ -559,6 +583,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AtivarRoute: typeof AtivarRoute
   ComprarRoute: typeof ComprarRoute
+  DenunciarRoute: typeof DenunciarRoute
   GeradorRoute: typeof GeradorRoute
   GuiaRoute: typeof GuiaRouteWithChildren
   PainelRoute: typeof PainelRouteWithChildren
@@ -602,6 +627,13 @@ declare module '@tanstack/react-router' {
       path: '/comprar'
       fullPath: '/comprar'
       preLoaderRoute: typeof ComprarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/denunciar': {
+      id: '/denunciar'
+      path: '/denunciar'
+      fullPath: '/denunciar'
+      preLoaderRoute: typeof DenunciarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gerador': {
@@ -742,6 +774,13 @@ declare module '@tanstack/react-router' {
       path: '/contador'
       fullPath: '/painel/contador'
       preLoaderRoute: typeof PainelContadorRouteImport
+      parentRoute: typeof PainelRoute
+    }
+    '/painel/denuncias': {
+      id: '/painel/denuncias'
+      path: '/denuncias'
+      fullPath: '/painel/denuncias'
+      preLoaderRoute: typeof PainelDenunciasRouteImport
       parentRoute: typeof PainelRoute
     }
     '/painel/estoque': {
@@ -919,6 +958,7 @@ interface PainelRouteChildren {
   PainelClientesRoute: typeof PainelClientesRoute
   PainelConciliacaoRoute: typeof PainelConciliacaoRoute
   PainelContadorRoute: typeof PainelContadorRoute
+  PainelDenunciasRoute: typeof PainelDenunciasRoute
   PainelEstoqueRoute: typeof PainelEstoqueRoute
   PainelFinanceiroRoute: typeof PainelFinanceiroRoute
   PainelFreteRoute: typeof PainelFreteRoute
@@ -938,6 +978,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelClientesRoute: PainelClientesRoute,
   PainelConciliacaoRoute: PainelConciliacaoRoute,
   PainelContadorRoute: PainelContadorRoute,
+  PainelDenunciasRoute: PainelDenunciasRoute,
   PainelEstoqueRoute: PainelEstoqueRoute,
   PainelFinanceiroRoute: PainelFinanceiroRoute,
   PainelFreteRoute: PainelFreteRoute,
@@ -958,6 +999,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtivarRoute: AtivarRoute,
   ComprarRoute: ComprarRoute,
+  DenunciarRoute: DenunciarRoute,
   GeradorRoute: GeradorRoute,
   GuiaRoute: GuiaRouteWithChildren,
   PainelRoute: PainelRouteWithChildren,
