@@ -30,12 +30,12 @@ export const Route = createFileRoute("/personalizar")({
 
 const STEPS = [
   {
-    title: "Compre o acrílico com NFC e escolha a cor",
-    text: "O acrílico + NFC chega sem arte impressa. Cada unidade tem um código próprio, e o NFC já vem gravado com esse código. Cores: cristal, branco, preto e azul.",
+    title: "Compre o acrílico liso e escolha receber o QR Code",
+    text: "Na compra do acrílico liso (10x10 quadrado ou 15x10 em L), responda Sim em “Quer o QR Code?”. É grátis e cada unidade recebe um código. Se quiser NFC, marque também o chip (ele vai vazio). Cores: cristal, branco, preto e azul.",
   },
   {
     title: "Ative o código e cole o link de destino",
-    text: "No painel (gcardpro.com.br/ativar), abra o código da sua placa e cole o link para onde ela deve levar: uma avaliação do Google ou uma página do TOQY. Você pode trocar quando quiser, sem reimprimir.",
+    text: "No painel (gcardpro.com.br/ativar), abra o código da sua placa e cole o link para onde ela deve levar: qualquer link https (avaliação do Google, TOQY, Instagram, seu site). Você pode trocar quando quiser, sem reimprimir.",
   },
   {
     title: "Baixe o QR do código",
@@ -46,8 +46,8 @@ const STEPS = [
     text: "Use os gabaritos abaixo (10x10 e 10x15) com a área do QR marcada. Mantenha o QR escuro em fundo claro, sem degradê atrás, com pelo menos 2,5 a 3 cm de lado e a margem branca que já vem no arquivo.",
   },
   {
-    title: "Imprima, cole o NFC atrás da placa e teste",
-    text: "Antes de imprimir um lote, teste a leitura do QR e do NFC em pelo menos dois celulares (um iPhone e um Android) e com pouca luz.",
+    title: "Imprima, grave o chip NFC e teste",
+    text: "O chip NFC chega vazio. No painel, use “Copiar URL NFC” do código e grave no chip com o app NFC Tools. Cole o chip atrás da placa e teste a leitura do QR e do NFC em pelo menos dois celulares (um iPhone e um Android).",
   },
 ];
 

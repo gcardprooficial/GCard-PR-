@@ -174,7 +174,6 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     has_qr: false,
     has_nfc: true,
     is_blank: false,
-    is_customizable: false,
     min_quantity: 1,
     color_variants: null,
     nfc_addon_price_cents: null,
@@ -208,6 +207,8 @@ type CartLine = {
   unitPriceCents: number;
   totalCents: number;
   nfcAddonQty: number;
+  /** Códigos de QR pedidos (acrílico liso). 0 = cliente não quis. */
+  qrCodeQty: number;
 };
 
 declare global {
@@ -419,8 +420,7 @@ function Comprar() {
     .filter((item) => item.status !== "oculto")
     // Acrílico puro (sem QR/NFC) só entra no fluxo de revenda/atacado — lojista
     // final só compra cartão de bolso e plaquinha 10x10 já prontos.
-    // Acrílico liso só na revenda; o "para personalizar" também vende avulso (tem código por unidade).
-    .filter((item) => !(!isResale && item.is_blank && !item.is_customizable));
+    .filter((item) => !(!isResale && item.is_blank));
   // O checkout não pode ficar sem opções quando o catálogo ainda não foi publicado.
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
@@ -544,8 +544,12 @@ function Comprar() {
   const [nfcAddonQty, setNfcAddonQty] = useState(0);
   const nfcAddonUnitCents = product?.nfc_addon_price_cents ?? 0;
   const nfcAddonTotal = nfcAddonQty * nfcAddonUnitCents;
+  // Código de QR de cada unidade: escolha do cliente (grátis). Só no acrílico liso.
+  const [wantsQr, setWantsQr] = useState(false);
+  const qrCodeQty = isBlank && wantsQr ? quantity : 0;
   useEffect(() => {
     setNfcAddonQty(0);
+    setWantsQr(false);
   }, [product]);
 
   const total = unitPrice * quantity + nfcAddonTotal;
@@ -568,6 +572,7 @@ function Comprar() {
         unitPriceCents: unitPrice,
         totalCents: total,
         nfcAddonQty,
+        qrCodeQty,
       },
     ]);
     setProduct(null);
@@ -597,6 +602,7 @@ function Comprar() {
               unitPriceCents: unitPrice,
               totalCents: total,
               nfcAddonQty,
+              qrCodeQty,
             },
           ]
         : [];
@@ -700,6 +706,7 @@ function Comprar() {
             colorSlug: l.colorSlug,
             quantity: l.quantity,
             nfcAddonQty: l.nfcAddonQty || undefined,
+            qrCodeQty: l.qrCodeQty || undefined,
           })),
           customer,
           marketingConsent,
@@ -1797,6 +1804,29 @@ function Comprar() {
                   </button>
                 </div>
               </div>
+
+              {isBlank && (
+                <div className="mt-6 rounded-2xl border-2 border-border bg-background p-5 sm:p-6">
+                  <p className="font-display text-lg font-black">Quer o QR Code de cada placa?</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Grátis. Cada unidade ganha um código de QR: depois você entra em <strong>gcardpro.com.br/ativar</strong>, baixa o QR, coloca na sua arte e escolhe o link que quiser. Se você só quer a placa (e o chip), marque Não.
+                  </p>
+                  <div className="mt-4 flex items-center gap-3">
+                    {([false, true] as const).map((v) => (
+                      <button
+                        key={String(v)}
+                        type="button"
+                        onClick={() => setWantsQr(v)}
+                        className={`btn-press rounded-xl border-2 px-4 py-2 text-sm font-bold ${
+                          wantsQr === v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        {v ? "Sim, quero o QR" : "Não, só a placa"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {isBlank && nfcAddonUnitCents > 0 && (
                 <div className="mt-6 rounded-2xl border-2 border-border bg-background p-5 sm:p-6">

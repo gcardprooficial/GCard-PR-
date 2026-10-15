@@ -1,5 +1,6 @@
 // Destino de uma placa (para onde /r/<token> redireciona). A lista de hosts permitidos vive no banco
 // (tabela allowed_destination_hosts) e é lida por /r, /ativar e pelo gatilho SQL: é a única fonte.
+// A regra com host "*" libera qualquer domínio público https; apagar essa linha volta a só Google/TOQY.
 
 export type DestinationRule = { host: string; include_subdomains: boolean };
 
@@ -15,6 +16,14 @@ export const FALLBACK_RULES: DestinationRule[] = ["search.google.com", "www.goog
 }));
 
 export const rulesOrFallback = (rules: DestinationRule[] | null | undefined): DestinationRule[] => (rules && rules.length > 0 ? rules : FALLBACK_RULES);
+
+/** Domínio público: tem ponto, não é IP, não é localhost nem rede interna. Vale mesmo com a regra "*". */
+export function isPublicHost(host: string): boolean {
+  const h = host.toLowerCase();
+  if (!h.includes(".") || h === "localhost" || h.includes(":") || h.startsWith("[")) return false;
+  if (/^[0-9.]+$/.test(h)) return false;
+  return !/\.(local|internal|localhost|lan|home|corp)$/.test(h);
+}
 
 export type NormalizedDestination =
   | { ok: true; url: string; upgradedToHttps: boolean }
@@ -34,6 +43,7 @@ export function normalizeDestination(raw: string): NormalizedDestination {
   if (url.protocol !== "https:" && url.protocol !== "http:") return { ok: false, reason: "Só links http ou https são aceitos." };
   if (url.username || url.password) return { ok: false, reason: "O link não pode ter usuário e senha." };
   if (url.port) return { ok: false, reason: "O link não pode ter porta no endereço." };
+  if (!isPublicHost(url.hostname)) return { ok: false, reason: "Use o endereço de um site público (não vale IP nem endereço interno)." };
   const upgradedToHttps = url.protocol === "http:";
   url.protocol = "https:";
   return { ok: true, url: url.toString(), upgradedToHttps };
@@ -42,7 +52,7 @@ export function normalizeDestination(raw: string): NormalizedDestination {
 /** Host permitido? Exato, ou subdomínio quando a regra tem include_subdomains. */
 export function isAllowedHost(host: string, rules: DestinationRule[]): boolean {
   const h = host.toLowerCase();
-  return rules.some((r) => h === r.host || (r.include_subdomains && h.endsWith(`.${r.host}`)));
+  return rules.some((r) => r.host === "*" || h === r.host || (r.include_subdomains && h.endsWith(`.${r.host}`)));
 }
 
 /** Normaliza e confere o host contra as regras. Mensagem pronta para mostrar. */
@@ -50,7 +60,7 @@ export function checkDestination(raw: string, rules: DestinationRule[]): Normali
   const n = normalizeDestination(raw);
   if (!n.ok) return n;
   if (!isAllowedHost(new URL(n.url).hostname, rulesOrFallback(rules))) {
-    return { ok: false, reason: "Esse endereço não é aceito. Use um link do Google (avaliação) ou uma página do TOQY (toqy.com.br)." };
+    return { ok: false, reason: "Esse endereço não é aceito para este código." };
   }
   return n;
 }
