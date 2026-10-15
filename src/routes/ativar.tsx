@@ -8,6 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ReviewLinkPicker } from "@/components/ReviewLinkPicker";
 import { AuthForm } from "@/components/AuthForm";
+import { PlateQrDownload } from "@/components/PlateQrDownload";
+import { PlateScanStats } from "@/components/PlateScanStats";
+import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
+import { untyped } from "@/lib/db-untyped";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 import logoMarca from "@/assets/logo/header-marca.png";
 import logoIcone from "@/assets/logo/header-icone.png";
@@ -21,9 +25,6 @@ export const Route = createFileRoute("/ativar")({
   }),
   component: Ativar,
 });
-
-const GOOGLE_HOST_RE =
-  /^https:\/\/(search\.google\.com|www\.google\.com|google\.com|maps\.google\.com|g\.page)\//;
 
 type Batch = {
   id: string;
@@ -46,6 +47,7 @@ type Plate = {
   last_scan_at: string | null;
   scan_count: number;
   activated_at: string | null;
+  tracking_v2: boolean;
 };
 
 function Ativar() {
@@ -140,6 +142,14 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   const [sortBy, setSortBy] = useState<"codigo" | "recentes" | "antigas" | "negocio">("codigo");
   const [redeemCode, setRedeemCode] = useState("");
   const [redeeming, setRedeeming] = useState(false);
+  // Hosts aceitos como destino: lista única do banco (a mesma do /r e do gatilho SQL).
+  const [rules, setRules] = useState<DestinationRule[]>([]);
+  useEffect(() => {
+    void untyped(supabase)
+      .from("allowed_destination_hosts")
+      .select("host, include_subdomains")
+      .then(({ data }: { data: DestinationRule[] | null }) => setRules(data ?? []));
+  }, []);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -166,7 +176,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       const p = await supabase
         .from("plates")
         .select(
-          "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count, activated_at",
+          "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count, activated_at, tracking_v2",
         )
         .in("batch_id", batchIds)
         .order("short_code", { ascending: true });
@@ -185,11 +195,13 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   }, [load]);
 
   async function activate(plate: Plate, businessName: string, reviewUrl: string, soldTo: string) {
-    const url = reviewUrl.trim();
-    if (!GOOGLE_HOST_RE.test(url)) {
-      toast.error("O link precisa ser da avaliação do Google (search.google.com/...).");
+    const checked = checkDestination(reviewUrl, rules);
+    if (!checked.ok) {
+      toast.error(checked.reason);
       return;
     }
+    if (checked.upgradedToHttps) toast.message("Trocamos o link para https (mais seguro).");
+    const url = checked.url;
     if (businessName.trim().length < 2) {
       toast.error("Informe o nome do negócio.");
       return;
@@ -617,10 +629,14 @@ function PlateCard({
   const [soldTo, setSoldTo] = useState(plate.sold_to ?? "");
   const [picking, setPicking] = useState(false);
   const active = plate.status === "ativada";
-  const dynamicUrl = `${typeof window !== "undefined" ? window.location.origin : "https://gcardpro.com.br"}/r/${plate.token}`;
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://gcardpro.com.br";
+  const dynamicUrl = `${origin}/r/${plate.token}`;
+  // Chips de códigos novos levam ?s=n (origem NFC); códigos antigos continuam sem parâmetro.
+  const nfcUrl = plate.tracking_v2 ? `${dynamicUrl}?s=n` : dynamicUrl;
+  const toqy = isToqyUrl(plate.destination_url);
 
   function copyDynamicUrl() {
-    navigator.clipboard.writeText(dynamicUrl);
+    navigator.clipboard.writeText(nfcUrl);
     toast.success("Link do cartão copiado! Cole no NFC Tools.");
   }
 
@@ -647,11 +663,11 @@ function PlateCard({
             active ? "bg-green-100 text-green-800 border border-green-200" : "bg-amber-100 text-amber-900 border border-amber-200"
           }`}
         >
-          {active ? "✓ Ativado no Google" : "○ Em branco (Sem loja)"}
+          {active ? (toqy ? "✓ Página TOQY" : "✓ Ativado no Google") : "○ Em branco (Sem loja)"}
         </span>
       </div>
       <p className="mt-1.5 text-xs text-muted-foreground">
-        {plate.scan_count} toque(s) / leitura(s) registradas
+        {plate.scan_count} toque(s) / leitura(s) de pessoas
         {active && plate.activated_at ? ` · ativado em ${new Date(plate.activated_at).toLocaleDateString("pt-BR")}` : ""}
       </p>
 
@@ -675,11 +691,11 @@ function PlateCard({
           />
         </div>
         <div className="sm:col-span-2">
-          <Label className="text-xs font-semibold">Link de avaliação do Google</Label>
+          <Label className="text-xs font-semibold">Link de destino (avaliação do Google ou página do TOQY)</Label>
           <Input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://search.google.com/local/writereview?placeid=..."
+            placeholder="https://search.google.com/local/writereview?placeid=... ou https://toqy.com.br/b/..."
             className="mt-1 h-10 input-soft rounded-xl"
           />
           <button
@@ -689,6 +705,15 @@ function PlateCard({
           >
             🔎 Não tem o link? Buscar pelo nome do negócio
           </button>
+          {toqy && <p className="mt-2 text-xs text-green-700">Sua placa já leva para a sua página TOQY.</p>}
+          <a
+            href={toqyOnboardingUrl(plate.short_code)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex h-9 items-center gap-1 rounded-xl border border-dashed border-foreground/30 px-3 text-xs font-semibold hover:bg-muted"
+          >
+            ✨ Criar minha página no TOQY
+          </a>
           <ReviewLinkPicker
             open={picking}
             onOpenChange={setPicking}
@@ -719,6 +744,8 @@ function PlateCard({
           </>
         )}
       </div>
+      <PlateQrDownload plateId={plate.id} />
+      <PlateScanStats plateId={plate.id} />
     </div>
   );
 }
