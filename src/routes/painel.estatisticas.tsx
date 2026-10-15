@@ -133,6 +133,7 @@ function Viewer() {
                           <div className="flex h-3 overflow-hidden rounded bg-muted" style={{ width: `${(d.leituras / max) * 100}%` }}>
                             <div className="bg-primary" style={{ width: `${d.leituras ? (d.nfc / d.leituras) * 100 : 0}%` }} />
                             <div className="bg-amber-400" style={{ width: `${d.leituras ? (d.qr / d.leituras) * 100 : 0}%` }} />
+                            <div className="bg-slate-400" style={{ width: `${d.leituras ? (d.desconhecido / d.leituras) * 100 : 0}%` }} />
                           </div>
                         </td>
                       </tr>
@@ -141,7 +142,7 @@ function Viewer() {
                 </table>
               )}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">Azul = NFC, amarelo = QR. Robôs e pré-visualizações não entram. Placas antigas (sem origem) aparecem como "desconhecido".</p>
+            <p className="mt-2 text-xs text-muted-foreground">Azul = NFC, amarelo = QR, cinza = origem desconhecida. Robôs e pré-visualizações não entram. Placas antigas (sem origem) aparecem como "desconhecido".</p>
           </>
         )}
       </div>
