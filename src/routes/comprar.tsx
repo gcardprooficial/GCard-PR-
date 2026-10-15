@@ -172,6 +172,7 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     has_qr: false,
     has_nfc: true,
     is_blank: false,
+    is_customizable: false,
     min_quantity: 1,
     color_variants: null,
     nfc_addon_price_cents: null,
@@ -416,7 +417,8 @@ function Comprar() {
     .filter((item) => item.status !== "oculto")
     // Acrílico puro (sem QR/NFC) só entra no fluxo de revenda/atacado — lojista
     // final só compra cartão de bolso e plaquinha 10x10 já prontos.
-    .filter((item) => !(!isResale && item.is_blank));
+    // Acrílico liso só na revenda; o "para personalizar" também vende avulso (tem código por unidade).
+    .filter((item) => !(!isResale && item.is_blank && !item.is_customizable));
   // O checkout não pode ficar sem opções quando o catálogo ainda não foi publicado.
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 

@@ -6,6 +6,8 @@ import { usePanel } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { untyped } from "@/lib/db-untyped";
+import { checkDestination, type DestinationRule } from "@/lib/destination";
 
 export const Route = createFileRoute("/painel/placas")({ component: Placas });
 
@@ -18,6 +20,13 @@ const STATUS_LABEL: Record<string, string> = {
 
 const PAGE = 40;
 
+/** Etapa do código (os estados do banco continuam nao_ativada / ativada / bloqueada). */
+function stageOf(r: { status: string; sold_at: string | null; batch_id: string | null; orders: unknown }): string {
+  if (r.status === "bloqueada") return "Desativado";
+  if (r.status === "ativada") return "Ativado";
+  return r.sold_at || r.batch_id || r.orders ? "Vendido" : "Em estoque";
+}
+
 type Plate = {
   id: string;
   token: string;
@@ -27,6 +36,9 @@ type Plate = {
   scan_count: number;
   last_scan_at: string | null;
   activated_at: string | null;
+  sold_at: string | null;
+  blocked_at: string | null;
+  block_reason: string | null;
   batch_id: string | null;
   products: { name: string } | null;
   orders: { order_number: number; customer_name: string } | null;
@@ -54,12 +66,20 @@ function Placas() {
   const [view, setView] = useState<View>("lotes");
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [limit, setLimit] = useState(PAGE);
+  // Hosts de destino aceitos: tabela única do banco (a mesma do /r, do /ativar e do gatilho SQL).
+  const [rules, setRules] = useState<DestinationRule[]>([]);
+  useEffect(() => {
+    void untyped(supabase)
+      .from("allowed_destination_hosts")
+      .select("host, include_subdomains")
+      .then(({ data }: { data: DestinationRule[] | null }) => setRules(data ?? []));
+  }, []);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("plates")
       .select(
-        "id, token, short_code, status, destination_url, scan_count, last_scan_at, activated_at, batch_id, products(name), orders(order_number, customer_name), businesses(name, review_url), batches(code, label, owner_email)",
+        "id, token, short_code, status, destination_url, scan_count, last_scan_at, activated_at, sold_at, blocked_at, block_reason, batch_id, products(name), orders(order_number, customer_name), businesses(name, review_url), batches(code, label, owner_email)",
       )
       .order("short_code", { ascending: true })
       .limit(3000);
@@ -199,6 +219,14 @@ function Placas() {
               {r.orders ? ` · pedido #${r.orders.order_number} (${r.orders.customer_name})` : ""}
             </p>
             {r.businesses && <p className="text-sm text-muted-foreground">Negócio: {r.businesses.name}</p>}
+            <p className="mt-1 text-xs font-semibold">
+              {stageOf(r)}
+              <span className="font-normal text-muted-foreground">
+                {r.sold_at ? ` · vendido em ${new Date(r.sold_at).toLocaleDateString("pt-BR")}` : ""}
+                {r.activated_at ? ` · ativado em ${new Date(r.activated_at).toLocaleDateString("pt-BR")}` : ""}
+                {r.blocked_at ? ` · bloqueado em ${new Date(r.blocked_at).toLocaleDateString("pt-BR")}${r.block_reason ? ` (${r.block_reason})` : ""}` : ""}
+              </span>
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {r.scan_count} scans
               {r.last_scan_at ? ` · último ${new Date(r.last_scan_at).toLocaleString("pt-BR")}` : ""}
@@ -232,14 +260,16 @@ function Placas() {
               onClick={() => {
                 const el = document.getElementById(`d-${r.id}`) as HTMLInputElement | null;
                 const v = el?.value.trim() || null;
-                if (
-                  v &&
-                  !/^https:\/\/(search\.google\.com|www\.google\.com|google\.com|maps\.google\.com|g\.page)\//.test(v)
-                ) {
-                  toast.error("O link precisa ser do Google.");
+                if (!v) {
+                  void patch(r, { destination_url: null });
                   return;
                 }
-                void patch(r, { destination_url: v });
+                const checked = checkDestination(v, rules);
+                if (!checked.ok) {
+                  toast.error(checked.reason);
+                  return;
+                }
+                void patch(r, { destination_url: checked.url });
               }}
             >
               Salvar

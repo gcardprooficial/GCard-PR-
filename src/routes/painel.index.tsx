@@ -117,7 +117,7 @@ type OrderRow = {
   order_items: {
     product_name: string;
     quantity: number;
-    products: { image_url: string | null; is_blank: boolean; has_qr: boolean } | null;
+    products: { image_url: string | null; is_blank: boolean; has_qr: boolean; is_customizable: boolean } | null;
   }[];
 };
 
@@ -157,7 +157,12 @@ function stageOf(r: { payment_status: string; fulfillment_status: string }): Sta
 
 /** Pedido sem placas com código: acrílico puro e cartão de PVC (só NFC) não têm lote. */
 function hasNoCodes(r: OrderRow): boolean {
-  return r.order_items.some((it) => it.products?.is_blank || it.products?.has_qr === false);
+  return r.order_items.some((it) => !it.products?.is_customizable && (it.products?.is_blank || it.products?.has_qr === false));
+}
+
+/** "Acrílico + NFC para personalizar": tem código por unidade, ligado ao pedido na mão (placas escaneadas), venda avulsa ou em lote. */
+function isCustomizableOrder(r: OrderRow): boolean {
+  return r.order_items.some((it) => it.products?.is_customizable);
 }
 
 function timeAgo(iso: string): string {
@@ -406,7 +411,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr))",
+        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_zip, internal_notes, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr, is_customizable))",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -966,7 +971,9 @@ function Orders() {
                     : "bg-g-blue/15 text-foreground"
                 }`}
               >
-                {r.order_items.some((it) => it.products?.is_blank)
+                {isCustomizableOrder(r)
+                  ? "ACRÍLICO + NFC PARA PERSONALIZAR — vincular as placas escaneadas (cada uma com o seu código) e enviar"
+                  : r.order_items.some((it) => it.products?.is_blank)
                   ? "ACRÍLICO SEM ARTE — só separar cor e quantidade (sem QR/NFC, sem lote)"
                   : r.order_items.some((it) => it.products?.has_qr === false)
                     ? "CARTÃO PVC (só NFC) — sem lote e sem código; desconta sozinho do Estoque de cartões (aba Placas)"
@@ -1019,7 +1026,7 @@ function Orders() {
                       </a>
                     </p>
                   )}
-                  {r.kind === "revenda" && batchesByOrder[r.id] && (
+                  {(r.kind === "revenda" || isCustomizableOrder(r)) && batchesByOrder[r.id] && (
                     <p className="mt-2 text-sm">
                       Lote:{" "}
                       <Link to="/painel/lotes" className="font-mono font-semibold underline">
@@ -1030,7 +1037,7 @@ function Orders() {
                         : " · exporte o CSV na aba Lotes e marque como enviado"}
                     </p>
                   )}
-                  {r.kind === "revenda" &&
+                  {(r.kind === "revenda" || isCustomizableOrder(r)) &&
                     r.payment_status === "pago" &&
                     !batchesByOrder[r.id] &&
                     !hasNoCodes(r) && (

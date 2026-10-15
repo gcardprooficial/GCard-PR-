@@ -21,7 +21,8 @@ function Produto() {
   const { lojista, revenda } = plansFrom(data);
   const products = productsFrom(data);
   const p = products.find((x) => x.slug === slug);
-  const [modo, setModo] = useState<"lojista" | "revenda">(p?.is_blank ? "revenda" : "lojista");
+  const custom = Boolean(p?.is_customizable);
+  const [modo, setModo] = useState<"lojista" | "revenda">(p?.is_blank && !custom ? "revenda" : "lojista");
   if (!p) throw notFound();
   const soon = p.status !== "ativo";
   const tiers = resaleLines(revenda, products).find((l) => l.slug === slug)?.tiers ?? [];
@@ -49,11 +50,11 @@ function Produto() {
             {p.has_nfc && <span className="rounded-lg bg-primary/20 px-2.5 py-1 text-xs font-black">NFC</span>}
             {p.has_qr && <span className="rounded-lg bg-foreground/10 px-2.5 py-1 text-xs font-black">QR Code</span>}
           </div>
-          {!p.is_blank && !soon && (
+          {(!p.is_blank || custom) && !soon && (
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2" role="tablist" aria-label="Como você vai usar">
               {([
-                ["lojista", "Loja própria", "Já configurado pra você"],
-                ["revenda", "Revenda", "Em quantidade, a partir de 10"],
+                ["lojista", custom ? "Avulso" : "Loja própria", custom ? "Para você personalizar" : "Já configurado pra você"],
+                ["revenda", custom ? "Em lote" : "Revenda", "Em quantidade, a partir de 10"],
               ] as const).map(([k, t, d]) => (
                 <button key={k} type="button" role="tab" aria-selected={modo === k} onClick={() => setModo(k)}
                   className={`flex items-start gap-3 rounded-2xl border-2 px-4 py-4 text-left transition-all active:scale-[0.98] ${modo === k ? "border-primary bg-foreground text-white shadow-lg" : "border-foreground/30 bg-card text-foreground hover:border-foreground hover:shadow-md"}`}>
@@ -65,6 +66,15 @@ function Produto() {
                 </button>
               ))}
             </div>
+          )}
+          {modo === "lojista" && custom && !soon && (
+            <>
+              <p className="mt-6 font-display text-4xl">
+                {money(lojista.unit_price_cents + p.price_delta_cents)}
+                <span className="ml-2 font-sans text-sm font-semibold text-muted-foreground">por unidade · frete grátis</span>
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">Sem arte impressa. Você baixa o QR do código no painel e coloca na sua arte. <Link to="/personalizar" className="font-semibold underline">Veja o passo a passo</Link>.</p>
+            </>
           )}
           {modo === "lojista" && !p.is_blank && !soon && (
             <>
@@ -89,7 +99,8 @@ function Produto() {
               {!p.is_blank && <p className="mt-3 text-xs text-muted-foreground">Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente.</p>}
             </div>
           )}
-          {p.is_blank && <p className="mt-4 text-sm text-muted-foreground">Sem impressão. Cores: cristal, branco, preto e azul. Você aplica a sua arte ou adesivo.</p>}
+          {p.is_blank && !custom && <p className="mt-4 text-sm text-muted-foreground">Sem impressão. Cores: cristal, branco, preto e azul. Você aplica a sua arte ou adesivo.</p>}
+          {custom && <p className="mt-4 text-sm text-muted-foreground">Cores: cristal, branco, preto e azul. Cada unidade vem com NFC e um código próprio.</p>}
           {soon ? (
             <Button disabled size="lg" className="mt-8 h-14 w-full rounded-xl">Em breve</Button>
           ) : (
