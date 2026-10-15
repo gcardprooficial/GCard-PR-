@@ -36,7 +36,9 @@ export async function loadOrderDetails(orderId: string): Promise<OrderDetails> {
 }
 
 /** Itens reais quando a soma bate com o total cobrado (cupom/desconto Pix fazem diferir); senão item único com a descrição. */
-export function chargeItems(items: OrderDetails["items"], totalCents: number, orderNumber: number) {
+export function chargeItems(allItems: OrderDetails["items"], totalCents: number, orderNumber: number) {
+  // Item grátis (valor 0, como "Código QR para ativar") não vai ao gateway: ele recusa item sem valor. O total não muda.
+  const items = allItems.filter((i) => i.unitCents > 0);
   const sum = items.reduce((t, i) => t + i.unitCents * i.quantity, 0);
   if (items.length > 0 && sum === totalCents) return items.map((i) => ({ name: i.name.slice(0, 200), quantity: i.quantity, unitCents: i.unitCents }));
   const desc = `Pedido GCard-PRO #${orderNumber}` + (items.length ? `: ${items.map((i) => `${i.quantity}x ${i.name}`).join("; ")}` : "");

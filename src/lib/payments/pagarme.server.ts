@@ -45,14 +45,16 @@ export async function createPagarmePix(input: {
   if (phone.startsWith("55") && phone.length > 11) phone = phone.slice(2);
   // Itens reais (nome, qtd, valor unitário) quando a soma bate com o total cobrado (cupom/desconto Pix fazem diferir);
   // senão um item único com a descrição do pedido, pra nunca recusar por soma errada.
-  const itemsSum = input.items.reduce((t, i) => t + i.unitCents * i.quantity, 0);
+  // Item grátis (valor 0, como "Código QR para ativar") não vai ao gateway: ele recusa item sem valor.
+  const priced = input.items.filter((i) => i.unitCents > 0);
+  const itemsSum = priced.reduce((t, i) => t + i.unitCents * i.quantity, 0);
   const items =
-    input.items.length > 0 && itemsSum === input.totalCents
-      ? input.items.map((i, n) => ({ amount: i.unitCents, description: i.name.slice(0, 256), quantity: i.quantity, code: `${input.orderNumber}-${n + 1}` }))
+    priced.length > 0 && itemsSum === input.totalCents
+      ? priced.map((i, n) => ({ amount: i.unitCents, description: i.name.slice(0, 256), quantity: i.quantity, code: `${input.orderNumber}-${n + 1}` }))
       : [
           {
             amount: input.totalCents,
-            description: (`Pedido GCard-PRO #${input.orderNumber}` + (input.items.length ? `: ${input.items.map((i) => `${i.quantity}x ${i.name}`).join("; ")}` : "")).slice(0, 256),
+            description: (`Pedido GCard-PRO #${input.orderNumber}` + (priced.length ? `: ${priced.map((i) => `${i.quantity}x ${i.name}`).join("; ")}` : "")).slice(0, 256),
             quantity: 1,
             code: String(input.orderNumber),
           },
