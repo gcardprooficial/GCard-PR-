@@ -30,8 +30,8 @@ export const Route = createFileRoute("/personalizar")({
 
 const STEPS = [
   {
-    title: "Compre o acrílico com NFC e escolha a cor",
-    text: "O acrílico + NFC chega sem arte impressa. Cada unidade tem um código próprio, e o NFC já vem gravado com esse código. Cores: cristal, branco, preto e azul.",
+    title: "Compre o acrílico liso com chip NFC e escolha a cor",
+    text: "Na compra do acrílico liso (10x10 quadrado ou 15x10 em L), marque a opção de chip NFC. Cada chip tem um código próprio, já gravado. Cores: cristal, branco, preto e azul.",
   },
   {
     title: "Ative o código e cole o link de destino",

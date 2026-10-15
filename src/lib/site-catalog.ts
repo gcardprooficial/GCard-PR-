@@ -22,9 +22,6 @@ export const PRODUCT_IMAGES: Record<string, string> = {
   "plaquinha-10x15-l": produtoPlaquinhaL,
   "acrilico-10x10-sem-arte": acrilico10x10Cristal,
   "acrilico-15x10-l-sem-arte": acrilicoLCristal,
-  // "para personalizar" usa a mesma foto do acrílico liso do mesmo formato.
-  "acrilico-10x10-nfc-personalizar": acrilico10x10Cristal,
-  "acrilico-10x15-nfc-personalizar": acrilicoLCristal,
 };
 
 /** Fotos de balcão (public/mockups), usadas no carrossel e na galeria dos produtos. */
@@ -43,7 +40,6 @@ export const FALLBACK_PRODUCTS = [
     has_nfc: true,
     has_qr: false,
     is_blank: false,
-    is_customizable: false,
     price_delta_cents: 0,
     resale_delta_cents: 0,
     resale_tiers: [],
@@ -58,7 +54,6 @@ export const FALLBACK_PRODUCTS = [
     has_nfc: true,
     has_qr: true,
     is_blank: false,
-    is_customizable: false,
     price_delta_cents: 2000,
     resale_delta_cents: 2000,
     resale_tiers: [],
@@ -73,7 +68,6 @@ export const FALLBACK_PRODUCTS = [
     has_nfc: false,
     has_qr: false,
     is_blank: true,
-    is_customizable: false,
     price_delta_cents: 0,
     resale_delta_cents: 0,
     // Última tabela real conhecida (migração 20260916160000) — só usada se o catálogo não carregar.

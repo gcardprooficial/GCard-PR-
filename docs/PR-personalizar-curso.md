@@ -7,7 +7,7 @@ Branch: `feat/personalizar-curso` (base: `main`). **Não faça merge sem testar 
 **Fase 1: placa para personalizar**
 - `/ativar`: **Baixar QR** por código (SVG e PDF vetoriais, PNG 1200 px+, normal e espelhado, nível H, margem de 4 módulos, texto de ajuda). Só o dono do código (ou a equipe) baixa; limite de 30 downloads/10 min por usuário. O QR leva a `/r/<token>?s=q`, nunca ao destino final.
 - Destino aceita **Google e TOQY** (`toqy.com.br`, `www.toqy.com.br`, `*.toqy.com.br`), só https. **Uma única lista**, tabela `allowed_destination_hosts`, lida por `/r`, `/ativar`, `painel.placas` e pelo gatilho SQL. Etiqueta "Página TOQY" e botão "Criar minha página no TOQY" (com UTM).
-- Produtos **Acrílico 10x10 + NFC** e **10x15 + NFC (para personalizar)**: entram **ocultos e sem preço** (`TODO_PRECOS`). Cores cristal/branco/preto/azul. Vendem avulso e em lote (tabela de faixas `product_price_tiers`). O código por unidade vem do estoque de placas já criado, vinculado ao pedido pelo painel ("Vincular placas escaneadas"), como na revenda.
+- **Acrílico liso + opção "Chip NFC" (fluxo que você já vende)**: nenhum produto novo. Quando o pedido tem chip, o painel mostra "Vincular placas escaneadas" com a quantidade de **chips** do pedido; cada chip tem o seu código e o cliente baixa o QR em `/ativar`. Os chips com código ficam no estoque de placas do próprio acrílico liso (10x10 e 15x10 em L): crie com "gerar estoque" do painel, grave os chips com o CSV (`url_nfc`) e vincule na venda.
 - Admin: CSV de lote com `url_nfc` e `url_qr`; painel de placas mostra a etapa (Em estoque / Vendido / Ativado / Desativado) e as datas; ativar código **não vendido** é bloqueado no banco; tela **Denúncias** (desativar código).
 - `/r`: **302 + no-store** (sem cache), página neutra para código inexistente, não ativado e desativado, link **Denunciar**.
 - `/personalizar`: passo a passo, gabaritos 10x10 e 10x15 (SVG), checklist de teste. Linkada em `/produtos` e `/guia`.
@@ -31,7 +31,8 @@ Branch: `feat/personalizar-curso` (base: `main`). **Não faça merge sem testar 
 | 1 | `20261015000000_allowed_destination_hosts.sql` | tabela de hosts (Google e TOQY), função `is_allowed_destination`, gatilho do revendedor passa a ler a tabela | `DROP FUNCTION is_allowed_destination`; restaurar o gatilho de `20260915120000` |
 | 2 | `20261015010000_plates_datas_scans_denuncias.sql` | colunas `sold_at`, `blocked_at`, `block_reason`, `bot_scan_count`, `tracking_v2` em `plates`; colunas em `plate_scan_events`; RPC `plate_register_scan`; view `plate_scan_daily`; tabela `abuse_reports`; gatilhos de data e de "não ativar sem vender" | `DROP` das colunas/gatilhos/RPC/tabela listados |
 | 3 | `20261015020000_eventos_consentimento_origem.sql` | `first_touch` em orders/profiles/tool_leads; `tool_leads.user_id/email/email_consent_at`; tabelas `events`, `consent_texts`, `consent_records`; gatilhos em `orders`, `plates` e `auth.users` (novo `handle_new_user`, `handle_user_confirmed`); funções `track_event`, `similar_account_exists`, `people_summary` | `DROP` dos gatilhos/funções/tabelas; restaurar `handle_new_user` de `20260910184023` |
-| 4 | `20261015030000_produtos_para_personalizar.sql` | coluna `products.is_customizable` e 2 produtos **ocultos** | `DELETE` dos 2 slugs; `DROP COLUMN` |
+| 4 | `20261015030000_produtos_para_personalizar.sql` | (substituída pela 5) criou 2 produtos duplicados do acrílico liso | ver 5 |
+| 5 | `20261015040000_remove_produtos_duplicados_personalizar.sql` | apaga os 2 produtos duplicados (ou os deixa ocultos se houver pedido) e remove a coluna `is_customizable` | n/a |
 
 **Ordem de publicação:** aplique as migrações **antes** de publicar o código deste PR. O `/r` tem plano B (se a tabela de hosts não existir, volta a aceitar só Google, então nenhum QR impresso quebra), mas o `/ativar` e o painel de placas leem colunas novas.
 
@@ -53,7 +54,7 @@ Atenção a duas mudanças de comportamento no banco:
 8. **Cadastro novo:** crie conta com a caixa de novidades marcada e outra desmarcada: confira em `consent_records` e em `events` (`conta_criada`), e o e-mail de confirmação.
 9. **Webhook duplicado:** reenvie o mesmo webhook de pagamento: `events` não duplica `pedido_pago` (chave `pedido_pago:<pedido>`).
 10. **CSV:** Clientes, "Exportar consentidos" só traz quem aceitou e não saiu; "Exportar pessoas (operacional)" não traz campos de marketing nem CPF. Usuário sem acesso de equipe não consegue chamar.
-11. **Produtos para personalizar:** defina preço e `status = 'ativo'` (SQL no fim da migração 4) e faça um pedido de teste.
+11. **Chip NFC:** compre acrílico liso na revenda com a opção de chip; no painel, o pedido pago mostra "Vincular placas escaneadas" com a quantidade de chips; depois de vincular, os códigos aparecem em `/ativar` do cliente.
 
 Verificação automatizada: `npx tsx scripts/check-fase1.ts` (destino, robôs, origem, QR com margem e espelhado, sugestão de e-mail, fim de semana/feriado).
 
@@ -80,7 +81,6 @@ Verificação automatizada: `npx tsx scripts/check-fase1.ts` (destino, robôs, o
 
 ## Pendências suas (`TODO_`)
 
-- `TODO_PRECOS`: preços e faixas dos 2 produtos (hoje ocultos).
 - `TODO_LINKS_CANVA`: links dos modelos em `src/routes/personalizar.tsx`.
 - Remetente do Resend (`RESEND_FROM`), hoje o padrão do projeto.
 - `SCAN_HASH_SALT` na Vercel (texto aleatório longo; sem ele usa um padrão fixo).

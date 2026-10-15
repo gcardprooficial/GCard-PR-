@@ -50,14 +50,6 @@ const COLOR_IMAGES: Record<string, string> = {
   "acrilico-15x10-l-sem-arte:branco": acrilicoLBranco,
   "acrilico-15x10-l-sem-arte:preto": acrilicoLPreto,
   "acrilico-15x10-l-sem-arte:azul": acrilicoLAzul,
-  "acrilico-10x10-nfc-personalizar:cristal": acrilico10x10Cristal,
-  "acrilico-10x10-nfc-personalizar:branco": acrilico10x10Branco,
-  "acrilico-10x10-nfc-personalizar:preto": acrilico10x10Preto,
-  "acrilico-10x10-nfc-personalizar:azul": acrilico10x10Azul,
-  "acrilico-10x15-nfc-personalizar:cristal": acrilicoLCristal,
-  "acrilico-10x15-nfc-personalizar:branco": acrilicoLBranco,
-  "acrilico-10x15-nfc-personalizar:preto": acrilicoLPreto,
-  "acrilico-10x15-nfc-personalizar:azul": acrilicoLAzul,
 };
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
@@ -165,8 +157,6 @@ const IMAGES: Record<string, string> = {
   "plaquinha-10x15-l": produtoPlaquinhaL,
   "acrilico-10x10-sem-arte": acrilico10x10Cristal,
   "acrilico-15x10-l-sem-arte": acrilicoLCristal,
-  "acrilico-10x10-nfc-personalizar": acrilico10x10Cristal,
-  "acrilico-10x15-nfc-personalizar": acrilicoLCristal,
 };
 
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
@@ -184,7 +174,6 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     has_qr: false,
     has_nfc: true,
     is_blank: false,
-    is_customizable: false,
     min_quantity: 1,
     color_variants: null,
     nfc_addon_price_cents: null,
@@ -429,8 +418,7 @@ function Comprar() {
     .filter((item) => item.status !== "oculto")
     // Acrílico puro (sem QR/NFC) só entra no fluxo de revenda/atacado — lojista
     // final só compra cartão de bolso e plaquinha 10x10 já prontos.
-    // Acrílico liso só na revenda; o "para personalizar" também vende avulso (tem código por unidade).
-    .filter((item) => !(!isResale && item.is_blank && !item.is_customizable));
+    .filter((item) => !(!isResale && item.is_blank));
   // O checkout não pode ficar sem opções quando o catálogo ainda não foi publicado.
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 

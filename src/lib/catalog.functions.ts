@@ -36,8 +36,6 @@ export type CatalogProduct = {
   has_nfc: boolean;
   /** Acrílico puro, sem impressão: não gera placa, não entra em lote, não ativa nada. */
   is_blank: boolean;
-  /** Acrílico + NFC "para personalizar": sem arte, mas com um código por unidade (o cliente baixa o QR no painel). */
-  is_customizable: boolean;
   /** Kit fechado: quantidade mínima de venda desse produto. */
   min_quantity: number;
   /** Cores disponíveis; cada uma soma seu delta ao preço da faixa. Null = cor única. */
@@ -75,7 +73,7 @@ export const getCatalog = createServerFn({ method: "GET" }).handler(async () => 
     supabase
       .from("products")
       .select(
-        "id, slug, name, tagline, description, format, status, price_delta_cents, resale_delta_cents, has_qr, has_nfc, is_blank, is_customizable, min_quantity, color_variants, nfc_addon_price_cents",
+        "id, slug, name, tagline, description, format, status, price_delta_cents, resale_delta_cents, has_qr, has_nfc, is_blank, min_quantity, color_variants, nfc_addon_price_cents",
       )
       .order("sort_order"),
     supabase
