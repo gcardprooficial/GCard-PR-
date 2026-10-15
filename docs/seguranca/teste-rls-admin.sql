@@ -61,14 +61,14 @@ RESET ROLE;
 -- 4) Usuário comum logado (sem papel admin/staff): não lê pedidos de outros nem roda relatórios -----
 -- Usa o primeiro usuário que NÃO é da equipe.
 DO $$
-DECLARE uid UUID; n INT;
+DECLARE uid UUID; mail TEXT; n INT;
 BEGIN
-  SELECT u.id INTO uid FROM auth.users u
+  SELECT u.id, u.email INTO uid, mail FROM auth.users u
   WHERE NOT EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id = u.id AND r.role IN ('admin','staff')) LIMIT 1;
   IF uid IS NULL THEN INSERT INTO _res VALUES ('(sem usuário comum para testar)', true); RETURN; END IF;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', uid, 'role', 'authenticated')::text, true);
   EXECUTE 'SET LOCAL ROLE authenticated';
-  SELECT count(*) INTO n FROM public.orders WHERE customer_email IS DISTINCT FROM (SELECT email FROM auth.users WHERE id = uid);
+  SELECT count(*) INTO n FROM public.orders WHERE customer_email IS DISTINCT FROM mail;
   INSERT INTO _res VALUES ('usuário comum não vê pedidos alheios', n = 0);
   BEGIN
     PERFORM * FROM public.accounts_report();
