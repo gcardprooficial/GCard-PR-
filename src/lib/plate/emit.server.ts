@@ -25,42 +25,6 @@ async function blankAcrylic(orderId: string): Promise<{ qty: number; productId: 
   return { qty: lines.length > 0 ? wanted : 0, productId: lines[0]?.product_id ?? null };
 }
 
-/**
- * Antes de criar código novo: aproveita código LIVRE do mesmo produto que você já gerou, seja no estoque solto
- * (sem lote) ou num lote seu sem dono. Livre = sem pedido, não ativado, lote sem dono. Move o código para o lote do pedido.
- * Retorna quantos foram aproveitados (o resto o chamador cria).
- */
-async function claimFreePlates(
-  wanted: number,
-  to: { productId: string; orderId: string; batchId: string | null },
-): Promise<number> {
-  if (wanted <= 0) return 0;
-  const { data } = await supabaseAdmin
-    .from("plates")
-    .select("id, batch_id, batches(owner_order_id, owner_email, owner_user_id)")
-    .eq("product_id", to.productId)
-    .is("order_id", null)
-    .eq("status", "nao_ativada")
-    .order("short_code", { ascending: true })
-    .limit(wanted * 3 + 50);
-  type Row = { id: string; batch_id: string | null; batches: { owner_order_id: string | null; owner_email: string | null; owner_user_id: string | null } | null };
-  const free = ((data ?? []) as unknown as Row[])
-    .filter((r) => !r.batch_id || (r.batches && !r.batches.owner_order_id && !r.batches.owner_email && !r.batches.owner_user_id))
-    .slice(0, wanted)
-    .map((r) => r.id);
-  if (free.length === 0) return 0;
-  // Atualização com as mesmas condições: se outro pedido pegou algum no meio tempo, esse não entra (sem duplicar).
-  const { data: claimed, error } = await supabaseAdmin
-    .from("plates")
-    .update({ order_id: to.orderId, batch_id: to.batchId } as never)
-    .in("id", free)
-    .is("order_id", null)
-    .eq("status", "nao_ativada")
-    .select("id");
-  if (error) throw error;
-  return claimed?.length ?? 0;
-}
-
 /** Cria N placas de uma vez (blocos de 100). Se um token repetir (raríssimo), cai para uma a uma. */
 async function insertPlatesBulk(
   count: number,
@@ -189,10 +153,9 @@ export async function emitPlatesForOrder(orderId: string): Promise<{ created: nu
       { id: order.id, order_number: order.order_number, quantity: blank.qty, customer_email: order.customer_email },
       blank.productId,
     );
-    // 1) Aproveita código livre do mesmo produto que já existe (estoque ou lote sem dono). 2) Cria só o que faltar.
-    const reused = blank.productId ? await claimFreePlates(missingBlank, { productId: blank.productId, orderId, batchId }) : 0;
-    const createdBlank = await insertPlatesBulk(missingBlank - reused, { batch_id: batchId, order_id: orderId, product_id: blank.productId });
-    return { created: reused + createdBlank, total: haveCount + reused + createdBlank };
+    // Sempre códigos NOVOS: nunca usa o estoque que você gera e imprime (as placas impressas ficam com os códigos delas).
+    const createdBlank = await insertPlatesBulk(missingBlank, { batch_id: batchId, order_id: orderId, product_id: blank.productId });
+    return { created: createdBlank, total: haveCount + createdBlank };
   }
 
   if (order.kind === "revenda") return { created: 0, total: 0 };
