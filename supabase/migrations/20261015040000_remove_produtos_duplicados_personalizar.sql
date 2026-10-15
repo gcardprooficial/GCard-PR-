@@ -16,4 +16,5 @@ DELETE FROM public.products p
 UPDATE public.products SET status = 'oculto'
  WHERE slug IN ('acrilico-10x10-nfc-personalizar', 'acrilico-10x15-nfc-personalizar');
 
-ALTER TABLE public.products DROP COLUMN IF EXISTS is_customizable;
+-- A coluna is_customizable NÃO é apagada aqui: o código que já está na main ainda a lê, e apagá-la derrubou o catálogo.
+-- Só apague depois que o código que a dispensa estiver na main:  ALTER TABLE public.products DROP COLUMN IF EXISTS is_customizable;
