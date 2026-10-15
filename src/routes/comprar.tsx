@@ -13,6 +13,8 @@ import { createCheckoutPreference } from "@/lib/payments/createPreference.server
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
 import { ProductionNotice } from "@/components/ProductionNotice";
 import { nonBusinessDayNotice } from "@/lib/business-hours";
+import { suggestEmailDomain } from "@/lib/email-typo";
+import { CONSENT_TEXT } from "@/lib/consent";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { createPagarmeCardCheckout, createPagarmeCheckout } from "@/lib/payments/pagarme.functions";
 import { gatewayOptions, type Gateway } from "@/lib/gateways";
@@ -1949,6 +1951,18 @@ function Comprar() {
                     onChange={(v) => setCustomer({ ...customer, email: v })}
                     placeholder="joao@email.com"
                   />
+                  {(() => {
+                    const fix = suggestEmailDomain(customer.email);
+                    return fix ? (
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        Você quis dizer{" "}
+                        <button type="button" className="font-semibold text-foreground underline" onClick={() => setCustomer({ ...customer, email: fix })}>
+                          {fix}
+                        </button>
+                        ?
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
               </div>
               <div className="mt-6 inline-flex items-start gap-3 rounded-2xl bg-surface/70 p-4">
@@ -1980,10 +1994,7 @@ function Comprar() {
                   onChange={(event) => setMarketingConsent(event.target.checked)}
                   className="mt-1 size-4 accent-primary"
                 />
-                <span className="leading-relaxed text-muted-foreground">
-                  Quero receber atualizações estratégicas e novidades da GCard-PRÓ por e-mail. Posso
-                  me descadastrar a qualquer momento.
-                </span>
+                <span className="leading-relaxed text-muted-foreground">{CONSENT_TEXT}</span>
               </label>
             </div>
           )}

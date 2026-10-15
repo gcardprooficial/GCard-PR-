@@ -506,6 +506,10 @@ export async function upsertCustomerConsent(input: {
   email: string;
   name: string;
   consent: boolean;
+  /** Onde a escolha foi feita (vai para consent_records junto com a versão do texto exibido). */
+  source?: "cadastro" | "checkout" | "gerador" | "sair";
+  orderId?: string;
+  userId?: string;
 }) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -526,6 +530,18 @@ export async function upsertCustomerConsent(input: {
     .select("unsubscribe_token")
     .single();
   if (error) throw error;
+  if (input.source) {
+    const { CONSENT_TEXT_VERSION } = await import("@/lib/consent");
+    const { error: recordError } = await db.from("consent_records").insert({
+      email,
+      user_id: input.userId ?? null,
+      order_id: input.orderId ?? null,
+      accepted: input.consent,
+      text_version: CONSENT_TEXT_VERSION,
+      source: input.source,
+    });
+    if (recordError) console.error("falha ao registrar consentimento", recordError);
+  }
   return contact?.unsubscribe_token ?? randomUUID();
 }
 
