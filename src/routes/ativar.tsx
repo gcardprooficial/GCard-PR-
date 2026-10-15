@@ -691,11 +691,11 @@ function PlateCard({
           />
         </div>
         <div className="sm:col-span-2">
-          <Label className="text-xs font-semibold">Link de destino (avaliação do Google ou página do TOQY)</Label>
+          <Label className="text-xs font-semibold">Link de destino (qualquer link https)</Label>
           <Input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://search.google.com/local/writereview?placeid=... ou https://toqy.com.br/b/..."
+            placeholder="https://... (avaliação do Google, página do TOQY, Instagram, site…)"
             className="mt-1 h-10 input-soft rounded-xl"
           />
           <button

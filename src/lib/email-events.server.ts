@@ -354,9 +354,17 @@ export async function dispatchOrderEmailEvent(
       case "pagamento_confirmado":
         body += `<p>Recebemos o pagamento do seu pedido. Obrigado!</p>${summary}${PRODUCTION_NOTE_HTML}`;
         if (isBlank) {
+          const qrCodes = items.filter((i) => i.product_name.startsWith("Código QR para ativar")).reduce((n, i) => n + i.quantity, 0);
           body +=
-            `<p>Seu pedido é de <strong>acrílico puro</strong>, sem impressão, QR Code ou NFC: é o material cortado pra você aplicar a sua própria arte. ` +
+            `<p>Seu pedido é de <strong>acrílico puro</strong>, sem impressão: é o material cortado pra você aplicar a sua própria arte. ` +
             `Vamos separar as cores escolhidas e te avisamos quando entrar em produção e quando for enviado.</p>`;
+          if (qrCodes > 0) {
+            body +=
+              `<p><strong>Seus ${qrCodes} código(s) de QR já estão prontos.</strong> Entre em <a href="${siteUrl()}/ativar" style="color:#1A1A1A;font-weight:600;">gcardpro.com.br/ativar</a> ` +
+              `com o e-mail da compra (crie a conta com ele se for a primeira vez), baixe o QR de cada código, coloque na sua arte e escolha o link que quiser. ` +
+              `Se pediu chip NFC, ele vai vazio: use o botão “Copiar URL NFC” do mesmo código e grave no chip com o app NFC Tools. ` +
+              `Passo a passo: <a href="${siteUrl()}/personalizar" style="color:#1A1A1A;font-weight:600;">gcardpro.com.br/personalizar</a>.</p>`;
+          }
         } else if (cardOnly && isRevenda) {
           body +=
             `<p>Estamos separando os seus cartões de PVC com NFC. Avisamos quando entrar em produção e quando forem enviados, com o código de rastreio.</p>` +

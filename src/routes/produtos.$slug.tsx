@@ -98,7 +98,7 @@ function Produto() {
           )}
           {p.is_blank && (
             <p className="mt-4 text-sm text-muted-foreground">
-              Sem impressão. Cores: cristal, branco, preto e azul. Você aplica a sua arte ou adesivo. Quer colocar o seu QR? Marque a opção de chip NFC na compra e veja{" "}
+              Sem impressão. Cores: cristal, branco, preto e azul. Você aplica a sua arte ou adesivo. Quer colocar o seu QR? Na compra, escolha receber o QR Code (grátis) e veja{" "}
               <Link to="/personalizar" className="font-semibold underline">como personalizar</Link>.
             </p>
           )}

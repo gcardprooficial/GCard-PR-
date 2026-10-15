@@ -12,6 +12,83 @@ async function firstProductId(orderId: string): Promise<string | null> {
   return data?.product_id ?? null;
 }
 
+/** Acrílico liso do pedido: quantos códigos de QR o cliente pediu e o produto da primeira linha. */
+async function blankAcrylic(orderId: string): Promise<{ qty: number; productId: string | null }> {
+  const { data } = await supabaseAdmin
+    .from("order_items")
+    .select("quantity, product_id, product_name, products(is_blank)")
+    .eq("order_id", orderId);
+  const items = (data ?? []) as unknown as { quantity: number; product_id: string | null; product_name: string; products: { is_blank: boolean } | null }[];
+  const lines = items.filter((r) => r.product_id && r.products?.is_blank);
+  // O cliente escolhe se quer o QR: só os itens "Código QR para ativar" geram código. Sem eles, acrílico liso não emite nada.
+  const wanted = items.filter((r) => r.product_name.startsWith("Código QR para ativar")).reduce((n, r) => n + r.quantity, 0);
+  return { qty: lines.length > 0 ? wanted : 0, productId: lines[0]?.product_id ?? null };
+}
+
+/**
+ * Antes de criar código novo: aproveita código LIVRE do mesmo produto que você já gerou, seja no estoque solto
+ * (sem lote) ou num lote seu sem dono. Livre = sem pedido, não ativado, lote sem dono. Move o código para o lote do pedido.
+ * Retorna quantos foram aproveitados (o resto o chamador cria).
+ */
+async function claimFreePlates(
+  wanted: number,
+  to: { productId: string; orderId: string; batchId: string | null },
+): Promise<number> {
+  if (wanted <= 0) return 0;
+  const { data } = await supabaseAdmin
+    .from("plates")
+    .select("id, batch_id, batches(owner_order_id, owner_email, owner_user_id)")
+    .eq("product_id", to.productId)
+    .is("order_id", null)
+    .eq("status", "nao_ativada")
+    .order("short_code", { ascending: true })
+    .limit(wanted * 3 + 50);
+  type Row = { id: string; batch_id: string | null; batches: { owner_order_id: string | null; owner_email: string | null; owner_user_id: string | null } | null };
+  const free = ((data ?? []) as unknown as Row[])
+    .filter((r) => !r.batch_id || (r.batches && !r.batches.owner_order_id && !r.batches.owner_email && !r.batches.owner_user_id))
+    .slice(0, wanted)
+    .map((r) => r.id);
+  if (free.length === 0) return 0;
+  // Atualização com as mesmas condições: se outro pedido pegou algum no meio tempo, esse não entra (sem duplicar).
+  const { data: claimed, error } = await supabaseAdmin
+    .from("plates")
+    .update({ order_id: to.orderId, batch_id: to.batchId } as never)
+    .in("id", free)
+    .is("order_id", null)
+    .eq("status", "nao_ativada")
+    .select("id");
+  if (error) throw error;
+  return claimed?.length ?? 0;
+}
+
+/** Cria N placas de uma vez (blocos de 100). Se um token repetir (raríssimo), cai para uma a uma. */
+async function insertPlatesBulk(
+  count: number,
+  base: { batch_id: string | null; order_id: string; product_id: string | null },
+): Promise<number> {
+  let created = 0;
+  for (let left = count; left > 0; left -= 100) {
+    const n = Math.min(100, left);
+    const rows = Array.from({ length: n }, () => ({
+      token: generatePlateToken(),
+      batch_id: base.batch_id,
+      order_id: base.order_id,
+      product_id: base.product_id,
+      business_id: null,
+      status: "nao_ativada" as const,
+      destination_url: null,
+    }));
+    const { error } = await supabaseAdmin.from("plates").insert(rows as never);
+    if (!error) {
+      created += n;
+      continue;
+    }
+    if (!error.message.includes("plates_token_key")) throw error;
+    created += await insertPlates(n, { ...(base.batch_id ? { batch_id: base.batch_id } : {}), order_id: base.order_id, product_id: base.product_id, business_id: null, destination_url: null, activated: false });
+  }
+  return created;
+}
+
 async function insertPlates(
   count: number,
   base: { batch_id?: string; order_id?: string; product_id: string | null; business_id: string | null; destination_url: string | null; activated: boolean },
@@ -83,6 +160,7 @@ async function ensureOrderBatch(
  * Emit plates for a paid order. Idempotent.
  * - kind "individual": N plates tied to the order, já ativadas apontando para o
  *   negócio informado na compra.
+ * - acrílico liso (is_blank): 1 código de QR por unidade, sem destino (ver acima).
  * - kind "revenda": NÃO gera nada aqui -- lote é montado manualmente pelo
  *   admin a partir do estoque físico (painel de Pedidos, "Gerar lote do
  *   estoque"), pra garantir que todo código emitido corresponde a uma
@@ -97,6 +175,25 @@ export async function emitPlatesForOrder(orderId: string): Promise<{ created: nu
 
   if (!order) throw new Error(`emitPlatesForOrder: pedido ${orderId} não encontrado`);
   if (order.payment_status !== "pago") return { created: 0, total: 0 };
+
+  // Acrílico liso: o cliente personaliza a arte em casa. Cada unidade ganha um código de QR (sem negócio e sem
+  // destino): ele baixa o QR em /ativar e cola o destino quando quiser. O chip NFC vai vazio; o link do NFC é o
+  // do mesmo código (botão "Copiar URL NFC" em /ativar). Vale para loja própria e para revenda.
+  const blank = await blankAcrylic(orderId);
+  if (blank.qty > 0) {
+    const { data: have } = await supabaseAdmin.from("plates").select("id").eq("order_id", orderId);
+    const haveCount = have?.length ?? 0;
+    const missingBlank = blank.qty - haveCount;
+    if (missingBlank <= 0) return { created: 0, total: haveCount };
+    const batchId = await ensureOrderBatch(
+      { id: order.id, order_number: order.order_number, quantity: blank.qty, customer_email: order.customer_email },
+      blank.productId,
+    );
+    // 1) Aproveita código livre do mesmo produto que já existe (estoque ou lote sem dono). 2) Cria só o que faltar.
+    const reused = blank.productId ? await claimFreePlates(missingBlank, { productId: blank.productId, orderId, batchId }) : 0;
+    const createdBlank = await insertPlatesBulk(missingBlank - reused, { batch_id: batchId, order_id: orderId, product_id: blank.productId });
+    return { created: reused + createdBlank, total: haveCount + reused + createdBlank };
+  }
 
   if (order.kind === "revenda") return { created: 0, total: 0 };
 

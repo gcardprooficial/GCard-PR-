@@ -333,6 +333,8 @@ const cartOrderSchema = z.object({
         colorSlug: z.string().trim().max(40).optional().nullable(),
         quantity: z.number().int().min(1).max(500),
         nfcAddonQty: z.number().int().min(0).max(500).optional(),
+        /** Cliente escolheu receber o código de QR de cada unidade (acrílico liso). Sem escolha, nada é emitido. */
+        qrCodeQty: z.number().int().min(0).max(500).optional(),
       }),
     )
     .min(1)
@@ -372,7 +374,7 @@ export const createCartOrder = createServerFn({ method: "POST" })
           productSlug: item.productSlug,
           colorSlug: item.colorSlug,
           quantity: item.quantity,
-        }).then((resolved) => ({ ...resolved, quantity: item.quantity, nfcAddonQty: item.nfcAddonQty ?? 0 })),
+        }).then((resolved) => ({ ...resolved, quantity: item.quantity, nfcAddonQty: item.nfcAddonQty ?? 0, qrCodeQty: item.qrCodeQty ?? 0 })),
       ),
     );
 
@@ -381,6 +383,13 @@ export const createCartOrder = createServerFn({ method: "POST" })
       if (line.nfcAddonQty > 0 && !(line.product as { is_blank?: boolean }).is_blank) {
         throw new Error(`Chip NFC avulso não disponível para "${line.product.name}".`);
       }
+    }
+    // Código de QR só no acrílico liso e no máximo 1 por unidade: nunca confia na quantidade do navegador.
+    for (const line of lines) {
+      if (line.qrCodeQty > 0 && !(line.product as { is_blank?: boolean }).is_blank) {
+        throw new Error(`Código de QR não disponível para "${line.product.name}".`);
+      }
+      if (line.qrCodeQty > line.quantity) throw new Error("Quantidade de códigos de QR maior que a de placas.");
     }
     const addonUnitCents = (product: { nfc_addon_price_cents?: number | null }) =>
       product.nfc_addon_price_cents ?? 0;
@@ -456,6 +465,17 @@ export const createCartOrder = createServerFn({ method: "POST" })
         total_cents: l.nfcAddonQty * addonUnitCents(l.product),
       }));
 
+    const qrItems = lines
+      .filter((l) => l.qrCodeQty > 0)
+      .map((l) => ({
+        order_id: order.id,
+        product_id: null,
+        product_name: "Código QR para ativar",
+        quantity: l.qrCodeQty,
+        unit_price_cents: 0,
+        total_cents: 0,
+      }));
+
     const { error: itemsError } = await supabaseAdmin.from("order_items").insert([
       ...lines.map((line) => ({
         order_id: order.id,
@@ -466,6 +486,7 @@ export const createCartOrder = createServerFn({ method: "POST" })
         total_cents: line.subtotal,
       })),
       ...addonItems,
+      ...qrItems,
     ]);
     if (itemsError) throw itemsError;
 

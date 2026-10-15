@@ -1,6 +1,6 @@
 // Verificação rápida da lógica da Fase 1 (sem framework): npx tsx scripts/check-fase1.ts
 import assert from "node:assert/strict";
-import { checkDestination, isAllowedHost, isToqyUrl, normalizeDestination, type DestinationRule } from "../src/lib/destination";
+import { checkDestination, isAllowedHost, isPublicHost, isToqyUrl, normalizeDestination, type DestinationRule } from "../src/lib/destination";
 import { classifyScan, parseScanSource, scanCountry } from "../src/lib/scan-filter";
 import { buildQrMatrix, qrToSvg, QUIET_ZONE_MODULES } from "../src/lib/qr-export";
 import { suggestEmailDomain } from "../src/lib/email-typo";
@@ -24,6 +24,16 @@ const up = normalizeDestination("http://toqy.com.br/b/x");
 assert.ok(up.ok && up.url.startsWith("https://") && up.upgradedToHttps);
 assert.equal(normalizeDestination("https://toqy.com.br/" + "a".repeat(2100)).ok, false);
 assert.equal(isAllowedHost("faketoqy.com.br", rules), false);
+// Regra "*" (qualquer link https): libera domínio público, mas nunca IP, localhost ou rede interna.
+const anyRules: DestinationRule[] = [{ host: "*", include_subdomains: false }];
+for (const ok of ["https://instagram.com/loja", "https://meusite.com.br/p?x=1", "https://wa.me/5511999999999"]) {
+  assert.equal(checkDestination(ok, anyRules).ok, true, `com "*" deveria aceitar: ${ok}`);
+}
+for (const bad of ["http://instagram.com/loja", "https://127.0.0.1/x", "https://192.168.0.10/", "https://localhost/", "https://servidor.local/", "https://[::1]/", "https://intranet/", "https://u:p@instagram.com/", "javascript:alert(1)"]) {
+  assert.equal(checkDestination(bad, anyRules).ok === true && !bad.startsWith("http://"), false, `mesmo com "*" deveria recusar: ${bad}`);
+}
+assert.equal(isPublicHost("a.b.com"), true);
+assert.equal(isPublicHost("10.0.0.1"), false);
 assert.equal(isToqyUrl("https://x.toqy.com.br/p"), true);
 
 // --- leituras: robôs e pré-visualizações separados; origem só q/n; país Vercel antes da Cloudflare

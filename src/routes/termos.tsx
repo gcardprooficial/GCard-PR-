@@ -80,8 +80,9 @@ function Termos() {
 
           <Section n="6" title="Uso correto">
             <p>
-              Cada código (QR e NFC) só pode apontar para páginas de avaliação do Google ou para páginas do
-              TOQY (toqy.com.br), sempre em https. Qualquer outro destino é bloqueado pelo sistema.
+              Cada código (QR e NFC) pode apontar para qualquer endereço público em https (por exemplo a
+              avaliação do Google, uma página do TOQY, um perfil ou um site). Não são aceitos endereços
+              http, IP, endereços internos nem links com usuário e senha.
             </p>
             <p>
               Códigos usados para golpe, fraude, conteúdo ilegal ou qualquer abuso podem ser desativados a

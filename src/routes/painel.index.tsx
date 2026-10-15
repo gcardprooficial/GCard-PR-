@@ -161,17 +161,6 @@ function hasNoCodes(r: OrderRow): boolean {
   return r.order_items.some((it) => it.products?.is_blank || it.products?.has_qr === false);
 }
 
-/**
- * Chips NFC avulsos do pedido (opção "Chip NFC" do acrílico liso). Cada chip tem um código próprio: o painel
- * vincula os chips escaneados ao pedido, e o cliente baixa o QR de cada código em /ativar. 0 = pedido sem chip.
- */
-function nfcChipQty(r: OrderRow): number {
-  return r.order_items.filter((it) => it.product_name.startsWith("Chip NFC avulso")).reduce((n, it) => n + it.quantity, 0);
-}
-
-/** Quantos códigos o pedido precisa: os chips, quando há; senão a quantidade do pedido. */
-const codesNeeded = (r: OrderRow): number => nfcChipQty(r) || r.quantity;
-
 function timeAgo(iso: string): string {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
   if (mins < 60) return `há ${mins} min`;
@@ -589,8 +578,8 @@ function Orders() {
   // Monta o lote com as placas que foram escaneadas de verdade (cole os links /r/... ou os tokens).
   async function assignScannedPlates(row: OrderRow) {
     const { hex, shorts } = parseScanned(scanText);
-    if (hex.size + shorts.size !== codesNeeded(row)) {
-      toast.error(`Encontrei ${hex.size + shorts.size} código(s), mas o pedido precisa de ${codesNeeded(row)}.`);
+    if (hex.size + shorts.size !== row.quantity) {
+      toast.error(`Encontrei ${hex.size + shorts.size} código(s), mas o pedido tem ${row.quantity} un.`);
       return;
     }
     setGeneratingFor(row.id);
@@ -612,7 +601,7 @@ function Orders() {
       }
       for (const f of foundPlates) tokens.add(f.token);
     }
-    if (tokens.size !== codesNeeded(row)) {
+    if (tokens.size !== row.quantity) {
       setGeneratingFor(null);
       toast.error("Um mesmo código foi informado duas vezes (link e código curto da mesma placa).");
       return;
@@ -978,10 +967,8 @@ function Orders() {
                     : "bg-g-blue/15 text-foreground"
                 }`}
               >
-                {nfcChipQty(r) > 0
-                  ? `ACRÍLICO + CHIP NFC (${nfcChipQty(r)} chip(s)) — vincular os chips escaneados (cada um com o seu código) e enviar`
-                  : r.order_items.some((it) => it.products?.is_blank)
-                  ? "ACRÍLICO SEM ARTE — só separar cor e quantidade (sem QR/NFC, sem lote)"
+                {r.order_items.some((it) => it.products?.is_blank)
+                  ? "ACRÍLICO SEM ARTE — separar cor e quantidade. Se o cliente escolheu QR (item \"Código QR para ativar\"), os códigos saem sozinhos no pagamento e ele baixa em /ativar; o chip NFC vai vazio"
                   : r.order_items.some((it) => it.products?.has_qr === false)
                     ? "CARTÃO PVC (só NFC) — sem lote e sem código; desconta sozinho do Estoque de cartões (aba Placas)"
                     : r.kind === "individual"
@@ -1039,7 +1026,7 @@ function Orders() {
                       </a>
                     </p>
                   )}
-                  {(r.kind === "revenda" || nfcChipQty(r) > 0) && batchesByOrder[r.id] && (
+                  {r.kind === "revenda" && batchesByOrder[r.id] && (
                     <p className="mt-2 text-sm">
                       Lote:{" "}
                       <Link to="/painel/lotes" className="font-mono font-semibold underline">
@@ -1050,10 +1037,10 @@ function Orders() {
                         : " · exporte o CSV na aba Lotes e marque como enviado"}
                     </p>
                   )}
-                  {(r.kind === "revenda" || nfcChipQty(r) > 0) &&
+                  {r.kind === "revenda" &&
                     r.payment_status === "pago" &&
                     !batchesByOrder[r.id] &&
-                    (nfcChipQty(r) > 0 || !hasNoCodes(r)) && (
+                    !hasNoCodes(r) && (
                     <div className="mt-2 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm text-amber-800">Pago, mas ainda sem lote.</p>
@@ -1067,7 +1054,6 @@ function Orders() {
                         >
                           Vincular placas escaneadas
                         </Button>
-                        {nfcChipQty(r) === 0 && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -1078,12 +1064,11 @@ function Orders() {
                         >
                           {generatingFor === r.id ? "Gerando…" : "Gerar lote do estoque (ordem)"}
                         </Button>
-                        )}
                       </div>
                       {scanOpenFor === r.id && (
                         <div className="rounded-xl border border-border bg-muted/60 p-3">
                           <p className="text-xs text-muted-foreground">
-                            Cole os {codesNeeded(r)} códigos das placas (GCARD-00001) ou os links escaneados
+                            Cole os {r.quantity} códigos das placas (GCARD-00001) ou os links escaneados
                             (gcardpro.com.br/r/…), um por linha. As placas precisam estar livres no estoque.
                           </p>
                           <Button
@@ -1097,7 +1082,7 @@ function Orders() {
                           <textarea
                             value={scanText}
                             onChange={(e) => setScanText(e.target.value)}
-                            rows={Math.min(12, Math.max(4, codesNeeded(r)))}
+                            rows={Math.min(12, Math.max(4, r.quantity))}
                             className="mt-2 w-full rounded-lg border border-input bg-background p-2 font-mono text-xs"
                             placeholder="Um código por linha, ex.: GCARD-00007"
                           />
@@ -1111,7 +1096,7 @@ function Orders() {
                                 setScanText((prev) => (prev.trim() ? `${prev.trim()}\n${code}` : code));
                                 const total =
                                   parseScanned(scanText).hex.size + parseScanned(scanText).shorts.size + 1;
-                                if (total >= codesNeeded(r)) setCameraOpenFor(null);
+                                if (total >= r.quantity) setCameraOpenFor(null);
                               }}
                             />
                           )}
@@ -1125,7 +1110,7 @@ function Orders() {
                               {generatingFor === r.id ? "Montando…" : "Montar lote"}
                             </Button>
                             <span className="text-xs text-muted-foreground">
-                              {parseScanned(scanText).hex.size + parseScanned(scanText).shorts.size} / {codesNeeded(r)} códigos
+                              {parseScanned(scanText).hex.size + parseScanned(scanText).shorts.size} / {r.quantity} códigos
                             </span>
                           </div>
                         </div>
