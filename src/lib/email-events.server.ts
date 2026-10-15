@@ -359,11 +359,20 @@ export async function dispatchOrderEmailEvent(
             `<p>Seu pedido é de <strong>acrílico puro</strong>, sem impressão: é o material cortado pra você aplicar a sua própria arte. ` +
             `Vamos separar as cores escolhidas e te avisamos quando entrar em produção e quando for enviado.</p>`;
           if (qrCodes > 0) {
+            // Número do lote: se os códigos não aparecerem sozinhos no /ativar, a pessoa resgata pelo lote.
+            const { data: lot } = await db.from("batches").select("code").eq("owner_order_id", orderId).maybeSingle();
             body +=
               `<p><strong>Seus ${qrCodes} código(s) de QR já estão prontos.</strong> Entre em <a href="${siteUrl()}/ativar" style="color:#1A1A1A;font-weight:600;">gcardpro.com.br/ativar</a> ` +
               `com o e-mail da compra (crie a conta com ele se for a primeira vez), baixe o QR de cada código, coloque na sua arte e escolha o link que quiser. ` +
               `Se pediu chip NFC, ele vai vazio: use o botão “Copiar URL NFC” do mesmo código e grave no chip com o app NFC Tools. ` +
               `Passo a passo: <a href="${siteUrl()}/personalizar" style="color:#1A1A1A;font-weight:600;">gcardpro.com.br/personalizar</a>.</p>`;
+            if (lot?.code) {
+              body += box(
+                `<strong>Número do seu lote:</strong> <span style="font-family:monospace;font-size:16px;font-weight:800;">${escapeHtml(lot.code)}</span><br/>` +
+                  `Se os códigos não aparecerem sozinhos em <a href="${siteUrl()}/ativar" style="color:#1A1A1A;font-weight:600;">gcardpro.com.br/ativar</a>, ` +
+                  `clique em <strong>Resgatar lote</strong> e digite esse número.`,
+              );
+            }
           }
         } else if (cardOnly && isRevenda) {
           body +=
