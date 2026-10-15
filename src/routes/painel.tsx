@@ -19,10 +19,12 @@ import {
   Truck,
   FileSpreadsheet,
   Handshake,
+  BarChart3,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
+import { DomainExpiryBanner } from "@/components/DomainExpiryBanner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -38,6 +40,7 @@ const TABS = [
   { to: "/painel/visao-geral", label: "Visão geral", icon: LayoutDashboard },
   { to: "/painel", label: "Pedidos", exact: true, icon: Package },
   { to: "/painel/clientes", label: "Clientes", icon: Users },
+  { to: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/painel/lotes", label: "Lotes", icon: Boxes },
   { to: "/painel/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/painel/afiliados", label: "Afiliados", icon: Handshake },
@@ -172,6 +175,7 @@ function PanelLayout() {
 
       <PanelCtx.Provider value={{ userId: session.user.id, email: session.user.email ?? "" }}>
         <main className="min-w-0 flex-1 px-4 pb-24 pt-5 sm:px-6 md:px-9 md:pb-16 md:pt-8">
+          <DomainExpiryBanner />
           <Outlet />
         </main>
       </PanelCtx.Provider>

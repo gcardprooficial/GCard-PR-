@@ -21,6 +21,24 @@ export function rateLimit(key: string, max: number, windowMs: number): boolean {
   return true;
 }
 
+/**
+ * Limite compartilhado entre instâncias (tabela rate_limits + RPC rate_limit_hit). Use nos endpoints sensíveis
+ * (criar pedido, denúncia, lead). Se o banco falhar (ou a migração ainda não rodou), cai no limite em memória:
+ * nunca bloqueia o cliente por erro nosso.
+ */
+export async function rateLimitShared(key: string, max: number, windowMs: number): Promise<boolean> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await (supabaseAdmin as unknown as {
+      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+    }).rpc("rate_limit_hit", { _key: key, _max: max, _window_seconds: Math.max(1, Math.round(windowMs / 1000)) });
+    if (error || typeof data !== "boolean") return rateLimit(key, max, windowMs);
+    return data;
+  } catch {
+    return rateLimit(key, max, windowMs);
+  }
+}
+
 /** Best-effort client key from proxy headers (Cloudflare / Vercel / generic). */
 export function clientKey(request: Request): string {
   return (

@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { unitPriceForQuantity } from "@/lib/pricing";
-import { rateLimit, clientKey } from "@/lib/rateLimit";
+import { rateLimitShared, clientKey } from "@/lib/rateLimit";
 
 const GOOGLE_HOSTS = [
   "search.google.com",
@@ -206,11 +206,11 @@ async function resolveOrderLine(
 export const createPendingOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderSchema.parse(input))
   .handler(async ({ data }) => {
-    if (!rateLimit(`order:${data.customer.email.toLowerCase()}`, 5, 300_000)) {
+    if (!(await rateLimitShared(`order:${data.customer.email.toLowerCase()}`, 5, 300_000))) {
       throw new Error("Muitos pedidos seguidos com este e-mail. Aguarde alguns minutos.");
     }
     const ip = clientKey(getRequest());
-    if (!rateLimit(`order-ip:${ip}`, 10, 300_000)) {
+    if (!(await rateLimitShared(`order-ip:${ip}`, 10, 300_000))) {
       throw new Error("Muitos pedidos seguidos. Aguarde alguns minutos.");
     }
 
@@ -352,11 +352,11 @@ const cartOrderSchema = z.object({
 export const createCartOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => cartOrderSchema.parse(input))
   .handler(async ({ data }) => {
-    if (!rateLimit(`order:${data.customer.email.toLowerCase()}`, 5, 300_000)) {
+    if (!(await rateLimitShared(`order:${data.customer.email.toLowerCase()}`, 5, 300_000))) {
       throw new Error("Muitos pedidos seguidos com este e-mail. Aguarde alguns minutos.");
     }
     const ip = clientKey(getRequest());
-    if (!rateLimit(`order-ip:${ip}`, 10, 300_000)) {
+    if (!(await rateLimitShared(`order-ip:${ip}`, 10, 300_000))) {
       throw new Error("Muitos pedidos seguidos. Aguarde alguns minutos.");
     }
 
