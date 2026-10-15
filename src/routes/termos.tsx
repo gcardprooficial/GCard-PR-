@@ -30,7 +30,7 @@ function Termos() {
             Termos de Uso
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            Última atualização: setembro de 2026.
+            Última atualização: outubro de 2026.
           </p>
         </div>
 
@@ -80,8 +80,17 @@ function Termos() {
 
           <Section n="6" title="Uso correto">
             <p>
-              As placas só podem apontar para páginas de avaliação do Google. Qualquer tentativa de
-              redirecionar para outros destinos é bloqueada pelo sistema.
+              Cada código (QR e NFC) só pode apontar para páginas de avaliação do Google ou para páginas do
+              TOQY (toqy.com.br), sempre em https. Qualquer outro destino é bloqueado pelo sistema.
+            </p>
+            <p>
+              Códigos usados para golpe, fraude, conteúdo ilegal ou qualquer abuso podem ser desativados a
+              qualquer momento, sem aviso, e deixam de redirecionar. Para denunciar um código, use a página{" "}
+              <a className="underline" href="/denunciar">gcardpro.com.br/denunciar</a>.
+            </p>
+            <p>
+              O link de destino pode ser trocado quando você quiser, pelo painel. A troca vale em poucos
+              segundos, sem reimprimir a placa.
             </p>
           </Section>
 

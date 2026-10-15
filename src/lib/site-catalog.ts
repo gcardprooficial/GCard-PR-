@@ -40,6 +40,7 @@ export const FALLBACK_PRODUCTS = [
     has_nfc: true,
     has_qr: false,
     is_blank: false,
+    is_customizable: false,
     price_delta_cents: 0,
     resale_delta_cents: 0,
     resale_tiers: [],
@@ -54,6 +55,7 @@ export const FALLBACK_PRODUCTS = [
     has_nfc: true,
     has_qr: true,
     is_blank: false,
+    is_customizable: false,
     price_delta_cents: 2000,
     resale_delta_cents: 2000,
     resale_tiers: [],
@@ -68,6 +70,7 @@ export const FALLBACK_PRODUCTS = [
     has_nfc: false,
     has_qr: false,
     is_blank: true,
+    is_customizable: false,
     price_delta_cents: 0,
     resale_delta_cents: 0,
     // Última tabela real conhecida (migração 20260916160000) — só usada se o catálogo não carregar.

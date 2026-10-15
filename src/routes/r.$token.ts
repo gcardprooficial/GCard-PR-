@@ -1,9 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { rateLimit, clientKey } from "@/lib/rateLimit";
+import { untyped } from "@/lib/db-untyped";
+import { isAllowedHost, rulesOrFallback, type DestinationRule } from "@/lib/destination";
+import { classifyScan, parseScanSource, scanCountry, visitorHash } from "@/lib/scan-filter";
 
-const ALLOWED_HOSTS = ["search.google.com", "www.google.com", "google.com", "maps.google.com", "g.page"];
+// Redirecionamento do QR/NFC. Sempre 302 e no-store: mudar o destino vale na hora, sem cache para invalidar.
+// ?s=q (QR) / ?s=n (NFC) só serve para contar a origem da leitura: qualquer outro valor é ignorado e
+// o parâmetro NUNCA é repassado ao destino.
 
-function page(title: string, message: string, status: number, code?: string) {
+function page(title: string, message: string, status: number, code?: string, report = false) {
   return new Response(
     `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} | GCard-PRÓ</title>
 <style>
@@ -16,8 +21,8 @@ function page(title: string, message: string, status: number, code?: string) {
   .btn { display: inline-block; background: #F59E0B; color: #0F172A; font-weight: 700; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 0.875rem; font-size: 0.95rem; transition: background 0.2s; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35); }
   .btn:hover { background: #D97706; }
 </style>
-</head><body><div class="box"><span class="badge">GCard-PRÓ</span><h1>${title}</h1><p>${message}</p>${code ? `<p class="code">${code}</p>` : ""}<a href="/" class="btn">Voltar ao início →</a></div></body></html>`,
-    { status, headers: { "content-type": "text/html; charset=utf-8" } },
+</head><body><div class="box"><span class="badge">GCard-PRÓ</span><h1>${title}</h1><p>${message}</p>${code ? `<p class="code">${code}</p>` : ""}<a href="/" class="btn">Voltar ao início →</a>${report && code ? `<p style="margin:1.25rem 0 0;font-size:0.8rem"><a href="/denunciar?codigo=${encodeURIComponent(code)}" style="color:#64748B">Denunciar este código</a></p>` : ""}</div></body></html>`,
+    { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } },
   );
 }
 
@@ -34,10 +39,11 @@ export const Route = createFileRoute("/r/$token")({
           return page("Muitas tentativas", "Aguarde um momento e tente de novo.", 429);
         }
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+        const supabaseAdmin = untyped(admin);
         const { data: plate } = await supabaseAdmin
           .from("plates")
-          .select("id, status, destination_url, business_id, scan_count, short_code")
+          .select("id, status, destination_url, business_id, short_code")
           .eq("token", token)
           .maybeSingle();
 
@@ -46,6 +52,16 @@ export const Route = createFileRoute("/r/$token")({
             "Placa não encontrada",
             "Essa placa ainda não consta no nosso sistema. Fale com a GCard-PRÓ para verificar.",
             404,
+          );
+        }
+
+        if (plate.status === "bloqueada") {
+          return page(
+            "Código desativado",
+            "Esse código foi desativado e não leva a nenhum destino.",
+            410,
+            plate.short_code,
+            true,
           );
         }
 
@@ -62,9 +78,10 @@ export const Route = createFileRoute("/r/$token")({
         if (plate.status !== "ativada" || !destination) {
           return page(
             "Placa ainda não ativada",
-            "Essa placa GCard-PRÓ ainda não está apontando para um negócio. Se ela é sua, fale com a gente para ativar.",
+            "Essa placa GCard-PRÓ ainda não está apontando para um destino. Se ela é sua, fale com a gente para ativar.",
             200,
             plate.short_code,
+            true,
           );
         }
 
@@ -72,40 +89,45 @@ export const Route = createFileRoute("/r/$token")({
         try {
           target = new URL(destination);
         } catch {
-          return page("Destino inválido", "O link de avaliação dessa placa precisa ser corrigido.", 500);
+          return page("Destino inválido", "O link dessa placa precisa ser corrigido.", 500);
         }
-        if (target.protocol !== "https:" || !ALLOWED_HOSTS.includes(target.hostname)) {
-          return page("Destino não permitido", "Essa placa só pode apontar para o Google.", 400);
+        // Valida também na leitura (não só na gravação): lista única no banco, só https, sem usuário/senha/porta.
+        const { data: rows } = await supabaseAdmin.from("allowed_destination_hosts").select("host, include_subdomains");
+        const rules = rulesOrFallback(rows as DestinationRule[] | null);
+        if (target.protocol !== "https:" || target.username || target.password || target.port || !isAllowedHost(target.hostname, rules)) {
+          return page("Destino não permitido", "Esse código só pode apontar para o Google ou para uma página do TOQY.", 400);
         }
 
-        const ua = request.headers.get("user-agent") ?? "";
-        const device = /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop";
-        const referrer = request.headers.get("referer");
-        let referrerHost: string | null = null;
+        // Registro da leitura (best-effort: se falhar, o cliente é redirecionado do mesmo jeito).
         try {
-          referrerHost = referrer ? new URL(referrer).hostname : null;
-        } catch {
-          referrerHost = null;
+          const ua = request.headers.get("user-agent") ?? "";
+          const day = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+          const cls = classifyScan(request.headers);
+          let referrerHost: string | null = null;
+          try {
+            const ref = request.headers.get("referer");
+            referrerHost = ref ? new URL(ref).hostname : null;
+          } catch {
+            referrerHost = null;
+          }
+          await supabaseAdmin.rpc("plate_register_scan", {
+            _plate_id: plate.id,
+            _token: token,
+            _device: /mobile|android|iphone|ipad/i.test(ua) ? "mobile" : "desktop",
+            _country: scanCountry(request.headers),
+            _referrer_host: referrerHost,
+            _source: parseScanSource(new URL(request.url).searchParams.get("s")),
+            _is_bot: cls.isBot,
+            _bot_reason: cls.reason,
+            _visitor_hash: visitorHash(clientKey(request), ua, day),
+          });
+        } catch (error) {
+          console.error("falha ao registrar leitura", { token, error });
         }
-
-        await supabaseAdmin.from("plate_scan_events").insert({
-          plate_id: plate.id,
-          token,
-          device,
-          country: request.headers.get("cf-ipcountry"),
-          referrer_host: referrerHost,
-        });
-
-        // ponytail: read-modify-write, races under concurrent scans of one plate.
-        // Fine at this volume; move to a DB trigger / rpc increment if it matters.
-        await supabaseAdmin
-          .from("plates")
-          .update({ scan_count: (plate.scan_count ?? 0) + 1, last_scan_at: new Date().toISOString() })
-          .eq("id", plate.id);
 
         return new Response(null, {
           status: 302,
-          headers: { location: target.toString(), "cache-control": "no-store" },
+          headers: { location: target.toString(), "cache-control": "no-store", "x-robots-tag": "noindex" },
         });
       },
     },

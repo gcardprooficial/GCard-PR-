@@ -33,7 +33,7 @@ function Privacidade() {
             Política de Privacidade
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            Última atualização: setembro de 2026.
+            Última atualização: outubro de 2026.
           </p>
         </div>
 
@@ -52,9 +52,12 @@ function Privacidade() {
 
           <Section n="2" title="Para que usamos" icon="target">
             <p>
-              Exclusivamente para emitir, produzir e entregar o seu pedido, enviar a confirmação e o
-              código de rastreio, e prestar suporte. Não vendemos nem compartilhamos seus dados com
-              terceiros para fins de marketing.
+              Para emitir, produzir e entregar o seu pedido, enviar a confirmação e o código de
+              rastreio, e prestar suporte. Se você marcar a caixa de novidades, também para enviar
+              avisos e ofertas dos produtos da Marusso Produções (GCard-PRÓ e TOQY) por e-mail. Essa
+              caixa nunca vem marcada, guardamos a data, a origem e a versão do texto que você viu, e
+              você sai da lista quando quiser pelo link no fim de cada e-mail. Não vendemos seus
+              dados nem os compartilhamos com terceiros para fins de marketing.
             </p>
           </Section>
 
@@ -62,7 +65,9 @@ function Privacidade() {
             <p>
               Quando alguém aproxima ou escaneia uma placa, registramos apenas dados não pessoais
               (tipo de dispositivo e país aproximado) para gerar as estatísticas de uso. Não
-              guardamos o endereço IP nem identificamos quem fez a leitura.
+              guardamos o endereço IP nem identificamos quem fez a leitura. Para contar pessoas
+              diferentes no mesmo dia, usamos um código irreversível que muda todo dia e não permite
+              reconhecer ninguém. Acessos automáticos (como a pré-visualização de links) são separados.
             </p>
           </Section>
 
@@ -81,14 +86,23 @@ function Privacidade() {
             </p>
           </Section>
 
-          <Section n="6" title="Retenção" icon="clock">
+          <Section n="6" title="De onde você veio (cookie próprio)" icon="clock">
+            <p>
+              Na sua primeira visita guardamos, num cookie do nosso site por 30 dias, de onde você veio
+              (por exemplo o link de um vídeo ou rede social) e a página em que entrou. Usamos isso
+              para saber quais canais trazem clientes. Não é cookie de terceiros e não identifica você
+              sozinho; ele só se liga ao seu cadastro ou pedido se você criar conta ou comprar.
+            </p>
+          </Section>
+
+          <Section n="7" title="Retenção" icon="clock">
             <p>
               Mantemos os dados do pedido pelo tempo necessário para cumprir obrigações fiscais e de
               garantia. Depois disso, são anonimizados ou excluídos.
             </p>
           </Section>
 
-          <Section n="7" title="Seus direitos (LGPD)" icon="shield">
+          <Section n="8" title="Seus direitos (LGPD)" icon="shield">
             <p>
               Você pode solicitar acesso, correção ou exclusão dos seus dados, e revogar
               consentimento, pelo Instagram{" "}

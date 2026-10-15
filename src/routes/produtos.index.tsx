@@ -45,6 +45,13 @@ function Produtos() {
           );
         })}
       </section>
+      <section className="mx-auto max-w-7xl px-5 pb-12">
+        <div className="rounded-3xl border border-dashed border-foreground/20 bg-card p-6 text-center">
+          <h2 className="text-lg font-bold">Vai colocar a sua própria arte?</h2>
+          <p className="mx-auto mt-1 max-w-xl text-sm text-muted-foreground">Veja o passo a passo para personalizar a sua placa, com gabaritos e checklist de teste.</p>
+          <Link to="/personalizar" className="mt-4 inline-flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground">Como personalizar →</Link>
+        </div>
+      </section>
       <SiteFooter />
     </div>
   );

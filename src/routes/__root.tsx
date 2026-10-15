@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import appCss from "../styles.css?url";
 import { captureReferralFromUrl } from "@/lib/referral";
+import { captureFirstTouch } from "@/lib/first-touch";
 
 function NotFoundComponent() {
   return (
@@ -251,6 +252,7 @@ function RootComponent() {
 function ReferralCapture() {
   useEffect(() => {
     captureReferralFromUrl();
+    captureFirstTouch();
   }, []);
   return null;
 }

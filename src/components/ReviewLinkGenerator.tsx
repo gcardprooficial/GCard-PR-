@@ -3,7 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
-import { submitToolLead } from "@/lib/leads.functions";
+import { emailReviewLink, submitToolLead } from "@/lib/leads.functions";
+import { CONSENT_TEXT } from "@/lib/consent";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,12 @@ async function copyText(text: string) {
 export function ReviewLinkGenerator() {
   const runSearch = useServerFn(searchBusinesses);
   const runSubmitLead = useServerFn(submitToolLead);
+  const runEmailLink = useServerFn(emailReviewLink);
+  // Receber o link por e-mail: o aceite de novidades é opcional e nunca vem marcado.
+  const [mailConsent, setMailConsent] = useState(false);
+  const [mailSending, setMailSending] = useState(false);
+  const [mailSent, setMailSent] = useState<string | null>(null);
+  const [leadUrl, setLeadUrl] = useState<string | null>(null);
   const [term, setTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<BusinessResult[] | null>(null);
@@ -67,7 +74,27 @@ export function ReviewLinkGenerator() {
     }
     // Copiou = já vai usar o link -- momento certo de oferecer o cartão físico.
     setLeadBusiness({ name: r.name, placeId: r.placeId });
+    setLeadUrl(r.reviewUrl);
     setLeadSent(false);
+    setMailSent(null);
+  }
+
+  async function sendEmail() {
+    if (!leadBusiness || !leadUrl) return;
+    setMailSending(true);
+    try {
+      const res = await runEmailLink({ data: { businessName: leadBusiness.name, placeId: leadBusiness.placeId, reviewUrl: leadUrl, consent: mailConsent } });
+      if (res.ok) {
+        setMailSent(leadBusiness.name);
+        toast.success("Enviamos o link para o e-mail da sua conta.");
+      } else {
+        toast.error(res.error);
+      }
+    } catch {
+      toast.error("Não consegui enviar agora. Copie o link pela tela.");
+    } finally {
+      setMailSending(false);
+    }
   }
 
   async function sendLead(e: FormEvent) {
@@ -104,7 +131,7 @@ export function ReviewLinkGenerator() {
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
           Digite o nome da empresa como aparece no Google, escolha o resultado e copie o link de
-          avaliação Google grátis que abre direto a tela de avaliação. Sem cadastro.
+          avaliação Google grátis que abre direto a tela de avaliação.
         </p>
 
         <form onSubmit={submit} className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -234,6 +261,24 @@ export function ReviewLinkGenerator() {
                   {leadSending ? "Enviando…" : "Me chama no WhatsApp"}
                 </Button>
               </form>
+            )}
+            {leadBusiness && (
+              <div className="mt-4 border-t border-primary/20 pt-4">
+                {mailSent ? (
+                  <p className="text-sm font-semibold text-foreground/80">Enviamos o link de {mailSent} para o seu e-mail. ✓</p>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold">Quer receber esse link por e-mail?</p>
+                    <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs leading-relaxed text-foreground/80">
+                      <input type="checkbox" checked={mailConsent} onChange={(e) => setMailConsent(e.target.checked)} className="mt-0.5 size-4 accent-primary" />
+                      <span>{CONSENT_TEXT} (Marque para receber também dicas para aumentar suas avaliações.)</span>
+                    </label>
+                    <Button type="button" size="sm" variant="outline" disabled={mailSending} onClick={() => void sendEmail()} className="mt-2 h-10 rounded-xl bg-background">
+                      {mailSending ? "Enviando…" : "Enviar para o meu e-mail"}
+                    </Button>
+                  </>
+                )}
+              </div>
             )}
             {leadSent && (
               <p className="mt-4 border-t border-primary/20 pt-4 text-sm font-semibold text-foreground/80">

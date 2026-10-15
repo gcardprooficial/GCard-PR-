@@ -13,6 +13,8 @@ import { createCheckoutPreference } from "@/lib/payments/createPreference.server
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
 import { ProductionNotice } from "@/components/ProductionNotice";
 import { nonBusinessDayNotice } from "@/lib/business-hours";
+import { suggestEmailDomain } from "@/lib/email-typo";
+import { CONSENT_TEXT } from "@/lib/consent";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { createPagarmeCardCheckout, createPagarmeCheckout } from "@/lib/payments/pagarme.functions";
 import { gatewayOptions, type Gateway } from "@/lib/gateways";
@@ -172,6 +174,7 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     has_qr: false,
     has_nfc: true,
     is_blank: false,
+    is_customizable: false,
     min_quantity: 1,
     color_variants: null,
     nfc_addon_price_cents: null,
@@ -416,7 +419,8 @@ function Comprar() {
     .filter((item) => item.status !== "oculto")
     // Acrílico puro (sem QR/NFC) só entra no fluxo de revenda/atacado — lojista
     // final só compra cartão de bolso e plaquinha 10x10 já prontos.
-    .filter((item) => !(!isResale && item.is_blank));
+    // Acrílico liso só na revenda; o "para personalizar" também vende avulso (tem código por unidade).
+    .filter((item) => !(!isResale && item.is_blank && !item.is_customizable));
   // O checkout não pode ficar sem opções quando o catálogo ainda não foi publicado.
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
@@ -1947,6 +1951,18 @@ function Comprar() {
                     onChange={(v) => setCustomer({ ...customer, email: v })}
                     placeholder="joao@email.com"
                   />
+                  {(() => {
+                    const fix = suggestEmailDomain(customer.email);
+                    return fix ? (
+                      <p className="mt-1.5 text-xs text-muted-foreground">
+                        Você quis dizer{" "}
+                        <button type="button" className="font-semibold text-foreground underline" onClick={() => setCustomer({ ...customer, email: fix })}>
+                          {fix}
+                        </button>
+                        ?
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
               </div>
               <div className="mt-6 inline-flex items-start gap-3 rounded-2xl bg-surface/70 p-4">
@@ -1978,10 +1994,7 @@ function Comprar() {
                   onChange={(event) => setMarketingConsent(event.target.checked)}
                   className="mt-1 size-4 accent-primary"
                 />
-                <span className="leading-relaxed text-muted-foreground">
-                  Quero receber atualizações estratégicas e novidades da GCard-PRÓ por e-mail. Posso
-                  me descadastrar a qualquer momento.
-                </span>
+                <span className="leading-relaxed text-muted-foreground">{CONSENT_TEXT}</span>
               </label>
             </div>
           )}

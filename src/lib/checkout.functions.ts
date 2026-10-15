@@ -271,6 +271,7 @@ export const createPendingOrder = createServerFn({ method: "POST" })
         shipping_cents: 0,
         total_cents: subtotal,
         marketing_consent_at: data.marketingConsent ? new Date().toISOString() : null,
+        first_touch: (await import("@/lib/events.server")).firstTouchFromRequest(),
       } as never)
       .select("id, order_number")
       .single();
@@ -294,6 +295,8 @@ export const createPendingOrder = createServerFn({ method: "POST" })
         email: data.customer.email,
         name: `${data.customer.firstName} ${data.customer.lastName}`.trim(),
         consent: data.marketingConsent,
+        source: "checkout",
+        orderId: order.id,
       });
     } catch (error) {
       console.error("createPendingOrder: falha ao salvar consentimento", {
@@ -436,6 +439,7 @@ export const createCartOrder = createServerFn({ method: "POST" })
         coupon_discount_cents: coupon?.discountCents ?? 0,
         affiliate_commission_pct: coupon?.affiliate.commission_pct ?? null,
         marketing_consent_at: data.marketingConsent ? new Date().toISOString() : null,
+        first_touch: (await import("@/lib/events.server")).firstTouchFromRequest(),
       } as never)
       .select("id, order_number")
       .single();
@@ -471,6 +475,8 @@ export const createCartOrder = createServerFn({ method: "POST" })
         email: data.customer.email,
         name: `${data.customer.firstName} ${data.customer.lastName}`.trim(),
         consent: data.marketingConsent,
+        source: "checkout",
+        orderId: order.id,
       });
     } catch (error) {
       console.error("createCartOrder: falha ao salvar consentimento", { orderId: order.id, error });

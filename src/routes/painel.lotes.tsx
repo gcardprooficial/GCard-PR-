@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { ROLO, roloMaxPlates, buildRoloPdf, type RoloKey } from "@/lib/plate/rolo-pdf";
 
 /** Mesmo QR do .zip e do PDF de rolo: short_code pequeno no centro (erro nível H aguenta ~30% coberto). */
-async function renderPlateQrCanvas(p: { token: string; short_code: string }, width: number) {
+async function renderPlateQrCanvas(p: { token: string; short_code: string; tracking_v2?: boolean }, width: number) {
   const QRCode = await import("qrcode");
   const canvas = document.createElement("canvas");
-  await QRCode.toCanvas(canvas, `${location.origin}/r/${p.token}`, { width, margin: 2, errorCorrectionLevel: "H" });
+  // Placas novas (tracking_v2) levam ?s=q para a contagem separar QR de NFC; as antigas ficam como estão.
+  await QRCode.toCanvas(canvas, `${location.origin}/r/${p.token}${p.tracking_v2 ? "?s=q" : ""}`, { width, margin: 2, errorCorrectionLevel: "H" });
   const ctx = canvas.getContext("2d");
   if (ctx) {
     const size = canvas.width;
@@ -110,7 +111,7 @@ function Lotes() {
     try {
       const { data, error } = await supabase
         .from("plates")
-        .select("token, short_code")
+        .select("token, short_code, tracking_v2")
         .is("batch_id", null)
         .eq("product_id", productId)
         .eq("print_group", group)
@@ -457,7 +458,7 @@ function Lotes() {
     if (!confirm(`Exportar ${b.quantity} códigos do lote ${b.code} para CSV?`)) return;
     const { data, error } = await supabase
       .from("plates")
-      .select("token, short_code, status, business_name")
+      .select("token, short_code, status, business_name, tracking_v2")
       .eq("batch_id", b.id)
       .order("short_code", { ascending: true });
     if (error || !data) {
@@ -465,10 +466,11 @@ function Lotes() {
       return;
     }
     const rows = [
-      "codigo,url,status,negocio",
+      // url_nfc: para gravar no chip. url_qr: o que vai dentro do QR. Códigos novos levam ?s=n / ?s=q (origem da leitura).
+      "codigo,url_nfc,url_qr,status,negocio",
       ...data.map(
         (p) =>
-          `${p.short_code},${location.origin}/r/${p.token},${p.status},"${(p.business_name ?? "").replace(/"/g, "'")}"`,
+          `${p.short_code},${location.origin}/r/${p.token}${p.tracking_v2 ? "?s=n" : ""},${location.origin}/r/${p.token}${p.tracking_v2 ? "?s=q" : ""},${p.status},"${(p.business_name ?? "").replace(/"/g, "'")}"`,
       ),
     ].join("\n");
     const url = URL.createObjectURL(new Blob([rows], { type: "text/csv;charset=utf-8" }));
@@ -484,7 +486,7 @@ function Lotes() {
    * Desenha o short_code pequeno no centro do QR (erro nível H aguenta até ~30%
    * coberto) só pra identificar a placa fisicamente, sem precisar de etiqueta separada.
    */
-  async function downloadQrZip(plates: { token: string; short_code: string }[], filename: string) {
+  async function downloadQrZip(plates: { token: string; short_code: string; tracking_v2?: boolean }[], filename: string) {
     toast.info(`Gerando ${plates.length} QR codes...`);
     const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
@@ -507,7 +509,7 @@ function Lotes() {
     if (!confirm(`Gerar ${b.quantity} imagens de QR do lote ${b.code} (.zip)?`)) return;
     const { data, error } = await supabase
       .from("plates")
-      .select("token, short_code")
+      .select("token, short_code, tracking_v2")
       .eq("batch_id", b.id)
       .order("short_code", { ascending: true });
     if (error || !data || data.length === 0) {
@@ -524,7 +526,7 @@ function Lotes() {
     if (!confirm(`Gerar ${total} imagens de QR do estoque de "${productName}" (.zip)?`)) return;
     const { data, error } = await supabase
       .from("plates")
-      .select("token, short_code")
+      .select("token, short_code, tracking_v2")
       .is("batch_id", null)
       .eq("product_id", productId)
       .order("short_code", { ascending: true });
