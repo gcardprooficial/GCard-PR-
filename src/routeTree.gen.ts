@@ -36,6 +36,7 @@ import { Route as PainelClientesRouteImport } from './routes/painel.clientes'
 import { Route as PainelConciliacaoRouteImport } from './routes/painel.conciliacao'
 import { Route as PainelContadorRouteImport } from './routes/painel.contador'
 import { Route as PainelDenunciasRouteImport } from './routes/painel.denuncias'
+import { Route as PainelEstatisticasRouteImport } from './routes/painel.estatisticas'
 import { Route as PainelEstoqueRouteImport } from './routes/painel.estoque'
 import { Route as PainelFinanceiroRouteImport } from './routes/painel.financeiro'
 import { Route as PainelFreteRouteImport } from './routes/painel.frete'
@@ -198,6 +199,11 @@ const PainelDenunciasRoute = PainelDenunciasRouteImport.update({
   path: '/denuncias',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelEstatisticasRoute = PainelEstatisticasRouteImport.update({
+  id: '/estatisticas',
+  path: '/estatisticas',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelEstoqueRoute = PainelEstoqueRouteImport.update({
   id: '/estoque',
   path: '/estoque',
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/painel/conciliacao': typeof PainelConciliacaoRoute
   '/painel/contador': typeof PainelContadorRoute
   '/painel/denuncias': typeof PainelDenunciasRoute
+  '/painel/estatisticas': typeof PainelEstatisticasRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/frete': typeof PainelFreteRoute
@@ -384,6 +391,7 @@ export interface FileRoutesByTo {
   '/painel/conciliacao': typeof PainelConciliacaoRoute
   '/painel/contador': typeof PainelContadorRoute
   '/painel/denuncias': typeof PainelDenunciasRoute
+  '/painel/estatisticas': typeof PainelEstatisticasRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/frete': typeof PainelFreteRoute
@@ -436,6 +444,7 @@ export interface FileRoutesById {
   '/painel/conciliacao': typeof PainelConciliacaoRoute
   '/painel/contador': typeof PainelContadorRoute
   '/painel/denuncias': typeof PainelDenunciasRoute
+  '/painel/estatisticas': typeof PainelEstatisticasRoute
   '/painel/estoque': typeof PainelEstoqueRoute
   '/painel/financeiro': typeof PainelFinanceiroRoute
   '/painel/frete': typeof PainelFreteRoute
@@ -489,6 +498,7 @@ export interface FileRouteTypes {
     | '/painel/conciliacao'
     | '/painel/contador'
     | '/painel/denuncias'
+    | '/painel/estatisticas'
     | '/painel/estoque'
     | '/painel/financeiro'
     | '/painel/frete'
@@ -538,6 +548,7 @@ export interface FileRouteTypes {
     | '/painel/conciliacao'
     | '/painel/contador'
     | '/painel/denuncias'
+    | '/painel/estatisticas'
     | '/painel/estoque'
     | '/painel/financeiro'
     | '/painel/frete'
@@ -589,6 +600,7 @@ export interface FileRouteTypes {
     | '/painel/conciliacao'
     | '/painel/contador'
     | '/painel/denuncias'
+    | '/painel/estatisticas'
     | '/painel/estoque'
     | '/painel/financeiro'
     | '/painel/frete'
@@ -835,6 +847,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelDenunciasRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/estatisticas': {
+      id: '/painel/estatisticas'
+      path: '/estatisticas'
+      fullPath: '/painel/estatisticas'
+      preLoaderRoute: typeof PainelEstatisticasRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/estoque': {
       id: '/painel/estoque'
       path: '/estoque'
@@ -1018,6 +1037,7 @@ interface PainelRouteChildren {
   PainelConciliacaoRoute: typeof PainelConciliacaoRoute
   PainelContadorRoute: typeof PainelContadorRoute
   PainelDenunciasRoute: typeof PainelDenunciasRoute
+  PainelEstatisticasRoute: typeof PainelEstatisticasRoute
   PainelEstoqueRoute: typeof PainelEstoqueRoute
   PainelFinanceiroRoute: typeof PainelFinanceiroRoute
   PainelFreteRoute: typeof PainelFreteRoute
@@ -1039,6 +1059,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelConciliacaoRoute: PainelConciliacaoRoute,
   PainelContadorRoute: PainelContadorRoute,
   PainelDenunciasRoute: PainelDenunciasRoute,
+  PainelEstatisticasRoute: PainelEstatisticasRoute,
   PainelEstoqueRoute: PainelEstoqueRoute,
   PainelFinanceiroRoute: PainelFinanceiroRoute,
   PainelFreteRoute: PainelFreteRoute,

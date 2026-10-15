@@ -20,6 +20,7 @@ import {
   FileSpreadsheet,
   Handshake,
   BarChart3,
+  Activity,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
@@ -49,6 +50,7 @@ const TABS = [
   { to: "/painel/whatsapp", label: "WhatsApp", icon: MessageCircle },
   { to: "/painel/estoque", label: "Estoque", icon: Archive },
   { to: "/painel/scans", label: "Scans", icon: ScanLine },
+  { to: "/painel/estatisticas", label: "Estatísticas (Plus)", icon: Activity },
   { to: "/painel/denuncias", label: "Denúncias", icon: ShieldAlert },
   { to: "/painel/frete", label: "Frete por estado", icon: Truck },
   { to: "/painel/contador", label: "Contador", icon: FileSpreadsheet },
