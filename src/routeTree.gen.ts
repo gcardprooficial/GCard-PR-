@@ -16,7 +16,9 @@ import { Route as DenunciarRouteImport } from './routes/denunciar'
 import { Route as GeradorRouteImport } from './routes/gerador'
 import { Route as GuiaRouteImport } from './routes/guia'
 import { Route as PainelRouteImport } from './routes/painel'
+import { Route as PersonalizarRouteImport } from './routes/personalizar'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as SairRouteImport } from './routes/sair'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as ApiUnsubscribeRouteImport } from './routes/api/unsubscribe'
 import { Route as CCodeRouteImport } from './routes/c.$code'
@@ -91,9 +93,19 @@ const PainelRoute = PainelRouteImport.update({
   path: '/painel',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PersonalizarRoute = PersonalizarRouteImport.update({
+  id: '/personalizar',
+  path: '/personalizar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacidadeRoute = PrivacidadeRouteImport.update({
   id: '/privacidade',
   path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SairRoute = SairRouteImport.update({
+  id: '/sair',
+  path: '/sair',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermosRoute = TermosRouteImport.update({
@@ -299,7 +311,9 @@ export interface FileRoutesByFullPath {
   '/gerador': typeof GeradorRoute
   '/guia': typeof GuiaRouteWithChildren
   '/painel': typeof PainelRouteWithChildren
+  '/personalizar': typeof PersonalizarRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/sair': typeof SairRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/c/$code': typeof CCodeRoute
@@ -345,7 +359,9 @@ export interface FileRoutesByTo {
   '/comprar': typeof ComprarRoute
   '/denunciar': typeof DenunciarRoute
   '/gerador': typeof GeradorRoute
+  '/personalizar': typeof PersonalizarRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/sair': typeof SairRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/c/$code': typeof CCodeRoute
@@ -394,7 +410,9 @@ export interface FileRoutesById {
   '/gerador': typeof GeradorRoute
   '/guia': typeof GuiaRouteWithChildren
   '/painel': typeof PainelRouteWithChildren
+  '/personalizar': typeof PersonalizarRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/sair': typeof SairRoute
   '/termos': typeof TermosRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/c/$code': typeof CCodeRoute
@@ -444,7 +462,9 @@ export interface FileRouteTypes {
     | '/gerador'
     | '/guia'
     | '/painel'
+    | '/personalizar'
     | '/privacidade'
+    | '/sair'
     | '/termos'
     | '/api/unsubscribe'
     | '/c/$code'
@@ -490,7 +510,9 @@ export interface FileRouteTypes {
     | '/comprar'
     | '/denunciar'
     | '/gerador'
+    | '/personalizar'
     | '/privacidade'
+    | '/sair'
     | '/termos'
     | '/api/unsubscribe'
     | '/c/$code'
@@ -538,7 +560,9 @@ export interface FileRouteTypes {
     | '/gerador'
     | '/guia'
     | '/painel'
+    | '/personalizar'
     | '/privacidade'
+    | '/sair'
     | '/termos'
     | '/api/unsubscribe'
     | '/c/$code'
@@ -587,7 +611,9 @@ export interface RootRouteChildren {
   GeradorRoute: typeof GeradorRoute
   GuiaRoute: typeof GuiaRouteWithChildren
   PainelRoute: typeof PainelRouteWithChildren
+  PersonalizarRoute: typeof PersonalizarRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
+  SairRoute: typeof SairRoute
   TermosRoute: typeof TermosRoute
   ApiUnsubscribeRoute: typeof ApiUnsubscribeRoute
   CCodeRoute: typeof CCodeRoute
@@ -657,11 +683,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/personalizar': {
+      id: '/personalizar'
+      path: '/personalizar'
+      fullPath: '/personalizar'
+      preLoaderRoute: typeof PersonalizarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacidade': {
       id: '/privacidade'
       path: '/privacidade'
       fullPath: '/privacidade'
       preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sair': {
+      id: '/sair'
+      path: '/sair'
+      fullPath: '/sair'
+      preLoaderRoute: typeof SairRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/termos': {
@@ -1003,7 +1043,9 @@ const rootRouteChildren: RootRouteChildren = {
   GeradorRoute: GeradorRoute,
   GuiaRoute: GuiaRouteWithChildren,
   PainelRoute: PainelRouteWithChildren,
+  PersonalizarRoute: PersonalizarRoute,
   PrivacidadeRoute: PrivacidadeRoute,
+  SairRoute: SairRoute,
   TermosRoute: TermosRoute,
   ApiUnsubscribeRoute: ApiUnsubscribeRoute,
   CCodeRoute: CCodeRoute,

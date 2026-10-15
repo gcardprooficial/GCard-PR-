@@ -64,6 +64,14 @@ function Guide() {
           <p className="text-sm leading-relaxed text-muted-foreground">Vídeo e passo a passo: entrar no painel, ativar o código, colar o link de avaliação do Google e trocar quando quiser.</p>
           <span className="mt-2 text-sm font-bold text-primary">Assistir e ler →</span>
         </Link>
+        <Link
+          to="/personalizar"
+          className="group mt-5 flex flex-col gap-2 rounded-3xl border border-border bg-card p-6 transition hover:-translate-y-1 sm:p-8"
+        >
+          <span className="text-xs font-black uppercase tracking-[0.2em] text-primary">Passo a passo</span>
+          <h2 className="text-xl font-bold group-hover:text-primary">Como personalizar a sua placa</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">Compre o acrílico com NFC, baixe o QR do código, coloque na sua arte e teste antes de imprimir.</p>
+        </Link>
         <div className="mt-5 grid gap-5 md:grid-cols-3">
           <ArticleLink
             href="/guia/cartao-nfc-vs-cartao-digital"

@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { trackClientEvent } from "@/lib/events.functions";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { money } from "@/lib/pricing";
@@ -22,6 +24,11 @@ function Produto() {
   const products = productsFrom(data);
   const p = products.find((x) => x.slug === slug);
   const custom = Boolean(p?.is_customizable);
+  const track = useServerFn(trackClientEvent);
+  // Evento "produto_visto" (sem dado pessoal; origem vem do cookie first-touch).
+  useEffect(() => {
+    void track({ data: { type: "produto_visto", slug } }).catch(() => {});
+  }, [slug, track]);
   const [modo, setModo] = useState<"lojista" | "revenda">(p?.is_blank && !custom ? "revenda" : "lojista");
   if (!p) throw notFound();
   const soon = p.status !== "ativo";

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Gabarito GCard-PRÓ: placa de acrílico 10 x 10 cm. 1 unidade = 1 mm. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="1000" height="1000" font-family="Arial, Helvetica, sans-serif">
+  <title>Gabarito placa 10x10 cm</title>
+  <!-- contorno do corte -->
+  <rect x="0.25" y="0.25" width="99.5" height="99.5" rx="3" fill="#ffffff" stroke="#111111" stroke-width="0.5"/>
+  <!-- área segura: nada importante fora daqui -->
+  <rect x="5" y="5" width="90" height="90" rx="1.5" fill="none" stroke="#2563eb" stroke-width="0.4" stroke-dasharray="2 1.5"/>
+  <text x="7" y="9" font-size="2.6" fill="#2563eb">Área segura (5 mm de margem): textos e logo ficam aqui</text>
+  <!-- área do QR: 30 x 30 mm (mínimo 25 mm) + margem branca de 4 módulos já incluída -->
+  <rect x="62" y="62" width="30" height="30" fill="#f3f4f6" stroke="#dc2626" stroke-width="0.5"/>
+  <rect x="64.5" y="64.5" width="25" height="25" fill="none" stroke="#dc2626" stroke-width="0.3" stroke-dasharray="1 1"/>
+  <text x="62" y="60.6" font-size="2.4" fill="#dc2626">Área do QR: 30 x 30 mm (mínimo 25 mm)</text>
+  <text x="77" y="77.8" font-size="2.4" fill="#dc2626" text-anchor="middle">QR aqui</text>
+  <text x="77" y="81" font-size="1.9" fill="#dc2626" text-anchor="middle">fundo claro, sem degradê</text>
+  <!-- centro -->
+  <line x1="50" y1="46" x2="50" y2="54" stroke="#9ca3af" stroke-width="0.25"/>
+  <line x1="46" y1="50" x2="54" y2="50" stroke="#9ca3af" stroke-width="0.25"/>
+  <text x="7" y="96" font-size="2.2" fill="#6b7280">10 x 10 cm · apague as marcações antes de imprimir</text>
+</svg>
