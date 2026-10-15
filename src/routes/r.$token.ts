@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { rateLimit, clientKey } from "@/lib/rateLimit";
 import { untyped } from "@/lib/db-untyped";
-import { isAllowedHost, type DestinationRule } from "@/lib/destination";
+import { isAllowedHost, rulesOrFallback, type DestinationRule } from "@/lib/destination";
 import { classifyScan, parseScanSource, scanCountry, visitorHash } from "@/lib/scan-filter";
 
 // Redirecionamento do QR/NFC. Sempre 302 e no-store: mudar o destino vale na hora, sem cache para invalidar.
@@ -93,7 +93,7 @@ export const Route = createFileRoute("/r/$token")({
         }
         // Valida também na leitura (não só na gravação): lista única no banco, só https, sem usuário/senha/porta.
         const { data: rows } = await supabaseAdmin.from("allowed_destination_hosts").select("host, include_subdomains");
-        const rules = (rows ?? []) as DestinationRule[];
+        const rules = rulesOrFallback(rows as DestinationRule[] | null);
         if (target.protocol !== "https:" || target.username || target.password || target.port || !isAllowedHost(target.hostname, rules)) {
           return page("Destino não permitido", "Esse código só pode apontar para o Google ou para uma página do TOQY.", 400);
         }

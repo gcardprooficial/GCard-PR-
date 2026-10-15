@@ -5,6 +5,17 @@ export type DestinationRule = { host: string; include_subdomains: boolean };
 
 export const MAX_DESTINATION_LENGTH = 2000;
 
+/**
+ * Plano B se a tabela allowed_destination_hosts ainda não existe (deploy antes da migração) ou veio vazia:
+ * volta ao comportamento de antes (só Google). Assim nenhum QR já impresso quebra por uma ordem de deploy.
+ */
+export const FALLBACK_RULES: DestinationRule[] = ["search.google.com", "www.google.com", "google.com", "maps.google.com", "g.page"].map((host) => ({
+  host,
+  include_subdomains: false,
+}));
+
+export const rulesOrFallback = (rules: DestinationRule[] | null | undefined): DestinationRule[] => (rules && rules.length > 0 ? rules : FALLBACK_RULES);
+
 export type NormalizedDestination =
   | { ok: true; url: string; upgradedToHttps: boolean }
   | { ok: false; reason: string };
@@ -38,7 +49,7 @@ export function isAllowedHost(host: string, rules: DestinationRule[]): boolean {
 export function checkDestination(raw: string, rules: DestinationRule[]): NormalizedDestination {
   const n = normalizeDestination(raw);
   if (!n.ok) return n;
-  if (!isAllowedHost(new URL(n.url).hostname, rules)) {
+  if (!isAllowedHost(new URL(n.url).hostname, rulesOrFallback(rules))) {
     return { ok: false, reason: "Esse endereço não é aceito. Use um link do Google (avaliação) ou uma página do TOQY (toqy.com.br)." };
   }
   return n;
