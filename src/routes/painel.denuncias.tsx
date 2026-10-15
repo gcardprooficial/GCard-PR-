@@ -45,18 +45,27 @@ function Denuncias() {
       .from("abuse_reports")
       .update({ status, resolved_at: new Date().toISOString(), resolved_by: u.user?.id ?? null })
       .eq("id", r.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     void load();
   }
 
   async function block(r: Report) {
-    if (!r.plate_id) return toast.error("Código não encontrado.");
+    if (!r.plate_id) {
+      toast.error("Código não encontrado.");
+      return;
+    }
     if (!window.confirm(`Desativar o código ${r.short_code}? Ele deixa de redirecionar.`)) return;
     const { error } = await db
       .from("plates")
       .update({ status: "bloqueada", block_reason: `Denúncia: ${REASON[r.reason] ?? r.reason}` })
       .eq("id", r.plate_id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(`${r.short_code} desativado.`);
     await close(r, "resolvida");
   }
@@ -64,7 +73,10 @@ function Denuncias() {
   async function unblock(r: Report) {
     if (!r.plate_id) return;
     const { error } = await db.from("plates").update({ status: "nao_ativada" }).eq("id", r.plate_id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(`${r.short_code} reativado (volta como não ativado).`);
   }
 
