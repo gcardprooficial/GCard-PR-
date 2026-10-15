@@ -5,13 +5,13 @@ import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 /** Marca o pedido como Pagar.me e devolve a página do Pix (o QR é gerado/recuperado lá). */
 export const createPagarmeCheckout = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ orderNumber: z.number().int().positive() }).parse(input))
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
     if (!rateLimit(`pg-link:${clientKey(getRequest())}`, 15, 60_000)) return { ok: false as const, error: "too_many_attempts" };
     const { pagarmeConfigured, PAGARME } = await import("./pagarme.server");
     if (!pagarmeConfigured()) return { ok: false as const, error: "payment_provider_not_configured" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: order } = await supabaseAdmin.from("orders").select("id, payment_status").eq("order_number", data.orderNumber).maybeSingle();
+    const { data: order } = await supabaseAdmin.from("orders").select("id, payment_status").eq("id", data.orderId).maybeSingle();
     if (!order) return { ok: false as const, error: "order_not_found" };
     if (order.payment_status === "pago") return { ok: false as const, error: "already_paid" };
     await supabaseAdmin
@@ -24,7 +24,7 @@ export const createPagarmeCheckout = createServerFn({ method: "POST" })
 
 /** Cartão: link de pagamento hospedado da Stone (só cartão). Devolve a URL pra redirecionar. */
 export const createPagarmeCardCheckout = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ orderNumber: z.number().int().positive() }).parse(input))
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
     if (!rateLimit(`pg-card:${clientKey(getRequest())}`, 15, 60_000)) return { ok: false as const, error: "too_many_attempts" };
     const { createPagarmeLink, pagarmeConfigured, PAGARME } = await import("./pagarme.server");
@@ -33,7 +33,7 @@ export const createPagarmeCardCheckout = createServerFn({ method: "POST" })
     const { data: order } = await supabaseAdmin
       .from("orders")
       .select("id, order_number, total_cents, payment_status, customer_email, customer_name, customer_document")
-      .eq("order_number", data.orderNumber)
+      .eq("id", data.orderId)
       .maybeSingle();
     if (!order) return { ok: false as const, error: "order_not_found" };
     if (order.payment_status === "pago") return { ok: false as const, error: "already_paid" };

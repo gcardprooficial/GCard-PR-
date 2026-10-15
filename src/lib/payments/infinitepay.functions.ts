@@ -5,7 +5,7 @@ import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 /** Gera o link de pagamento da InfinitePay (alternativa ao Mercado Pago). */
 export const createInfinitePayCheckout = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ orderNumber: z.number().int().positive() }).parse(input))
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
     if (!rateLimit(`ip-link:${clientKey(getRequest())}`, 15, 60_000)) return { ok: false as const, error: "rate_limited" };
     const { createInfinitePayLink, infinitePayHandle, INFINITEPAY } = await import("./infinitepay.server");
@@ -14,7 +14,7 @@ export const createInfinitePayCheckout = createServerFn({ method: "POST" })
     const { data: order } = await supabaseAdmin
       .from("orders")
       .select("id, order_number, total_cents, payment_status, customer_email, customer_name")
-      .eq("order_number", data.orderNumber)
+      .eq("id", data.orderId)
       .maybeSingle();
     if (!order) return { ok: false as const, error: "order_not_found" };
     if (order.payment_status === "pago") return { ok: false as const, error: "already_paid" };

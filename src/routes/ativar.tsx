@@ -325,7 +325,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
         </div>
         <div className="mx-auto max-w-4xl px-5 pb-6 pt-2">
           <p className="text-sm text-white/60">Olá 👋</p>
-          <h1 className="font-display text-2xl leading-tight sm:text-3xl">Painel do Revendedor</h1>
+          <h1 className="font-display text-2xl leading-tight sm:text-3xl">Meus códigos</h1>
           <a
             href="#resgatar"
             className="mt-4 inline-flex h-12 items-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
@@ -390,7 +390,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <span className="badge-pill bg-primary/20 text-foreground font-black text-xs">
-                    Painel do Revendedor
+                    Meus códigos
                   </span>
                   <h2 className="mt-2 font-display text-xl font-bold">Como gerenciar e ativar seus cartões</h2>
                   <p className="mt-1 text-sm text-muted-foreground">

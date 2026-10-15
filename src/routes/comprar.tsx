@@ -721,13 +721,13 @@ function Comprar() {
       try {
         const pref =
           gateway === "pagarme"
-            ? await createPagarme({ data: { orderNumber: res.orderNumber } })
+            ? await createPagarme({ data: { orderId: res.orderId } })
             : gateway === "pagarmecard"
-              ? await createPagarmeCard({ data: { orderNumber: res.orderNumber } })
+              ? await createPagarmeCard({ data: { orderId: res.orderId } })
               : gateway === "infinitepay"
-              ? await createInfinitePay({ data: { orderNumber: res.orderNumber } })
+              ? await createInfinitePay({ data: { orderId: res.orderId } })
               : await createPref({
-                  data: { orderNumber: res.orderNumber, pixDiscount: pixPromoLive && wantsPixDiscount },
+                  data: { orderId: res.orderId, pixDiscount: pixPromoLive && wantsPixDiscount },
                 });
         if (pref?.url) {
           // Redirect the buyer to the hosted checkout

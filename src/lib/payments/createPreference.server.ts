@@ -5,7 +5,8 @@ import { rateLimit, clientKey } from "@/lib/rateLimit";
 import { getRequest } from "@tanstack/react-start/server";
 
 const schema = z.object({
-  orderNumber: z.number().int().positive(),
+  /** UUID do pedido (secreto). Nunca o número sequencial: ele é adivinhável e o link de pagamento mostra dados do cliente. */
+  orderId: z.string().uuid(),
   pixDiscount: z.boolean().optional(),
 });
 
@@ -14,7 +15,7 @@ export const createCheckoutPreference = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     // Muitas tentativas seguidas (mesmo IP ou mesmo pedido) parecem teste de cartão e pesam na
     // análise de segurança do Mercado Pago -- corta aqui e manda o cliente pro Pix/InfinitePay.
-    if (!rateLimit(`mp-pref-ip:${clientKey(getRequest())}`, 8, 600_000) || !rateLimit(`mp-pref-order:${data.orderNumber}`, 4, 3_600_000)) {
+    if (!rateLimit(`mp-pref-ip:${clientKey(getRequest())}`, 8, 600_000) || !rateLimit(`mp-pref-order:${data.orderId}`, 4, 3_600_000)) {
       return { ok: false as const, error: "too_many_attempts" };
     }
     const { getPaymentProvider } = await import("@/lib/payments");
@@ -29,7 +30,7 @@ export const createCheckoutPreference = createServerFn({ method: "POST" })
       .select(
         "id, order_number, total_cents, subtotal_cents, quantity, payment_status, customer_email, customer_name, customer_document, customer_phone, ship_zip, ship_street, ship_number, ship_complement, pix_discount_applied, order_items(product_name, quantity)",
       )
-      .eq("order_number", data.orderNumber)
+      .eq("id", data.orderId)
       .maybeSingle();
     if (!order) {
       return { ok: false as const, error: "order_not_found" };
