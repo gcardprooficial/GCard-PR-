@@ -51,6 +51,7 @@ function Funnel() {
   const [to, setTo] = useState(() => iso(new Date()));
   const [internal, setInternal] = useState(false);
   const [rows, setRows] = useState<FunnelRow[] | null>(null);
+  const [originQ, setOriginQ] = useState("");
 
   const load = useCallback(async () => {
     setRows(null);
@@ -79,6 +80,7 @@ function Funnel() {
         <label className="flex items-center gap-2">De <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1" /></label>
         <label className="flex items-center gap-2">até <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1" /></label>
         <label className="flex items-center gap-2"><input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} /> Incluir contas internas/teste</label>
+        <input value={originQ} onChange={(e) => setOriginQ(e.target.value)} placeholder="Filtrar origem…" className="w-44 rounded-md border border-border bg-background px-2 py-1" />
       </div>
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full text-sm">
@@ -91,7 +93,7 @@ function Funnel() {
           <tbody>
             {rows === null && <tr><td className="p-4 text-muted-foreground" colSpan={7}>Carregando…</td></tr>}
             {rows?.length === 0 && <tr><td className="p-4 text-muted-foreground" colSpan={7}>Sem eventos no período.</td></tr>}
-            {rows?.map((r) => (
+            {rows?.filter((r) => r.source.toLowerCase().includes(originQ.trim().toLowerCase())).map((r) => (
               <tr key={r.source} className="border-t border-border">
                 <td className="p-3 font-semibold">{r.source}</td>
                 {cols.map(([label, k]) => <td key={label} className="p-3 text-right tabular-nums">{Number(r[k])}</td>)}
@@ -119,6 +121,11 @@ function Accounts() {
   const [internal, setInternal] = useState(false);
   const [eng, setEng] = useState<"todos" | AccountRow["engagement"]>("todos");
   const [rows, setRows] = useState<AccountRow[] | null>(null);
+  const [q, setQ] = useState("");
+  const [origin, setOrigin] = useState("todas");
+  const [consent, setConsent] = useState<"todos" | "sim" | "nao">("todos");
+  const [since, setSince] = useState("");
+  const [until, setUntil] = useState("");
 
   const load = useCallback(async () => {
     setRows(null);
@@ -131,7 +138,17 @@ function Accounts() {
   }, [run, onlyNoBuy, internal]);
   useEffect(() => void load(), [load]);
 
-  const shown = (rows ?? []).filter((r) => eng === "todos" || r.engagement === eng);
+  const origins = [...new Set((rows ?? []).map((r) => r.source))].sort();
+  const needle = q.trim().toLowerCase();
+  const shown = (rows ?? []).filter(
+    (r) =>
+      (eng === "todos" || r.engagement === eng) &&
+      (origin === "todas" || r.source === origin) &&
+      (consent === "todos" || (consent === "sim") === r.consented) &&
+      (!needle || r.email.toLowerCase().includes(needle)) &&
+      (!since || r.created_at.slice(0, 10) >= since) &&
+      (!until || r.created_at.slice(0, 10) <= until),
+  );
   const count = (e: AccountRow["engagement"]) => (rows ?? []).filter((r) => r.engagement === e).length;
 
   async function download(mode: "operacional" | "marketing") {
@@ -177,6 +194,26 @@ function Accounts() {
           <Button size="sm" variant="outline" onClick={() => download("operacional")}>CSV operacional</Button>
           <Button size="sm" variant="outline" onClick={() => download("marketing")}>CSV marketing (só com aceite)</Button>
         </span>
+      </div>
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar e-mail…" className="w-56 rounded-md border border-border bg-background px-2 py-1" />
+        <label className="flex items-center gap-2">Origem
+          <select value={origin} onChange={(e) => setOrigin(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1">
+            <option value="todas">Todas</option>
+            {origins.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </label>
+        <label className="flex items-center gap-2">Aceitou novidades
+          <select value={consent} onChange={(e) => setConsent(e.target.value as typeof consent)} className="rounded-md border border-border bg-background px-2 py-1">
+            <option value="todos">Todos</option><option value="sim">Sim</option><option value="nao">Não</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2">Criada de <input type="date" value={since} onChange={(e) => setSince(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1" /></label>
+        <label className="flex items-center gap-2">até <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1" /></label>
+        {(q || origin !== "todas" || consent !== "todos" || since || until) && (
+          <Button size="sm" variant="ghost" onClick={() => { setQ(""); setOrigin("todas"); setConsent("todos"); setSince(""); setUntil(""); }}>Limpar filtros</Button>
+        )}
+        <span className="text-muted-foreground">{shown.length} de {rows?.length ?? 0}</span>
       </div>
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         <table className="w-full text-sm">
