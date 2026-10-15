@@ -22,6 +22,9 @@ export const PRODUCT_IMAGES: Record<string, string> = {
   "plaquinha-10x15-l": produtoPlaquinhaL,
   "acrilico-10x10-sem-arte": acrilico10x10Cristal,
   "acrilico-15x10-l-sem-arte": acrilicoLCristal,
+  // "para personalizar" usa a mesma foto do acrílico liso do mesmo formato.
+  "acrilico-10x10-nfc-personalizar": acrilico10x10Cristal,
+  "acrilico-10x15-nfc-personalizar": acrilicoLCristal,
 };
 
 /** Fotos de balcão (public/mockups), usadas no carrossel e na galeria dos produtos. */

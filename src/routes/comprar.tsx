@@ -50,6 +50,14 @@ const COLOR_IMAGES: Record<string, string> = {
   "acrilico-15x10-l-sem-arte:branco": acrilicoLBranco,
   "acrilico-15x10-l-sem-arte:preto": acrilicoLPreto,
   "acrilico-15x10-l-sem-arte:azul": acrilicoLAzul,
+  "acrilico-10x10-nfc-personalizar:cristal": acrilico10x10Cristal,
+  "acrilico-10x10-nfc-personalizar:branco": acrilico10x10Branco,
+  "acrilico-10x10-nfc-personalizar:preto": acrilico10x10Preto,
+  "acrilico-10x10-nfc-personalizar:azul": acrilico10x10Azul,
+  "acrilico-10x15-nfc-personalizar:cristal": acrilicoLCristal,
+  "acrilico-10x15-nfc-personalizar:branco": acrilicoLBranco,
+  "acrilico-10x15-nfc-personalizar:preto": acrilicoLPreto,
+  "acrilico-10x15-nfc-personalizar:azul": acrilicoLAzul,
 };
 
 const catalogQuery = queryOptions({ queryKey: ["catalog"], queryFn: () => getCatalog() });
@@ -157,6 +165,8 @@ const IMAGES: Record<string, string> = {
   "plaquinha-10x15-l": produtoPlaquinhaL,
   "acrilico-10x10-sem-arte": acrilico10x10Cristal,
   "acrilico-15x10-l-sem-arte": acrilicoLCristal,
+  "acrilico-10x10-nfc-personalizar": acrilico10x10Cristal,
+  "acrilico-10x15-nfc-personalizar": acrilicoLCristal,
 };
 
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
