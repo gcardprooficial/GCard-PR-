@@ -60,5 +60,6 @@ export const getWhatsAppStatus = createServerFn({ method: "GET" })
           ? Boolean(env["ZAPI_WEBHOOK_SECRET"])
           : Boolean(env["WHATSAPP_TOKEN"] && env["WHATSAPP_PHONE_NUMBER_ID"] && env["WHATSAPP_APP_SECRET"] && env["WHATSAPP_VERIFY_TOKEN"]),
       ai: Boolean(env["ANTHROPIC_API_KEY"] || env["GEMINI_API_KEY"]),
+      outbound: env["WHATSAPP_OUTBOUND"] === "on",
     };
   });

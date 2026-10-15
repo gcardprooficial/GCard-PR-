@@ -90,6 +90,10 @@ export async function ingestInbound(m: Inbound): Promise<void> {
     return;
   }
 
+  // Envio desligado: guarda a mensagem recebida (histórico no painel), mas o bot não responde nem gasta IA.
+  const { outboundEnabled } = await import("./transport.server");
+  if (!outboundEnabled()) return;
+
   try {
     const { processInbound } = await import("./bot.server");
     await processInbound(conv, m.kind, m.text, m.buttonId);

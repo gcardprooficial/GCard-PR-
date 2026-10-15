@@ -63,7 +63,7 @@ const fmtTime = (iso: string) =>
 function WhatsApp() {
   const [tab, setTab] = useState<"conversas" | "contatos" | "fluxos" | "respostas" | "ia">("conversas");
   const runStatus = useServerFn(getWhatsAppStatus);
-  const [status, setStatus] = useState<{ provider: "zapi" | "meta"; connected: boolean; ai: boolean } | null>(null);
+  const [status, setStatus] = useState<{ provider: "zapi" | "meta"; connected: boolean; ai: boolean; outbound: boolean } | null>(null);
 
   useEffect(() => {
     runStatus().then(setStatus).catch(() => setStatus(null));
@@ -85,6 +85,11 @@ function WhatsApp() {
         a conversa vira <strong>Atendente</strong> e o bot fica quieto até você devolver.
       </p>
 
+      {status && !status.outbound && (
+        <div role="alert" className="mb-3 rounded-xl border-2 border-red-300 bg-red-50 p-3 text-sm font-semibold text-red-900">
+          Envio de WhatsApp DESLIGADO (número banido). O sistema recebe e guarda as mensagens, mas não envia nada: sem avisos de pedido, sem bot e sem resposta manual. Para religar com outro número: WHATSAPP_OUTBOUND=on na Vercel.
+        </div>
+      )}
       {status && !status.connected && (
         <div className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm">
           <strong>WhatsApp ainda não conectado.</strong>{" "}
