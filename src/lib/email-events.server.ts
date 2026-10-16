@@ -512,6 +512,25 @@ export async function notifyAdminPaymentFailure(order: {
   }
 }
 
+/** Avisa a equipe quando alguém pede liberação de um site para o destino de um código. */
+export async function notifyAdminDestinationRequest(req: { shortCode: string; url: string; host: string; requesterEmail: string }) {
+  const to = process.env["ADMIN_NOTIFY_EMAIL"];
+  if (!to) return { skipped: true, reason: "ADMIN_NOTIFY_EMAIL ausente" };
+  const html = emailShell({
+    title: "Pedido de liberação de destino",
+    bodyHtml:
+      `<p><strong>${escapeHtml(req.requesterEmail)}</strong> pediu para usar este endereço no código <strong>${escapeHtml(req.shortCode)}</strong>:</p>` +
+      `<p style="word-break:break-all;">${escapeHtml(req.url)}</p>` +
+      `<p>Site: <strong>${escapeHtml(req.host)}</strong>. No painel, em <strong>Liberações</strong>, aprove o site inteiro, só esse endereço, ou negue.</p>`,
+  });
+  try {
+    return await sendWithResend({ to, subject: `Pedido de liberação — ${req.shortCode} (${req.host})`, html });
+  } catch (error) {
+    console.error("Falha ao avisar sobre pedido de liberação", error);
+    return { sent: false };
+  }
+}
+
 /** Avisa o dono quando alguém deixa o WhatsApp na ferramenta grátis, pra ele seguir manualmente. */
 /** E-mail do gerador grátis: o link de avaliação para a pessoa guardar. As dicas só vão com o aceite de novidades. */
 export async function sendReviewLinkEmail(input: { to: string; businessName: string; reviewUrl: string; withTips: boolean }) {

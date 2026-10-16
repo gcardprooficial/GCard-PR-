@@ -94,7 +94,10 @@ export const Route = createFileRoute("/r/$token")({
         // Valida também na leitura (não só na gravação): lista única no banco, só https, sem usuário/senha/porta.
         const { data: rows } = await supabaseAdmin.from("allowed_destination_hosts").select("host, include_subdomains");
         const rules = rulesOrFallback(rows as DestinationRule[] | null);
-        if (target.protocol !== "https:" || target.username || target.password || target.port || !isPublicHost(target.hostname) || !isAllowedHost(target.hostname, rules)) {
+        // Endereço exato liberado por pedido aprovado (tabela pode ainda não existir: aí a lista vem vazia).
+        const { data: urlRows } = await supabaseAdmin.from("allowed_destination_urls").select("url");
+        const exactOk = ((urlRows ?? []) as { url: string }[]).some((u) => u.url === destination);
+        if (target.protocol !== "https:" || target.username || target.password || target.port || !isPublicHost(target.hostname) || (!isAllowedHost(target.hostname, rules) && !exactOk)) {
           return page("Destino não permitido", "Esse código aponta para um endereço que não é aceito.", 400);
         }
 
