@@ -6,7 +6,7 @@ import { money } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useServerFn } from "@tanstack/react-start";
-import { exportPeopleCsv } from "@/lib/people.functions";
+import { exportPeopleCsv, listMarketingStatus } from "@/lib/people.functions";
 
 export const Route = createFileRoute("/painel/clientes")({ component: Customers });
 
@@ -35,10 +35,11 @@ type Order = {
 function Customers() {
   const [contacts, setContacts] = useState<Contact[] | null>(null);
   const [query, setQuery] = useState("");
-  const [segment, setSegment] = useState<"todos" | "consentidos" | "revenda" | "clientes">("todos");
+  const [segment, setSegment] = useState<"todos" | "consentidos" | "descadastrados" | "revenda" | "clientes">("todos");
+  const loadMarketing = useServerFn(listMarketingStatus);
 
   const load = useCallback(async () => {
-    const [ordersResult, marketingResult] = await Promise.all([
+    const [ordersResult, marketing] = await Promise.all([
       supabase
         .from("orders")
         .select(
@@ -46,15 +47,14 @@ function Customers() {
         )
         .order("created_at", { ascending: false })
         .limit(5000),
-      supabase.from("marketing_contacts").select("email, marketing_unsubscribed_at"),
+      loadMarketing().catch(() => []),
     ]);
     if (ordersResult.error) {
       toast.error("Não foi possível carregar os clientes.");
       return;
     }
-    const unsubscribed = new Set(
-      (marketingResult.data ?? []).filter((x) => x.marketing_unsubscribed_at).map((x) => x.email),
-    );
+    // A situação de marketing vem do servidor (a equipe não lê marketing_contacts direto pelo navegador).
+    const unsubscribed = new Set(marketing.filter((x) => x.unsubscribed_at).map((x) => x.email));
     const map = new Map<string, Contact>();
     for (const order of (ordersResult.data ?? []) as Order[]) {
       const current = map.get(order.customer_email);
@@ -66,7 +66,7 @@ function Customers() {
         paid: 0,
         lastOrder: order.created_at,
         consent: false,
-        unsubscribed: unsubscribed.has(order.customer_email),
+        unsubscribed: unsubscribed.has(order.customer_email.toLowerCase()),
         kind: order.kind,
       };
       next.orders += 1;
@@ -75,12 +75,28 @@ function Customers() {
       if (new Date(order.created_at) > new Date(next.lastOrder)) next.lastOrder = order.created_at;
       map.set(order.customer_email, next);
     }
+    // Quem se descadastrou mas nunca comprou (ex.: ferramenta grátis) também aparece.
+    const known = new Set([...map.keys()].map((e) => e.toLowerCase()));
+    for (const m of marketing) {
+      if (!m.unsubscribed_at || known.has(m.email)) continue;
+      map.set(m.email, {
+        email: m.email,
+        name: m.name ?? "",
+        phone: null,
+        orders: 0,
+        paid: 0,
+        lastOrder: m.unsubscribed_at,
+        consent: Boolean(m.consent_at),
+        unsubscribed: true,
+        kind: "—",
+      });
+    }
     setContacts(
       [...map.values()].sort(
         (a, b) => new Date(b.lastOrder).getTime() - new Date(a.lastOrder).getTime(),
       ),
     );
-  }, []);
+  }, [loadMarketing]);
 
   useEffect(() => {
     void load();
@@ -94,6 +110,7 @@ function Customers() {
         const matchesSegment =
           segment === "todos" ||
           (segment === "consentidos" && contact.consent && !contact.unsubscribed) ||
+          (segment === "descadastrados" && contact.unsubscribed) ||
           (segment === "revenda" && contact.kind === "revenda") ||
           (segment === "clientes" && contact.paid > 0);
         return matchesQuery && matchesSegment;
@@ -102,6 +119,7 @@ function Customers() {
   );
 
   const consented = (contacts ?? []).filter((x) => x.consent && !x.unsubscribed).length;
+  const unsubscribedCount = (contacts ?? []).filter((x) => x.unsubscribed).length;
   const revenue = (contacts ?? []).reduce((sum, x) => sum + x.paid, 0);
 
   const runExport = useServerFn(exportPeopleCsv);
@@ -149,9 +167,10 @@ function Customers() {
           </Button>
         </div>
       </div>
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-4">
         <Summary label="Contatos" value={String(contacts?.length ?? 0)} />
         <Summary label="Consentidos" value={String(consented)} />
+        <Summary label="Descadastrados" value={String(unsubscribedCount)} />
         <Summary label="Receita paga" value={money(revenue)} />
       </div>
       <div className="mt-6 rounded-3xl bg-card p-5 card-soft sm:p-6">
@@ -168,6 +187,7 @@ function Customers() {
                 ["todos", "Todos"],
                 ["clientes", "Compradores"],
                 ["consentidos", "Consentimento LGPD"],
+                ["descadastrados", "Descadastrados"],
                 ["revenda", "Revenda"],
               ] as const
             ).map(([key, label]) => (

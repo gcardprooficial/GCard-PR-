@@ -61,6 +61,8 @@ export function captureFirstTouch(): void {
     const v = params.get(k) ?? (k === "ref" ? params.get("cupom") : null);
     if (v) raw[k] = v;
   }
+  // Quem chega pelo atalho do kit (/comprar?kit=...) e não traz utm_source vem do curso/personalizar.
+  if (!raw["utm_source"] && params.get("kit")) raw["utm_source"] = "personalizar";
   raw["landing"] = window.location.pathname;
   try {
     const ref = document.referrer ? new URL(document.referrer).hostname : "";

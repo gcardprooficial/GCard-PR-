@@ -20,6 +20,25 @@ type Person = {
   marketing_unsubscribed_at: string | null;
 };
 
+/** Situação de marketing por e-mail (aceite e descadastro), para a tela Clientes. Só equipe. */
+export const listMarketingStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertTeam } = await import("@/lib/team.server");
+    await assertTeam(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await untyped(supabaseAdmin).rpc("people_summary");
+    if (error) throw new Error("Não consegui carregar os contatos.");
+    return ((data ?? []) as Person[])
+      .filter((p) => p.marketing_unsubscribed_at || p.marketing_consent_at)
+      .map((p) => ({
+        email: p.email.toLowerCase(),
+        name: p.name,
+        consent_at: p.marketing_consent_at,
+        unsubscribed_at: p.marketing_unsubscribed_at,
+      }));
+  });
+
 /** Célula de CSV segura: aspas escapadas e proteção contra fórmula (=, +, -, @) ao abrir no Excel/Planilhas. */
 function cell(value: unknown): string {
   let text = value === null || value === undefined ? "" : String(value);

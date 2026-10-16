@@ -531,6 +531,32 @@ export async function notifyAdminDestinationRequest(req: { shortCode: string; ur
   }
 }
 
+/** Avisa o cliente do resultado do pedido de liberação de destino. */
+export async function sendDestinationDecisionEmail(input: { to: string; shortCode: string; url: string; approved: boolean }) {
+  const appUrl = `${process.env["PUBLIC_APP_URL"] ?? "https://www.gcardpro.com.br"}`.replace(/\/$/, "");
+  const html = emailShell({
+    title: input.approved ? "Endereço liberado" : "Pedido de liberação analisado",
+    bodyHtml: input.approved
+      ? `<p>Liberamos o endereço que você pediu para o código <strong>${escapeHtml(input.shortCode)}</strong>:</p>` +
+        `<p style="word-break:break-all;">${escapeHtml(input.url)}</p>` +
+        `<p>Agora é só entrar no painel, abrir o código e salvar esse link.</p>` +
+        ctaButton(`${appUrl}/ativar`, "Abrir meu painel")
+      : `<p>Analisamos o pedido para o código <strong>${escapeHtml(input.shortCode)}</strong> e não conseguimos liberar este endereço:</p>` +
+        `<p style="word-break:break-all;">${escapeHtml(input.url)}</p>` +
+        `<p>Você pode usar outro link (por exemplo Google, WhatsApp, Instagram ou TOQY). Se achar que foi engano, responda este e-mail.</p>`,
+  });
+  try {
+    return await sendWithResend({
+      to: input.to,
+      subject: input.approved ? `Endereço liberado — ${input.shortCode}` : `Sobre o seu pedido de liberação — ${input.shortCode}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Falha ao avisar o cliente sobre a liberação", error);
+    return { sent: false };
+  }
+}
+
 /** Avisa o dono quando alguém deixa o WhatsApp na ferramenta grátis, pra ele seguir manualmente. */
 /** E-mail do gerador grátis: o link de avaliação para a pessoa guardar. As dicas só vão com o aceite de novidades. */
 export async function sendReviewLinkEmail(input: { to: string; businessName: string; reviewUrl: string; withTips: boolean }) {

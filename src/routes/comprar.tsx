@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCatalog, type CatalogProduct, type ColorVariant } from "@/lib/catalog.functions";
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.functions";
+import { trackClientEvent } from "@/lib/events.functions";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
 import { ProductionNotice } from "@/components/ProductionNotice";
@@ -67,7 +68,12 @@ function resolveUnitPrice(
 
 const searchSchema = z.object({
   caminho: z.enum(["lojista", "revenda"]).optional().catch(undefined),
+  // Atalho do curso: acrílico liso já com QR = Sim, chip NFC = Sim e 10 unidades (tudo editável).
+  kit: z.enum(["personalizar", "personalizar-l"]).optional().catch(undefined),
 });
+
+const KIT_SLUGS = { personalizar: "acrilico-10x10-sem-arte", "personalizar-l": "acrilico-15x10-l-sem-arte" } as const;
+const KIT_QUANTITY = 10;
 
 export const Route = createFileRoute("/comprar")({
   validateSearch: searchSchema,
@@ -320,7 +326,7 @@ function VideoGate({
 }
 
 function Comprar() {
-  const { caminho } = Route.useSearch();
+  const { caminho, kit } = Route.useSearch();
   const navigate = useNavigate();
   const { data } = useSuspenseQuery(catalogQuery);
   const runSearch = useServerFn(searchBusinesses);
@@ -385,7 +391,8 @@ function Comprar() {
     clearReferral();
   }
 
-  const isResale = caminho === "revenda";
+  // O kit para personalizar é acrílico liso: mesmo fluxo da revenda (conta + QR/lote), mínimo de 10.
+  const isResale = caminho === "revenda" || Boolean(kit);
   const plan = data.plans.find((p) =>
     isResale ? p.slug === "renda-extra" : p.slug === "lojista",
   ) ?? {
@@ -522,8 +529,8 @@ function Comprar() {
     setResults([]);
     setManualLink("");
     setBusiness(null);
-    setQuantity(caminho === "revenda" ? 10 : 1);
-  }, [caminho]);
+    setQuantity(caminho === "revenda" || kit ? KIT_QUANTITY : 1);
+  }, [caminho, kit]);
 
   // E-mail do pedido = e-mail da conta em revenda, senão /ativar não acha o lote depois.
   // Precisa ficar junto dos outros hooks, antes de qualquer early return -- senão a
@@ -547,9 +554,13 @@ function Comprar() {
   // Código de QR de cada unidade: escolha do cliente (grátis). Só no acrílico liso.
   const [wantsQr, setWantsQr] = useState(false);
   const qrCodeQty = isBlank && wantsQr ? quantity : 0;
+  // Atalho do kit: na primeira vez que o produto do kit é escolhido, já vem com QR = Sim e o chip em todas as unidades.
+  const kitPreset = useRef<string | null>(null);
   useEffect(() => {
-    setNfcAddonQty(0);
-    setWantsQr(false);
+    const preset = kitPreset.current !== null && product?.slug === kitPreset.current;
+    setNfcAddonQty(preset ? KIT_QUANTITY : 0);
+    setWantsQr(preset);
+    if (preset) kitPreset.current = null;
   }, [product]);
 
   const total = unitPrice * quantity + nfcAddonTotal;
@@ -619,6 +630,21 @@ function Comprar() {
     setColor(product?.color_variants?.[0] ?? null);
     setQuantity((q) => Math.max(q, product?.min_quantity ?? 1));
   }, [product]);
+
+  // Abre o produto do kit, pula a escolha de modelo (a cor é a próxima etapa) e registra a visita com origem "personalizar".
+  const trackVisit = useServerFn(trackClientEvent);
+  const kitApplied = useRef(false);
+  useEffect(() => {
+    if (!kit || kitApplied.current) return;
+    const item = products.find((p) => p.slug === KIT_SLUGS[kit] && p.status === "ativo");
+    if (!item) return;
+    kitApplied.current = true;
+    kitPreset.current = item.slug;
+    setProduct(item);
+    setQuantity(KIT_QUANTITY);
+    setStepIndex(1);
+    void trackVisit({ data: { type: "produto_visto", slug: item.slug, origin: "personalizar" } }).catch(() => {});
+  }, [kit, products, trackVisit]);
 
   const go = (delta: number) => {
     if (isTransitioning) return;
