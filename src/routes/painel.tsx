@@ -21,6 +21,7 @@ import {
   Handshake,
   BarChart3,
   Activity,
+  ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
@@ -52,6 +53,7 @@ const TABS = [
   { to: "/painel/scans", label: "Scans", icon: ScanLine },
   { to: "/painel/estatisticas", label: "Estatísticas (Plus)", icon: Activity },
   { to: "/painel/denuncias", label: "Denúncias", icon: ShieldAlert },
+  { to: "/painel/liberacoes", label: "Liberações", icon: ShieldCheck },
   { to: "/painel/frete", label: "Frete por estado", icon: Truck },
   { to: "/painel/contador", label: "Contador", icon: FileSpreadsheet },
   { to: "/painel/conciliacao", label: "Conciliação MP", icon: Wallet },

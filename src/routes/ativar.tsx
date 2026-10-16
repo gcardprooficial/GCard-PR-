@@ -11,6 +11,9 @@ import { AuthForm } from "@/components/AuthForm";
 import { PlateQrDownload } from "@/components/PlateQrDownload";
 import { PlateScanStats } from "@/components/PlateScanStats";
 import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
+import { requestDestinationRelease } from "@/lib/destination.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { untyped } from "@/lib/db-untyped";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 import logoMarca from "@/assets/logo/header-marca.png";
@@ -144,12 +147,38 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   const [redeeming, setRedeeming] = useState(false);
   // Hosts aceitos como destino: lista única do banco (a mesma do /r e do gatilho SQL).
   const [rules, setRules] = useState<DestinationRule[]>([]);
+  const [allowedUrls, setAllowedUrls] = useState<string[]>([]);
+  // Pedido de liberação: aparece quando o link é válido mas o site ainda não está na lista.
+  const [release, setRelease] = useState<{ plate: Plate; url: string; host: string } | null>(null);
+  const [asking, setAsking] = useState(false);
+  const askRelease = useServerFn(requestDestinationRelease);
   useEffect(() => {
     void untyped(supabase)
       .from("allowed_destination_hosts")
       .select("host, include_subdomains")
       .then(({ data }: { data: DestinationRule[] | null }) => setRules(data ?? []));
+    void untyped(supabase)
+      .from("allowed_destination_urls")
+      .select("url")
+      .then(({ data }: { data: { url: string }[] | null }) => setAllowedUrls((data ?? []).map((u) => u.url)));
   }, []);
+
+  async function sendRelease() {
+    if (!release) return;
+    setAsking(true);
+    try {
+      const r = await askRelease({ data: { plateId: release.plate.id, url: release.url } });
+      if (!r.ok) toast.error(r.error);
+      else if (r.status === "ja_liberado") toast.success("Esse endereço já está liberado. Tente salvar de novo.");
+      else if (r.status === "ja_pedido") toast.message("Você já pediu liberação desse endereço. Aguarde a nossa resposta.");
+      else toast.success("Pedido enviado! Avisamos por e-mail quando for analisado.");
+      if (r.ok) setRelease(null);
+    } catch {
+      toast.error("Não consegui enviar o pedido agora. Tente de novo.");
+    } finally {
+      setAsking(false);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -195,8 +224,12 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   }, [load]);
 
   async function activate(plate: Plate, businessName: string, reviewUrl: string, soldTo: string) {
-    const checked = checkDestination(reviewUrl, rules);
+    const checked = checkDestination(reviewUrl, rules, allowedUrls);
     if (!checked.ok) {
+      if (checked.code === "host_nao_permitido" && checked.host && checked.url) {
+        setRelease({ plate, url: checked.url, host: checked.host });
+        return;
+      }
       toast.error(checked.reason);
       return;
     }
@@ -418,6 +451,9 @@ function Lote({ email, userId }: { email: string; userId: string }) {
                   <p className="mt-2 text-muted-foreground">
                     Abra o app <strong>NFC Tools</strong> (grátis para Android/iPhone) &gt; <em>Escrever</em> &gt; <em>Adicionar Registro</em> &gt; <em>URL</em>. Cole o link dinâmico do cartão e encoste no chip!
                   </p>
+                  <p className="mt-2 text-muted-foreground">
+                    Para pegar esse link, use o botão <strong>📋 Copiar URL NFC</strong> do seu código: ele já leva a marca que separa os toques de NFC das leituras de QR.
+                  </p>
                 </div>
               </div>
             </div>
@@ -489,6 +525,23 @@ function Lote({ email, userId }: { email: string; userId: string }) {
           </>
         )}
       </div>
+
+      <Dialog open={release !== null} onOpenChange={(o) => !o && setRelease(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Esse site ainda não está liberado</DialogTitle>
+            <DialogDescription>
+              O endereço <strong>{release?.host}</strong> ainda não está na nossa lista de sites aceitos nos códigos. Hoje aceitamos Google, WhatsApp,
+              Instagram, Facebook, TikTok, YouTube, Linktree, iFood e TOQY. Se o seu é outro, peça a liberação: a gente analisa e avisa por e-mail.
+              Enquanto isso, o código continua como está.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={sendRelease} disabled={asking}>{asking ? "Enviando…" : "Pedir liberação"}</Button>
+            <Button variant="outline" onClick={() => setRelease(null)}>Cancelar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card md:hidden" aria-label="Painel">
         <ul className="mx-auto grid h-16 max-w-md grid-cols-5 items-center text-[11px] font-semibold text-muted-foreground">

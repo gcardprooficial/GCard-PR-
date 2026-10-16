@@ -27,7 +27,7 @@ export function isPublicHost(host: string): boolean {
 
 export type NormalizedDestination =
   | { ok: true; url: string; upgradedToHttps: boolean }
-  | { ok: false; reason: string };
+  | { ok: false; reason: string; /** "host_nao_permitido" = link válido, mas o site ainda não foi liberado (dá para pedir liberação). */ code?: "host_nao_permitido"; host?: string; url?: string };
 
 /** Aceita só http/https, sem usuário/senha e sem porta; http vira https. Normaliza (host em minúsculas, sem espaços). */
 export function normalizeDestination(raw: string): NormalizedDestination {
@@ -55,12 +55,16 @@ export function isAllowedHost(host: string, rules: DestinationRule[]): boolean {
   return rules.some((r) => r.host === "*" || h === r.host || (r.include_subdomains && h.endsWith(`.${r.host}`)));
 }
 
-/** Normaliza e confere o host contra as regras. Mensagem pronta para mostrar. */
-export function checkDestination(raw: string, rules: DestinationRule[]): NormalizedDestination {
+/**
+ * Normaliza e confere o host contra as regras. Mensagem pronta para mostrar.
+ * `allowedUrls` = endereços exatos liberados (allowed_destination_urls), além dos hosts.
+ */
+export function checkDestination(raw: string, rules: DestinationRule[], allowedUrls: string[] = []): NormalizedDestination {
   const n = normalizeDestination(raw);
   if (!n.ok) return n;
-  if (!isAllowedHost(new URL(n.url).hostname, rulesOrFallback(rules))) {
-    return { ok: false, reason: "Esse endereço não é aceito para este código." };
+  const host = new URL(n.url).hostname;
+  if (!isAllowedHost(host, rulesOrFallback(rules)) && !allowedUrls.includes(n.url)) {
+    return { ok: false, reason: "Esse endereço ainda não está liberado para este código.", code: "host_nao_permitido", host, url: n.url };
   }
   return n;
 }
