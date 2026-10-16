@@ -17,6 +17,10 @@ export const Route = createFileRoute("/produtos/$slug")({
   component: Produto,
 });
 
+/** Produto liso que tem atalho de kit em /comprar?kit=. */
+const kitParamFor = (slug: string) =>
+  slug === "acrilico-10x10-sem-arte" ? ("personalizar" as const) : slug === "acrilico-15x10-l-sem-arte" ? ("personalizar-l" as const) : null;
+
 function Produto() {
   const { slug } = Route.useParams();
   const { data } = useSuspenseQuery(catalogQuery);
@@ -97,10 +101,23 @@ function Produto() {
             </div>
           )}
           {p.is_blank && (
-            <p className="mt-4 text-sm text-muted-foreground">
-              Sem impressão. Cores: cristal, branco, preto e azul. Você aplica a sua arte ou adesivo. Quer colocar o seu QR? Na compra, escolha receber o QR Code (grátis) e veja{" "}
-              <Link to="/personalizar" className="font-semibold underline">como personalizar</Link>.
-            </p>
+            <>
+              <p className="mt-4 text-sm text-muted-foreground">Sem impressão. Cores: cristal, branco, preto e azul. Você aplica a sua arte ou adesivo.</p>
+              <div className="mt-3 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-sm">
+                <p className="font-bold">Vai personalizar?</p>
+                <p className="mt-1 text-muted-foreground">
+                  O QR de cada placa é grátis
+                  {p.nfc_addon_price_cents ? ` e o chip custa ${money(p.nfc_addon_price_cents)}` : ""}.{" "}
+                  <Link to="/personalizar" className="font-semibold text-foreground underline">Veja o passo a passo</Link>
+                  {kitParamFor(p.slug) && (
+                    <>
+                      {" · "}
+                      <Link to="/comprar" search={{ kit: kitParamFor(p.slug)! }} className="font-semibold text-foreground underline">Comprar o kit para personalizar</Link>
+                    </>
+                  )}
+                </p>
+              </div>
+            </>
           )}
           {soon ? (
             <Button disabled size="lg" className="mt-8 h-14 w-full rounded-xl">Em breve</Button>

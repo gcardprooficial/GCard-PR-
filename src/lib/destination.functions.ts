@@ -98,7 +98,11 @@ export const decideReleaseRequest = createServerFn({ method: "POST" })
     const { assertTeam } = await import("@/lib/team.server");
     await assertTeam(context.userId);
     const db = await admin();
-    const { data: req } = await db.from("destination_requests").select("id, url, host, status").eq("id", data.id).maybeSingle();
+    const { data: req } = await db
+      .from("destination_requests")
+      .select("id, url, host, status, short_code, requester_email")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!req) throw new Error("Pedido não encontrado.");
     if (req.status !== "pendente") throw new Error("Esse pedido já foi decidido.");
 
@@ -121,6 +125,16 @@ export const decideReleaseRequest = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("status", "pendente");
     if (error) throw new Error("Não consegui salvar a decisão.");
+    // Avisa o cliente (falha de e-mail não desfaz a decisão).
+    if (/.+@.+\..+/.test(req.requester_email)) {
+      const { sendDestinationDecisionEmail } = await import("@/lib/email-events.server");
+      await sendDestinationDecisionEmail({
+        to: req.requester_email,
+        shortCode: req.short_code,
+        url: req.url,
+        approved: data.decision !== "negar",
+      });
+    }
     return { ok: true as const };
   });
 

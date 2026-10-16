@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import { Button } from "@/components/ui/button";
+import { money, resolveUnitPrice } from "@/lib/pricing";
+import { catalogQuery, plansFrom } from "@/lib/site-catalog";
 
 // Links dos modelos do Canva, por nicho. Enquanto estiver TODO_LINKS_CANVA a tela mostra "em breve".
 const CANVA_TEMPLATES: { label: string; url: string }[] = [
@@ -13,7 +16,14 @@ const GABARITOS = [
   { label: "Gabarito 10x15 (SVG)", href: "/gabaritos/gabarito-10x15.svg" },
 ];
 
+const KITS = [
+  { slug: "acrilico-10x10-sem-arte", label: "Acrílico 10x10 (quadrado)", kit: "personalizar" },
+  { slug: "acrilico-15x10-l-sem-arte", label: "Acrílico 15x10 (em L)", kit: "personalizar-l" },
+] as const;
+const KIT_QUANTITY = 10;
+
 export const Route = createFileRoute("/personalizar")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(catalogQuery),
   head: () => ({
     meta: [
       { title: "Como personalizar sua placa GCard-PRÓ | Passo a passo" },
@@ -61,6 +71,48 @@ const CHECKLIST = [
   "Troquei o destino no painel e conferi que o novo link abre (vale na hora).",
 ];
 
+function KitPrices() {
+  const { data } = useSuspenseQuery(catalogQuery);
+  const { revenda } = plansFrom(data);
+  const rows = KITS.map((k) => {
+    const product = data.products.find((p) => p.slug === k.slug && p.status === "ativo");
+    if (!product) return null;
+    // Mesma conta do checkout: preço por unidade na quantidade do kit, cor cristal (sem adicional).
+    const unit = resolveUnitPrice(revenda, product, KIT_QUANTITY, true, 0);
+    const chip = product.nfc_addon_price_cents ?? 0;
+    return { ...k, unit, chip, total: unit * KIT_QUANTITY + chip * KIT_QUANTITY };
+  }).filter((r): r is NonNullable<typeof r> => r !== null);
+  if (rows.length === 0) return null;
+  return (
+    <section className="mt-10 rounded-2xl border border-border bg-card p-6 card-soft">
+      <h2 className="text-xl font-bold">Kit para personalizar</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Acrílico liso, sem arte. O QR de cada placa é grátis; o chip NFC é opcional. O kit já abre com {KIT_QUANTITY} unidades, QR e chip marcados; você muda quantidade, cor e chip na compra.
+      </p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {rows.map((r) => (
+          <div key={r.slug} className="rounded-xl border border-border p-4">
+            <p className="font-bold">{r.label}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {money(r.unit)} por unidade (a partir de {KIT_QUANTITY} un.) · cor cristal
+            </p>
+            <p className="text-sm text-muted-foreground">
+              QR grátis{r.chip > 0 ? ` · chip NFC ${money(r.chip)} por unidade` : ""}
+            </p>
+            <p className="mt-2 text-sm">
+              Kit de {KIT_QUANTITY}{r.chip > 0 ? " com chip" : ""}: <strong>{money(r.total)}</strong>
+            </p>
+            <Button asChild size="sm" className="mt-3 rounded-xl font-bold">
+              <Link to="/comprar" search={{ kit: r.kit }}>Montar este kit</Link>
+            </Button>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">Cores como branco, preto e azul podem ter pequeno adicional por unidade. O total final aparece na compra.</p>
+    </section>
+  );
+}
+
 function Personalizar() {
   return (
     <div className="min-h-screen bg-background">
@@ -87,6 +139,8 @@ function Personalizar() {
             </li>
           ))}
         </ol>
+
+        <KitPrices />
 
         <section className="mt-10 rounded-2xl border border-border bg-card p-6 card-soft">
           <h2 className="text-xl font-bold">Gabaritos para baixar</h2>
