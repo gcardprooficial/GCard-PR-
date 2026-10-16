@@ -799,7 +799,7 @@ function Comprar() {
     );
   }
 
-  if (!caminho) {
+  if (!caminho && !kit) {
     const lojista = data.plans.find((p) => p.slug === "lojista");
     const revenda = data.plans.find((p) => p.slug === "renda-extra");
     const revendaFrom = revenda
