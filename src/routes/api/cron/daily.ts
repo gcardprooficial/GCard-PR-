@@ -36,7 +36,15 @@ export const Route = createFileRoute("/api/cron/daily")({
           } catch (error) {
             console.error("Cron: falha ao sincronizar contatos do WhatsApp", error);
           }
-          return Response.json({ ok: true, reconcile, reminders, autoCancelled, expired, whatsappContacts });
+          // Carga diária de contas para o hub. Só com HUB_SYNC_ENABLED ligado; não pode derrubar o cron.
+          let hubSync: unknown = null;
+          try {
+            const { hubSyncEnabled, runDailyHubSync } = await import("@/lib/hub-sync.server");
+            if (hubSyncEnabled()) hubSync = await runDailyHubSync();
+          } catch {
+            console.error("Cron: falha na carga diária para o hub");
+          }
+          return Response.json({ ok: true, reconcile, reminders, autoCancelled, expired, whatsappContacts, hubSync });
         } catch (error) {
           console.error("Cron diário falhou", error);
           return Response.json({ ok: false }, { status: 500 });
