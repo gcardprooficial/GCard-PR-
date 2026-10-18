@@ -108,6 +108,9 @@ CREATE TRIGGER hub_outbox_events_trg AFTER INSERT ON public.events
   FOR EACH ROW EXECUTE FUNCTION public.hub_outbox_from_events();
 
 -- 3) Gatilho em consent_records: aceite e revogação ----------------------------------------------------------
+-- accepted = true (qualquer origem) → consentimento_dado.
+-- accepted = false e source = 'sair' (descadastro) → consentimento_revogado.
+-- accepted = false vindo de cadastro, checkout ou gerador é só a caixa não marcada: NÃO enfileira nada.
 CREATE OR REPLACE FUNCTION public.hub_outbox_from_consent()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -120,6 +123,7 @@ BEGIN
   BEGIN
     mail := lower(NULLIF(trim(NEW.email), ''));
     IF mail IS NULL THEN RETURN NEW; END IF;
+    IF NOT NEW.accepted AND NEW.source <> 'sair' THEN RETURN NEW; END IF;   -- caixa não marcada, não é revogação
     INSERT INTO public.hub_outbox (event_id, payload, status, priority)
     VALUES (
       'gcard:consent:' || NEW.id,

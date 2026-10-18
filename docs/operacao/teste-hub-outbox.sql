@@ -13,7 +13,8 @@ DECLARE
   usr UUID;  usr_mail TEXT;
   e1 UUID := gen_random_uuid(); e2 UUID := gen_random_uuid(); e3 UUID := gen_random_uuid();
   e4 UUID := gen_random_uuid(); e5 UUID := gen_random_uuid(); e6 UUID := gen_random_uuid();
-  c1 UUID := gen_random_uuid(); c2 UUID := gen_random_uuid();
+  c1 UUID := gen_random_uuid(); c2 UUID := gen_random_uuid(); c3 UUID := gen_random_uuid();
+  c4 UUID := gen_random_uuid(); c5 UUID := gen_random_uuid(); c6 UUID := gen_random_uuid();
   p JSONB; n INT;
 BEGIN
   SELECT id, lower(customer_email), order_number INTO ord, ord_mail, ord_num FROM public.orders ORDER BY created_at DESC LIMIT 1;
@@ -71,6 +72,20 @@ BEGIN
   SELECT payload INTO p FROM public.hub_outbox WHERE event_id = 'gcard:consent:' || c2;
   INSERT INTO _res VALUES ('7c consentimento_revogado (origem sair)', p ->> 'type' = 'consentimento_revogado' AND p #>> '{data,origem}' = 'sair');
   INSERT INTO _res VALUES ('7d revogação tem prioridade 10', (SELECT priority FROM public.hub_outbox WHERE event_id = 'gcard:consent:' || c2) = 10);
+
+  -- 7e) accepted = false de cadastro, checkout ou gerador é só caixa não marcada: nenhum evento
+  INSERT INTO public.consent_records (id, email, accepted, text_version, source)
+  VALUES (c3, 'naomarcou@exemplo.com', false, (SELECT version FROM public.consent_texts LIMIT 1), 'cadastro'),
+         (c4, 'naomarcou@exemplo.com', false, (SELECT version FROM public.consent_texts LIMIT 1), 'checkout'),
+         (c5, 'naomarcou@exemplo.com', false, (SELECT version FROM public.consent_texts LIMIT 1), 'gerador');
+  INSERT INTO _res VALUES ('7e recusa em cadastro/checkout/gerador NÃO enfileira',
+    NOT EXISTS (SELECT 1 FROM public.hub_outbox WHERE event_id IN ('gcard:consent:' || c3, 'gcard:consent:' || c4, 'gcard:consent:' || c5)));
+
+  -- 7f) accepted = true em qualquer origem continua gerando consentimento_dado
+  INSERT INTO public.consent_records (id, email, accepted, text_version, source)
+  VALUES (c6, 'marcou@exemplo.com', true, (SELECT version FROM public.consent_texts LIMIT 1), 'gerador');
+  INSERT INTO _res VALUES ('7f aceite no gerador gera consentimento_dado',
+    (SELECT payload ->> 'type' FROM public.hub_outbox WHERE event_id = 'gcard:consent:' || c6) = 'consentimento_dado');
 
   -- 8) retirar o próximo lote: revogação sai primeiro e o item fica "alugado" (não sai de novo)
   PERFORM set_config('request.jwt.claims', '{"role":"service_role"}', true);
