@@ -8,6 +8,7 @@ import {
   testMelhorEnvioConnection,
 } from "@/lib/shipping/melhorenvio.functions";
 import { Button } from "@/components/ui/button";
+import { getHubStatus, testHubSync } from "@/lib/hub-sync.functions";
 
 const searchSchema = (search: Record<string, unknown>) => ({
   melhorenvio: typeof search["melhorenvio"] === "string" ? search["melhorenvio"] : undefined,
@@ -29,6 +30,34 @@ function Integracoes() {
   const [connecting, setConnecting] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const runHubStatus = useServerFn(getHubStatus);
+  const runHubTest = useServerFn(testHubSync);
+  const [hub, setHub] = useState<{ configured: boolean; outbox: boolean; sync: boolean } | null>(null);
+  const [hubTesting, setHubTesting] = useState(false);
+  const [hubResult, setHubResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    runHubStatus().then(setHub).catch(() => setHub(null));
+  }, [runHubStatus]);
+
+  async function testHub() {
+    setHubTesting(true);
+    setHubResult(null);
+    try {
+      const r = await runHubTest();
+      setHubResult(
+        r.motivo === "hub_nao_configurado"
+          ? "Hub não configurado (faltam HUB_INGEST_URL e HUB_INGEST_SECRET na Vercel)."
+          : r.ok
+            ? `Hub respondeu ok: ${r.linhas ?? "?"} linha(s) aplicada(s).`
+            : `Hub respondeu ${r.status === null ? "sem conexão" : `HTTP ${r.status}`}. Conferir segredo, endereço e relógio.`,
+      );
+    } catch {
+      setHubResult("Não consegui testar agora.");
+    } finally {
+      setHubTesting(false);
+    }
+  }
 
   async function load() {
     try {
@@ -106,6 +135,29 @@ function Integracoes() {
         </div>
 
         {testResult && <p className="mt-3 text-sm text-muted-foreground">{testResult}</p>}
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-card p-5 card-soft">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-bold">Hub</p>
+            <p className="text-sm text-muted-foreground">Eventos assinados e carga diária de contas.</p>
+          </div>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${hub?.configured ? "bg-green-100 text-green-800" : "bg-secondary text-white"}`}>
+            {hub === null ? "Verificando…" : hub.configured ? "Configurado" : "Não configurado"}
+          </span>
+        </div>
+        {hub && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Envio de eventos: <strong>{hub.outbox ? "ligado" : "desligado"}</strong> · Carga diária: <strong>{hub.sync ? "ligada" : "desligada"}</strong>
+          </p>
+        )}
+        <div className="mt-4">
+          <Button size="sm" variant="outline" onClick={() => void testHub()} disabled={hubTesting || !hub?.configured}>
+            {hubTesting ? "Testando…" : "Testar envio (2 contas fictícias)"}
+          </Button>
+        </div>
+        {hubResult && <p className="mt-3 text-sm text-muted-foreground">{hubResult}</p>}
       </div>
     </>
   );

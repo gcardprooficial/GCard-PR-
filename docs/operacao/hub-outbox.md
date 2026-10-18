@@ -74,3 +74,34 @@ Só desligar o envio, sem reverter: `HUB_OUTBOX_ENABLED=false` (o outbox continu
 - **Há caminho que insere em `events` sem passar por `track_event`?** Não. O único `INSERT INTO public.events` do código e das migrações está dentro de `track_event()`; os gatilhos de pedido, placa, cadastro e confirmação e o servidor (`trackEvent`) chamam essa função. O consentimento tem 3 caminhos de escrita (cadastro por gatilho, `upsertCustomerConsent`, descadastro), todos inserindo em `consent_records`, que tem o próprio gatilho.
 - **Qual agendador e custo?** `pg_cron` + `pg_net` a cada minuto (acima).
 - **`marketing_contacts`, `consent_records` e `consent_texts` estão em produção?** Há evidência de que sim (consentimentos gravados em 15/10 e a tela Clientes lendo descadastros sem erro), mas confirme com `select to_regclass('public.marketing_contacts') is not null, to_regclass('public.consent_records') is not null, to_regclass('public.consent_texts') is not null;`
+
+---
+
+# Carga diária de contas e eventos de suporte
+
+## Carga diária de contas (`POST /api/sync/gcard`)
+- Roda dentro do cron diário existente (`/api/cron/daily`), **depois** de tudo o que ele já faz, e **não pode derrubá-lo** (erro é capturado).
+- Lê `people_summary()` e envia em lotes de até 300 (`{ "records": [...] }`), assinando com a **mesma função e o mesmo segredo** do outbox (`X-Hub-Timestamp`, `X-Hub-Signature`). O endereço sai do `HUB_INGEST_URL` (origem do hub + `/api/sync/gcard`).
+- Colunas (e-mail obrigatório; vazio vai `null`): `email`, `nome`, `celular` (só dígitos), `origem`, `primeiro_contato`, `pedidos`, `pedidos_pagos`, `total_pago_reais`, `ultimo_pagamento`, `codigos_ativados`, `tem_conta`, `email_confirmado`, `aceite_em`, `descadastrado_em`. Nunca CPF, CNPJ, senha, token, endereço ou pagamento.
+- Respostas: 200 aplicado; **429** espera (5 s, depois 20 s, ou o `Retry-After`) e repete o mesmo lote, no máximo 2 vezes; **401, 413, 422** (e outros 4xx) param a execução e alertam, sem reenviar; **5xx e rede** param e tentam de novo no dia seguinte. O hub soma e nunca apaga.
+- **Interruptor `HUB_SYNC_ENABLED`** (padrão desligado). É a **única variável nova** (o segredo e o endereço são os do outbox). Existe para a carga completa **não rodar antes** de você conferir o teste.
+- **Teste:** Painel → Integrações → **Hub** → *Testar envio (2 contas fictícias)* (`teste-sync-gcard-1@example.com` e `-2@`). Esperado: "Hub respondeu ok: 2 linha(s)". Funciona mesmo com a carga diária desligada.
+- Log só com contagens (`registros`, `lotes`, `aplicados`, `linhas`, `parou`); sem e-mail e sem corpo. Se parar por erro, vai ao Sentry.
+
+## Eventos de suporte (`suporte_mensagem`, `suporte_resposta`)
+- Migração `20261019000000_hub_suporte_eventos.sql`: gatilhos em `wa_messages` (WhatsApp) e `chat_messages` (chat do site, se a tabela existir), pelo mesmo outbox.
+- `suporte_mensagem`: mensagem de **texto** de cliente **identificado**; `data: { conversa, texto (até 300), canal }`. `suporte_resposta`: resposta **humana** da equipe; `data: { conversa }`.
+- `event_id` = `gcard:suporte:<id da mensagem>` (determinístico, sem duplicar).
+- **Nunca** entram: visitante/contato sem e-mail, anexos (áudio, imagem), respostas do bot.
+- **Identificação no WhatsApp:** o e-mail vem de `wa_contacts` (ligado pelo telefone ao pedido). Quem ainda não comprou não tem e-mail e não gera evento.
+- **Proteção do texto:** números longos (9+ dígitos com pontos, traços ou espaços: CPF, cartão, telefone, data completa) são trocados por `[número removido]` antes de cortar em 300 caracteres.
+- **`canal`:** `whatsapp` para o WhatsApp e `chat` para o chat do site. Os eventos do pedido citam só `"chat"`; **confirme na seção 7 do contrato do hub que `whatsapp` é aceito**, senão o hub responde 422 e o item vira `morto`.
+- Reverter: ver o cabeçalho da migração.
+
+## Decisões e riscos desta parte
+1. `canal = "whatsapp"` para o WhatsApp (acima, a confirmar).
+2. Redução de números longos no texto (não pedida, por privacidade).
+3. A resposta de equipe só leva a conversa; resposta humana com anexo também gera `suporte_resposta` (sem conteúdo).
+4. O `chat_messages` não tem nenhum código que escreva nele hoje (o suporte do site usa um widget externo); o gatilho fica pronto caso volte a ser usado.
+5. O e-mail do WhatsApp pode estar desatualizado (último pedido daquele telefone).
+6. Se o hub ainda não estiver pronto, deixe `HUB_OUTBOX_ENABLED` desligado: os eventos só acumulam.
