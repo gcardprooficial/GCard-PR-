@@ -16,20 +16,32 @@ O GCard empurra eventos assinados ao hub (`POST /api/ingest/gcard`). **Desligado
 4. Agendar a rota a cada minuto (abaixo).
 
 ## Agendador (pg_cron + pg_net, a cada minuto)
-O cron da Vercel do projeto é diário; para ficar perto de tempo real usamos o banco chamando a rota. Habilite as extensões `pg_cron` e `pg_net` (Supabase → Database → Extensions) e rode, **trocando o texto do segredo no próprio editor (não cole o segredo em chat nem em commit)**:
+O cron da Vercel do projeto é diário; para ficar perto de tempo real usamos o banco chamando a rota. Habilite as extensões `pg_cron`, `pg_net` e `supabase_vault` (Supabase → Database → Extensions).
+
+**1) Guarde o `CRON_SECRET` no Vault** (nome `gcard_cron_secret`). Prefira pela tela: Supabase → Integrations → Vault → *Add new secret*, nome `gcard_cron_secret`; assim o segredo não passa pelo histórico do SQL Editor. Se for por SQL, troque o texto no próprio editor (nunca em chat nem em commit) e depois apague o snippet do histórico:
+
+```sql
+select vault.create_secret('COLE_AQUI_O_CRON_SECRET', 'gcard_cron_secret', 'CRON_SECRET do GCard para o agendador do outbox');
+```
+
+**2) Agende lendo o segredo do Vault** (o comando agendado não contém o segredo em texto):
 
 ```sql
 select cron.schedule('hub-outbox', '* * * * *', $$
   select net.http_get(
     url := 'https://www.gcardpro.com.br/api/cron/hub-outbox',
-    headers := jsonb_build_object('Authorization', 'Bearer COLE_AQUI_O_CRON_SECRET'),
+    headers := jsonb_build_object(
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'gcard_cron_secret')
+    ),
     timeout_milliseconds := 55000
   );
 $$);
 ```
 Parar: `select cron.unschedule('hub-outbox');`
+Trocar o segredo depois: `select vault.update_secret((select id from vault.secrets where name = 'gcard_cron_secret'), 'NOVO_VALOR');` (e o mesmo valor na Vercel).
+Conferir (sem mostrar o segredo): `select name, length(decrypted_secret) as tamanho from vault.decrypted_secrets where name = 'gcard_cron_secret';`
 
-**Custo e cuidados:** as extensões não têm custo extra no Supabase (não verificado no seu plano). Cada minuto é 1 chamada à Vercel: cerca de 1.440 por dia, 43 mil por mês; com o outbox desligado a chamada responde na hora. O segredo fica gravado na tabela `cron.job` (legível por quem tem acesso de administrador ao banco): por isso use um `CRON_SECRET` só para isso, se possível, ou restrinja o acesso.
+**Custo e cuidados:** as extensões não têm custo extra no Supabase (não verificado no seu plano). Cada minuto é 1 chamada à Vercel: cerca de 1.440 por dia, 43 mil por mês; com o outbox desligado a chamada responde na hora. Com o Vault, o segredo **não** fica em texto na tabela `cron.job` (o comando só consulta o Vault na hora de chamar). Ele continua sendo o mesmo `CRON_SECRET` da Vercel; trocar um exige trocar o outro.
 
 ## Reverter
 ```sql
@@ -46,7 +58,7 @@ Só desligar o envio, sem reverter: `HUB_OUTBOX_ENABLED=false` (o outbox continu
 ## Decisões que fogem do texto do pedido (para você confirmar)
 1. **`produto_visto` de visitante anônimo não entra no outbox** (nem como `sem_email`). É o evento mais frequente e nunca seria enviado; guardá-lo só incharia a tabela. Os demais sem e-mail entram como `sem_email`.
 2. **`event_id` do consentimento** é `gcard:consent:<id do registro>` (o contrato só define `gcard:<id do evento>`).
-3. **Recusar no cadastro, no checkout ou no gerador** (`accepted = false`) também vira `consentimento_revogado`, como o pedido manda. Se o hub não deve tratar "nunca aceitou" como revogação, restrinja a `source = 'sair'`.
+3. **Consentimento:** `consentimento_dado` sai para `accepted = true` em qualquer origem. `consentimento_revogado` sai **somente** com `accepted = false` **e** `source = 'sair'` (descadastro). `accepted = false` vindo de cadastro, checkout ou gerador é só caixa não marcada: **não enfileira nenhum evento**.
 4. **`person.phone` e `person.name` não são enviados** (minimização); o CSV de Clientes cobre.
 5. **`context.origin`** leva só as 5 chaves do contrato (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `ref`); `landing`, `referrer_host` e `ts` ficam de fora.
 6. **`pedido_pago` ganhou `order_number`** (o evento do banco não o trazia; o gatilho completa a partir do pedido).
