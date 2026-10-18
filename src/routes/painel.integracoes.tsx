@@ -8,7 +8,7 @@ import {
   testMelhorEnvioConnection,
 } from "@/lib/shipping/melhorenvio.functions";
 import { Button } from "@/components/ui/button";
-import { getHubStatus, testHubSync } from "@/lib/hub-sync.functions";
+import { getHubStatus, runHubSyncNow, testHubSync } from "@/lib/hub-sync.functions";
 
 const searchSchema = (search: Record<string, unknown>) => ({
   melhorenvio: typeof search["melhorenvio"] === "string" ? search["melhorenvio"] : undefined,
@@ -35,6 +35,39 @@ function Integracoes() {
   const [hub, setHub] = useState<{ configured: boolean; outbox: boolean; sync: boolean } | null>(null);
   const [hubTesting, setHubTesting] = useState(false);
   const [hubResult, setHubResult] = useState<string | null>(null);
+  const runHubFull = useServerFn(runHubSyncNow);
+  const [hubRunning, setHubRunning] = useState(false);
+  const [hubFullResult, setHubFullResult] = useState<string | null>(null);
+
+  async function runFull() {
+    if (hubRunning) return; // duplo clique
+    if (!confirm("Enviar TODAS as contas ao hub agora?")) return;
+    setHubRunning(true);
+    setHubFullResult(null);
+    try {
+      const r = await runHubFull();
+      if (!r.ok) {
+        setHubFullResult(
+          r.motivo === "carga_desligada"
+            ? "A carga diária está DESLIGADA (HUB_SYNC_ENABLED). Nada foi enviado."
+            : r.motivo === "ja_em_execucao"
+              ? "Já existe uma carga em andamento. Aguarde terminar."
+              : r.motivo === "hub_nao_configurado"
+                ? "Hub não configurado (faltam HUB_INGEST_URL e HUB_INGEST_SECRET)."
+                : `Não rodou: ${r.motivo}.`,
+        );
+      } else {
+        setHubFullResult(
+          `Lidos: ${r.lidos} · enviados: ${r.enviados} · lotes aplicados: ${r.aplicados}/${r.lotes} · linhas aplicadas pelo hub: ${r.linhas}` +
+            (r.parou ? ` · PAROU por erro: ${r.parou}` : " · sem erro."),
+        );
+      }
+    } catch {
+      setHubFullResult("Não consegui rodar agora.");
+    } finally {
+      setHubRunning(false);
+    }
+  }
 
   useEffect(() => {
     runHubStatus().then(setHub).catch(() => setHub(null));
@@ -158,6 +191,12 @@ function Integracoes() {
           </Button>
         </div>
         {hubResult && <p className="mt-3 text-sm text-muted-foreground">{hubResult}</p>}
+        <div className="mt-4">
+          <Button size="sm" onClick={() => void runFull()} disabled={hubRunning || !hub?.configured}>
+            {hubRunning ? "Enviando… (não feche a página)" : "Rodar carga completa agora"}
+          </Button>
+        </div>
+        {hubFullResult && <p className="mt-3 text-sm text-muted-foreground">{hubFullResult}</p>}
       </div>
     </>
   );

@@ -188,21 +188,66 @@ export function hubConfig(): { url: string; secret: string } | null {
   }
 }
 
-/** Carga diária completa: lê people_summary() e envia em lotes. Só chamada com HUB_SYNC_ENABLED ligado. */
-export async function runDailyHubSync(): Promise<SyncSummary | { skipped: string }> {
-  const cfg = hubConfig();
-  if (!cfg) return { skipped: "hub_nao_configurado" };
+/** Trava para não rodar duas cargas ao mesmo tempo (cron + botão, ou duplo clique). */
+export type LockStore = { acquire: (ttlMs: number) => Promise<boolean>; release: () => Promise<void> };
+
+export async function withLock<T>(
+  store: LockStore,
+  ttlMs: number,
+  fn: () => Promise<T>,
+): Promise<{ ran: true; value: T } | { ran: false }> {
+  if (!(await store.acquire(ttlMs))) return { ran: false };
+  try {
+    return { ran: true, value: await fn() };
+  } finally {
+    await store.release().catch(() => undefined);
+  }
+}
+
+const LOCK_KEY = "hub_sync_lock";
+const EPOCH = "1970-01-01T00:00:00.000Z";
+export const LOCK_TTL_MS = 10 * 60_000; // se uma execução morrer no meio, a trava expira sozinha
+
+/** Trava no banco (app_settings): a troca "livre → ocupada" é uma única atualização condicional, então só uma execução ganha. */
+async function appSettingsLock(): Promise<LockStore> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { untyped } = await import("@/lib/db-untyped");
-  const { data, error } = await untyped(supabaseAdmin).rpc("people_summary");
-  if (error) return { skipped: "people_summary_falhou" };
-  const records = ((data ?? []) as PersonRow[]).map(toRecord).filter((r): r is SyncRecord => r !== null);
-  const summary = await runSync(records, cfg);
-  // Só contagens: sem e-mail, sem corpo.
-  console.log("hub_sync", summary);
-  if (summary.parou) {
-    const { captureError } = await import("@/lib/sentry");
-    captureError(new Error(`hub_sync parou: ${summary.parou}`));
-  }
-  return summary;
+  const db = untyped(supabaseAdmin);
+  return {
+    async acquire(ttlMs) {
+      await db.from("app_settings").upsert({ key: LOCK_KEY, value: { until: EPOCH } }, { onConflict: "key", ignoreDuplicates: true });
+      const now = new Date().toISOString();
+      const until = new Date(Date.now() + ttlMs).toISOString();
+      const { data, error } = await db.from("app_settings").update({ value: { until } }).eq("key", LOCK_KEY).lt("value->>until", now).select("key");
+      return !error && Array.isArray(data) && data.length === 1;
+    },
+    async release() {
+      await db.from("app_settings").update({ value: { until: EPOCH } }).eq("key", LOCK_KEY);
+    },
+  };
+}
+
+export type DailySummary = SyncSummary & { lidos: number };
+
+/** Carga completa: lê people_summary() e envia em lotes. Usada pelo cron diário e pelo botão do painel (a mesma função). */
+export async function runDailyHubSync(): Promise<DailySummary | { skipped: string }> {
+  const cfg = hubConfig();
+  if (!cfg) return { skipped: "hub_nao_configurado" };
+  const run = await withLock(await appSettingsLock(), LOCK_TTL_MS, async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { untyped } = await import("@/lib/db-untyped");
+    const { data, error } = await untyped(supabaseAdmin).rpc("people_summary");
+    if (error) return { skipped: "people_summary_falhou" } as const;
+    const rows = (data ?? []) as PersonRow[];
+    const records = rows.map(toRecord).filter((r): r is SyncRecord => r !== null);
+    const summary: DailySummary = { lidos: rows.length, ...(await runSync(records, cfg)) };
+    // Só contagens: sem e-mail, sem corpo.
+    console.log("hub_sync", summary);
+    if (summary.parou) {
+      const { captureError } = await import("@/lib/sentry");
+      captureError(new Error(`hub_sync parou: ${summary.parou}`));
+    }
+    return summary;
+  });
+  return run.ran ? run.value : { skipped: "ja_em_execucao" };
 }
