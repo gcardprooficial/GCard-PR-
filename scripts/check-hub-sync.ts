@@ -9,6 +9,8 @@ import {
   syncUrl,
   testRecords,
   toRecord,
+  withLock,
+  type LockStore,
   type PersonRow,
   type SyncRecord,
 } from "../src/lib/hub-sync.server";
@@ -143,6 +145,37 @@ for (const [status, parou] of [[401, "http_401"], [413, "http_413"], [422, "http
   }) as unknown as typeof fetch;
   const s = await runSync(testRecords(), { ...cfg, fetchImpl: boom });
   assert.equal(s.parou, "rede");
+}
+
+// --- trava contra duas cargas ao mesmo tempo
+{
+  let held = false;
+  let releases = 0;
+  const store: LockStore = {
+    acquire: async () => (held ? false : ((held = true), true)),
+    release: async () => void ((held = false), releases++),
+  };
+  let inside = 0;
+  let maxInside = 0;
+  const work = async () => {
+    inside++;
+    maxInside = Math.max(maxInside, inside);
+    await new Promise((r) => setTimeout(r, 20));
+    inside--;
+    return "feito";
+  };
+  // duplo clique: duas chamadas quase juntas → só uma roda
+  const [a, b] = await Promise.all([withLock(store, 1000, work), withLock(store, 1000, work)]);
+  assert.equal([a, b].filter((x) => x.ran).length, 1);
+  assert.equal([a, b].filter((x) => !x.ran).length, 1);
+  assert.equal(maxInside, 1);
+  assert.equal(held, false, "trava liberada no fim");
+  // depois de liberar, roda de novo
+  assert.equal((await withLock(store, 1000, work)).ran, true);
+  // erro dentro: a trava é liberada mesmo assim
+  await assert.rejects(withLock(store, 1000, async () => { throw new Error("falhou"); }));
+  assert.equal(held, false);
+  assert.ok(releases >= 3);
 }
 
 console.log("check-hub-sync: ok");

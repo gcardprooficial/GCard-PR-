@@ -105,3 +105,13 @@ Só desligar o envio, sem reverter: `HUB_OUTBOX_ENABLED=false` (o outbox continu
 4. O `chat_messages` não tem nenhum código que escreva nele hoje (o suporte do site usa um widget externo); o gatilho fica pronto caso volte a ser usado.
 5. O e-mail do WhatsApp pode estar desatualizado (último pedido daquele telefone).
 6. Se o hub ainda não estiver pronto, deixe `HUB_OUTBOX_ENABLED` desligado: os eventos só acumulam.
+
+## Carga completa agora (botão) e trava
+- Painel → Integrações → Hub → **Rodar carga completa agora** (só equipe). Chama a **mesma função** do cron diário (`runDailyHubSync`) e mostra: lidos, enviados, lotes aplicados, linhas aplicadas pelo hub e se parou por erro.
+- Respeita `HUB_SYNC_ENABLED`: desligado, avisa e **não envia nada**.
+- **Trava contra duas cargas ao mesmo tempo** (cron + botão, ou duplo clique): uma linha em `app_settings` (`hub_sync_lock`) trocada de "livre" para "ocupada" por uma única atualização condicional, com validade de 10 minutos (se uma execução morrer, a trava expira sozinha). Quem perde a corrida recebe "já existe uma carga em andamento". O botão também fica desabilitado enquanto roda e pede confirmação.
+
+## people_summary(): correção de "column reference email is ambiguous"
+Migração `20261027000000_people_summary_variable_conflict.sql`: a função é a mesma de `20261015020000`, com uma linha a mais (`#variable_conflict use_column` depois do `AS $$`). Produção já tinha a correção aplicada à mão. Para conferir que o arquivo é igual à produção, rode **antes e depois** da migração e compare (têm de ser iguais):
+`select md5(pg_get_functiondef('public.people_summary()'::regprocedure));`
+
