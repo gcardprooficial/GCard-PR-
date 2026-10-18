@@ -53,6 +53,7 @@ import { Route as ProdutosIndexRouteImport } from './routes/produtos.index'
 import { Route as ProdutosSlugRouteImport } from './routes/produtos.$slug'
 import { Route as RTokenRouteImport } from './routes/r.$token'
 import { Route as ApiCronDailyRouteImport } from './routes/api/cron/daily'
+import { Route as ApiCronHubOutboxRouteImport } from './routes/api/cron/hub-outbox'
 import { Route as ApiMelhorenvioCallbackRouteImport } from './routes/api/melhorenvio/callback'
 import { Route as ApiWebhooksInfinitepayRouteImport } from './routes/api/webhooks/infinitepay'
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
@@ -285,6 +286,11 @@ const ApiCronDailyRoute = ApiCronDailyRouteImport.update({
   path: '/api/cron/daily',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronHubOutboxRoute = ApiCronHubOutboxRouteImport.update({
+  id: '/api/cron/hub-outbox',
+  path: '/api/cron/hub-outbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMelhorenvioCallbackRoute = ApiMelhorenvioCallbackRouteImport.update({
   id: '/api/melhorenvio/callback',
   path: '/api/melhorenvio/callback',
@@ -366,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/painel/': typeof PainelIndexRoute
   '/produtos/': typeof ProdutosIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
+  '/api/cron/hub-outbox': typeof ApiCronHubOutboxRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/infinitepay': typeof ApiWebhooksInfinitepayRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
@@ -417,6 +424,7 @@ export interface FileRoutesByTo {
   '/painel': typeof PainelIndexRoute
   '/produtos': typeof ProdutosIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
+  '/api/cron/hub-outbox': typeof ApiCronHubOutboxRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/infinitepay': typeof ApiWebhooksInfinitepayRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
@@ -471,6 +479,7 @@ export interface FileRoutesById {
   '/painel/': typeof PainelIndexRoute
   '/produtos/': typeof ProdutosIndexRoute
   '/api/cron/daily': typeof ApiCronDailyRoute
+  '/api/cron/hub-outbox': typeof ApiCronHubOutboxRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/infinitepay': typeof ApiWebhooksInfinitepayRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
@@ -526,6 +535,7 @@ export interface FileRouteTypes {
     | '/painel/'
     | '/produtos/'
     | '/api/cron/daily'
+    | '/api/cron/hub-outbox'
     | '/api/melhorenvio/callback'
     | '/api/webhooks/infinitepay'
     | '/api/webhooks/mercadopago'
@@ -577,6 +587,7 @@ export interface FileRouteTypes {
     | '/painel'
     | '/produtos'
     | '/api/cron/daily'
+    | '/api/cron/hub-outbox'
     | '/api/melhorenvio/callback'
     | '/api/webhooks/infinitepay'
     | '/api/webhooks/mercadopago'
@@ -630,6 +641,7 @@ export interface FileRouteTypes {
     | '/painel/'
     | '/produtos/'
     | '/api/cron/daily'
+    | '/api/cron/hub-outbox'
     | '/api/melhorenvio/callback'
     | '/api/webhooks/infinitepay'
     | '/api/webhooks/mercadopago'
@@ -660,6 +672,7 @@ export interface RootRouteChildren {
   RTokenRoute: typeof RTokenRoute
   ProdutosIndexRoute: typeof ProdutosIndexRoute
   ApiCronDailyRoute: typeof ApiCronDailyRoute
+  ApiCronHubOutboxRoute: typeof ApiCronHubOutboxRoute
   ApiMelhorenvioCallbackRoute: typeof ApiMelhorenvioCallbackRoute
   ApiWebhooksInfinitepayRoute: typeof ApiWebhooksInfinitepayRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
@@ -978,6 +991,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronDailyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/hub-outbox': {
+      id: '/api/cron/hub-outbox'
+      path: '/api/cron/hub-outbox'
+      fullPath: '/api/cron/hub-outbox'
+      preLoaderRoute: typeof ApiCronHubOutboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/melhorenvio/callback': {
       id: '/api/melhorenvio/callback'
       path: '/api/melhorenvio/callback'
@@ -1119,6 +1139,7 @@ const rootRouteChildren: RootRouteChildren = {
   RTokenRoute: RTokenRoute,
   ProdutosIndexRoute: ProdutosIndexRoute,
   ApiCronDailyRoute: ApiCronDailyRoute,
+  ApiCronHubOutboxRoute: ApiCronHubOutboxRoute,
   ApiMelhorenvioCallbackRoute: ApiMelhorenvioCallbackRoute,
   ApiWebhooksInfinitepayRoute: ApiWebhooksInfinitepayRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
