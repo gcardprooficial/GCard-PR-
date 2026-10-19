@@ -5,10 +5,17 @@
 --  4) hub: 'configuracoes' com accepted = false também é revogação (descadastro total), além de 'sair'.
 -- Aceite = linha em consent_records (accepted, versão, origem). Não marcar a caixa não grava nada e não emite evento.
 --
+-- handle_new_user parte da definição LIDA EM PRODUÇÃO (pg_get_functiondef) e só acrescenta o bloco do aceite Marusso.
+-- TRAVA: se a função do banco não for a conferida (md5 406e680653ba454b7648d0c2e4b80b67) e ainda não tiver o aceite,
+-- a migração ABORTA sem alterar nada. Tudo roda numa transação: ou entra tudo, ou nada.
+--
 -- REVERTER:
 --   -- 1) DELETE FROM public.consent_texts WHERE version = 'marusso-2026-10-v1';   (só se nenhum consent_records usa)
 --   -- 2) recriar a restrição sem 'configuracoes' (só se nenhuma linha usa essa origem)
---   -- 3) e 4) reaplicar as definições de handle_new_user (20261015020000) e hub_outbox_from_consent (20261018000000)
+--   -- 3) recriar handle_new_user sem o bloco "Segundo aceite" (definição conferida: md5 406e680653ba454b7648d0c2e4b80b67)
+--   -- 4) reaplicar hub_outbox_from_consent de 20261018000000
+
+BEGIN;
 
 -- 1) Texto exato ------------------------------------------------------------------------------------------------
 INSERT INTO public.consent_texts (version, text) VALUES
@@ -31,13 +38,24 @@ BEGIN
 END
 $$;
 
--- 3) Cadastro: mesma função de antes + o aceite Marusso (caixa separada). Nunca derruba o cadastro. -------------------
+-- 3) Cadastro ---------------------------------------------------------------------------------------------------------
+-- 3a) Trava: só segue se a função for a conferida em produção (ou se já tiver o aceite Marusso).
+DO $$
+DECLARE def TEXT := pg_get_functiondef('public.handle_new_user'::regproc);
+BEGIN
+  IF position('marusso_consent' IN def) = 0 AND md5(def) <> '406e680653ba454b7648d0c2e4b80b67' THEN
+    RAISE EXCEPTION 'handle_new_user mudou desde a versão conferida (md5 atual %). Nada foi alterado; revisar antes de aplicar.', md5(def);
+  END IF;
+END
+$$;
+
+-- 3b) Definição de produção + o bloco do aceite Marusso (única mudança).
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $function$
 DECLARE
   ft JSONB := public.clean_first_touch(NEW.raw_user_meta_data -> 'first_touch');
   consent_ok BOOLEAN := COALESCE((NEW.raw_user_meta_data ->> 'marketing_consent') = 'true', false);
@@ -49,7 +67,6 @@ BEGIN
 
   PERFORM public.track_event('conta_criada', NEW.id, NEW.email, NULL, NULL, ft, '{}'::jsonb, 'conta_criada:' || NEW.id);
 
-  -- Registra a escolha (aceitou ou não) com a versão do texto exibido. Versão desconhecida = não registra.
   IF consent_ver IS NOT NULL AND EXISTS (SELECT 1 FROM public.consent_texts WHERE version = consent_ver) THEN
     INSERT INTO public.consent_records (email, user_id, accepted, text_version, source)
     VALUES (lower(NEW.email), NEW.id, consent_ok, consent_ver, 'cadastro');
@@ -72,8 +89,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$;
-REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+$function$;
 
 -- 4) Hub: revogação = descadastro ('sair') OU desligar o interruptor da conta ('configuracoes'). --------------------
 -- Única mudança em relação a 20261018000000: o IF que decide o que NÃO enfileira.
@@ -113,3 +129,5 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION public.hub_outbox_from_consent() FROM PUBLIC, anon, authenticated;
+
+COMMIT;
