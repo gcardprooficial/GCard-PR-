@@ -417,6 +417,10 @@ function Comprar() {
     phone: "",
     email: "",
   });
+  const [emailConfirm, setEmailConfirm] = useState("");
+  // Revenda logada usa o e-mail da conta (não digitado): não precisa repetir.
+  const emailLocked = isResale && !!session?.user.email;
+  const emailsMatch = emailLocked || emailConfirm.trim().toLowerCase() === customer.email.trim().toLowerCase();
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [marussoConsent, setMarussoConsent] = useState(false);
 
@@ -980,7 +984,8 @@ function Comprar() {
           customer.lastName.length >= 1 &&
           customer.document.replace(/\D/g, "").length >= 11 &&
           customer.phone.replace(/\D/g, "").length >= 10 &&
-          /.+@.+\..+/.test(customer.email)
+          /.+@.+\..+/.test(customer.email) &&
+          emailsMatch
         );
       case "entrega":
         return (
@@ -1948,6 +1953,23 @@ function Comprar() {
                     ) : null;
                   })()}
                 </div>
+                {!emailLocked && (
+                  <div className="sm:col-span-2">
+                    <Label className="text-sm font-bold text-foreground/90">Confirme o e-mail</Label>
+                    <Input
+                      type="email"
+                      value={emailConfirm}
+                      onChange={(e) => setEmailConfirm(e.target.value)}
+                      onPaste={(e) => e.preventDefault()}
+                      placeholder="Digite o e-mail de novo"
+                      autoComplete="off"
+                      className="mt-1.5 h-12 input-soft rounded-2xl text-base"
+                    />
+                    {emailConfirm !== "" && !emailsMatch && (
+                      <p className="mt-1.5 text-xs text-destructive">Os e-mails não são iguais. É nele que chegam a confirmação e o rastreio.</p>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="mt-6 inline-flex items-start gap-3 rounded-2xl bg-surface/70 p-4">
                 <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/25 text-primary-foreground">
