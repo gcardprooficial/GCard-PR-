@@ -754,3 +754,13 @@ export async function notifyAdminEmailProblem(o: {
     return { sent: false };
   }
 }
+
+/** E-mail de serviço do GCard Plus para assinante (relatório mensal, destino fora do ar). Sem marketing: não leva descadastro. */
+export async function sendPlusEmail(input: { to: string; subject: string; title: string; bodyHtml: string }) {
+  try {
+    return await sendWithResend({ to: input.to, subject: input.subject, html: emailShell({ title: input.title, bodyHtml: input.bodyHtml }) });
+  } catch (error) {
+    console.error("Falha ao enviar e-mail do Plus", error);
+    return { sent: false };
+  }
+}

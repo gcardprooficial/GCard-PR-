@@ -44,7 +44,15 @@ export const Route = createFileRoute("/api/cron/daily")({
           } catch {
             console.error("Cron: falha na carga diária para o hub");
           }
-          return Response.json({ ok: true, reconcile, reminders, autoCancelled, expired, whatsappContacts, hubSync });
+          // Relatório mensal e alerta de destino fora do ar do GCard Plus. Só com a flag ligada; não pode derrubar o cron.
+          let plus: unknown = null;
+          try {
+            const { runPlusJobs } = await import("@/lib/plus-reports.server");
+            plus = await runPlusJobs();
+          } catch {
+            console.error("Cron: falha nos avisos do Plus");
+          }
+          return Response.json({ ok: true, reconcile, reminders, autoCancelled, expired, whatsappContacts, hubSync, plus });
         } catch (error) {
           console.error("Cron diário falhou", error);
           return Response.json({ ok: false }, { status: 500 });
