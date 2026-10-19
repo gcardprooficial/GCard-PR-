@@ -215,3 +215,43 @@ export const payAffiliateCommissions = createServerFn({ method: "POST" })
     }
     return { ok: true as const, count: rows.length, totalCents: total };
   });
+
+/** Corrige o e-mail do pedido (erro de digitação / bounce) e reenvia só os e-mails de confirmação. Não repete aviso por WhatsApp. */
+export const fixOrderEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid(), email: z.string().trim().toLowerCase().email().max(200) }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertTeam(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabaseAdmin as any;
+    const { data: order, error } = await db
+      .from("orders")
+      .select("id, order_number, customer_email, payment_status")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!order) throw new Error("Pedido não encontrado.");
+    if (String(order.customer_email).toLowerCase() === data.email) throw new Error("Esse já é o e-mail do pedido.");
+
+    const { error: upd } = await db.from("orders").update({ customer_email: data.email }).eq("id", order.id);
+    if (upd) throw upd;
+    // Lote de revenda ainda não resgatado é reivindicado pelo e-mail: acompanha a correção.
+    await db.from("batches").update({ owner_email: data.email }).eq("owner_order_id", order.id).is("owner_user_id", null);
+    await db.from("audit_log").insert({
+      action: "corrigiu_email_pedido",
+      entity: "orders",
+      entity_id: order.id,
+      actor_id: context.userId,
+      details: { order_number: order.order_number },
+    });
+
+    const { dispatchOrderEmailEvent } = await import("@/lib/email-events.server");
+    const events: ("pedido_recebido" | "pagamento_confirmado")[] = ["pedido_recebido", ...(order.payment_status === "pago" ? (["pagamento_confirmado"] as const) : [])];
+    const resent: string[] = [];
+    for (const ev of events) {
+      const r = await dispatchOrderEmailEvent(order.id, ev, { force: true, skipWhatsApp: true });
+      if ("sent" in r && r.sent) resent.push(ev);
+    }
+    return { ok: true as const, resent };
+  });
