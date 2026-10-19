@@ -12,6 +12,7 @@ import { PlateQrDownload } from "@/components/PlateQrDownload";
 import { AvisosPorEmail } from "@/components/AvisosPorEmail";
 import { PlusSection } from "@/components/PlusSection";
 import { BulkDestino } from "@/components/BulkDestino";
+import { PlusStats } from "@/components/PlusStats";
 import { usePlus } from "@/lib/use-plus";
 import { PlateScanStats } from "@/components/PlateScanStats";
 import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
@@ -403,6 +404,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
         )}
 
         <PlusSection />
+        {plus.active && <PlusStats plates={plates.filter((p) => p.status === "ativada")} />}
         {plus.active && <BulkDestino plates={plates} rules={rules} allowedUrls={allowedUrls} onDone={() => void load()} />}
         <AvisosPorEmail />
 
