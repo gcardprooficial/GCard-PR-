@@ -11,6 +11,8 @@ import { AuthForm } from "@/components/AuthForm";
 import { PlateQrDownload } from "@/components/PlateQrDownload";
 import { AvisosPorEmail } from "@/components/AvisosPorEmail";
 import { PlusSection } from "@/components/PlusSection";
+import { BulkDestino } from "@/components/BulkDestino";
+import { usePlus } from "@/lib/use-plus";
 import { PlateScanStats } from "@/components/PlateScanStats";
 import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
 import { requestDestinationRelease } from "@/lib/destination.functions";
@@ -139,6 +141,7 @@ function Center({ children }: { children: ReactNode }) {
 }
 
 function Lote({ email, userId }: { email: string; userId: string }) {
+  const plus = usePlus();
   const [batches, setBatches] = useState<Batch[] | null>(null);
   const [plates, setPlates] = useState<Plate[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -400,6 +403,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
         )}
 
         <PlusSection />
+        {plus.active && <BulkDestino plates={plates} rules={rules} allowedUrls={allowedUrls} onDone={() => void load()} />}
         <AvisosPorEmail />
 
         {batches.length === 0 ? (

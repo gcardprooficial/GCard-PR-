@@ -1,28 +1,11 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { untyped } from "@/lib/db-untyped";
+import { usePlus } from "@/lib/use-plus";
 import { PLUS_CHECKOUT, PLUS_PRICE } from "@/lib/plus";
-
-type Sub = { plan: "mensal" | "anual"; status: string; current_period_end: string | null };
 
 /** GCard Plus no /ativar. Some inteira enquanto app_settings.gcard_plus estiver desligada. Placas e QRs nunca dependem disto. */
 export function PlusSection() {
-  const [on, setOn] = useState(false);
-  const [sub, setSub] = useState<Sub | null>(null);
-
-  useEffect(() => {
-    const db = untyped(supabase);
-    void db.rpc("plus_enabled").then(({ data }: { data: boolean | null }) => setOn(data === true));
-    void db
-      .from("plus_subscriptions")
-      .select("plan, status, current_period_end")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .then(({ data }: { data: Sub[] | null }) => setSub(data?.[0] ?? null));
-  }, []);
+  const { enabled: on, sub, active: ativa } = usePlus();
 
   if (!on) return null;
-  const ativa = sub?.status === "ativa";
   const fim = sub?.current_period_end ? new Date(sub.current_period_end).toLocaleDateString("pt-BR") : null;
 
   return (
