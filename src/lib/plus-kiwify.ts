@@ -41,11 +41,15 @@ export function parseKiwifyPlus(body: unknown, allowedProducts: string[] = []): 
   const email = str(b["Customer"]?.["email"])?.toLowerCase();
   const subscriptionId = str(b["subscription_id"]) ?? str(b["Subscription"]?.["id"]);
   const freq = str(b["Subscription"]?.["plan"]?.["frequency"])?.toLowerCase() ?? "";
-  const plan = /year|annual|anual/.test(freq) ? "anual" : /month|mensal/.test(freq) ? "mensal" : null;
+  const next = str(b["Subscription"]?.["next_payment"]);
+  const start = str(b["Subscription"]?.["start_date"]);
+  // Texto da frequência primeiro; se não reconhecer, deduz pelo intervalo entre início e próxima cobrança.
+  const days = next && start ? (Date.parse(next) - Date.parse(start)) / 86_400_000 : NaN;
+  const plan = /year|annual|anual/.test(freq) ? "anual" : /month|mensal/.test(freq) ? "mensal"
+    : days >= 330 && days <= 400 ? "anual" : days >= 25 && days <= 40 ? "mensal" : null;
   const productId = str(b["Product"]?.["product_id"]);
   if (!event || !status || !email || !subscriptionId || !plan) return null;
   if (allowedProducts.length && (!productId || !allowedProducts.includes(productId))) return null;
-  const next = str(b["Subscription"]?.["next_payment"]);
   return {
     email, plan, status, subscriptionId, event, productId,
     orderId: str(b["order_id"]),

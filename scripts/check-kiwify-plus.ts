@@ -39,6 +39,18 @@ assert.equal(parseKiwifyPlus(null), null);
 assert.ok(parseKiwifyPlus(mk("order_approved", "active"), ["p1"]));
 assert.equal(parseKiwifyPlus(mk("order_approved", "active"), ["outro"]), null, "produto fora da lista");
 
+// frequência com outro texto: deduz pelo intervalo
+const iv = (days: number, freq: string) => {
+  const s = Date.parse("2026-10-01T00:00:00Z");
+  const x = mk("order_approved", "active", freq) as any;
+  x.Subscription.start_date = new Date(s).toISOString();
+  x.Subscription.next_payment = new Date(s + days * 86_400_000).toISOString();
+  return parseKiwifyPlus(x)?.plan ?? null;
+};
+assert.equal(iv(30, "every_30_days"), "mensal");
+assert.equal(iv(365, "12m"), "anual");
+assert.equal(iv(7, "weekly"), null);
+
 // idempotência: mesmo aviso, mesma chave; renovação seguinte (outro pedido), outra
 assert.equal(dedupeKey(a), dedupeKey(parseKiwifyPlus(mk("order_approved", "active"))!));
 assert.notEqual(dedupeKey(a), dedupeKey(parseKiwifyPlus(mk("order_approved", "active", "monthly", { order_id: "o2" }))!));
