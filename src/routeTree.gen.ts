@@ -56,6 +56,7 @@ import { Route as ApiCronDailyRouteImport } from './routes/api/cron/daily'
 import { Route as ApiCronHubOutboxRouteImport } from './routes/api/cron/hub-outbox'
 import { Route as ApiMelhorenvioCallbackRouteImport } from './routes/api/melhorenvio/callback'
 import { Route as ApiWebhooksInfinitepayRouteImport } from './routes/api/webhooks/infinitepay'
+import { Route as ApiWebhooksKiwifyPlusRouteImport } from './routes/api/webhooks/kiwify-plus'
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 import { Route as ApiWebhooksPagarmeRouteImport } from './routes/api/webhooks/pagarme'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks/whatsapp'
@@ -301,6 +302,11 @@ const ApiWebhooksInfinitepayRoute = ApiWebhooksInfinitepayRouteImport.update({
   path: '/api/webhooks/infinitepay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksKiwifyPlusRoute = ApiWebhooksKiwifyPlusRouteImport.update({
+  id: '/api/webhooks/kiwify-plus',
+  path: '/api/webhooks/kiwify-plus',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWebhooksMercadopagoRoute = ApiWebhooksMercadopagoRouteImport.update({
   id: '/api/webhooks/mercadopago',
   path: '/api/webhooks/mercadopago',
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/api/cron/hub-outbox': typeof ApiCronHubOutboxRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/infinitepay': typeof ApiWebhooksInfinitepayRoute
+  '/api/webhooks/kiwify-plus': typeof ApiWebhooksKiwifyPlusRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/pagarme': typeof ApiWebhooksPagarmeRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
@@ -427,6 +434,7 @@ export interface FileRoutesByTo {
   '/api/cron/hub-outbox': typeof ApiCronHubOutboxRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/infinitepay': typeof ApiWebhooksInfinitepayRoute
+  '/api/webhooks/kiwify-plus': typeof ApiWebhooksKiwifyPlusRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/pagarme': typeof ApiWebhooksPagarmeRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
@@ -482,6 +490,7 @@ export interface FileRoutesById {
   '/api/cron/hub-outbox': typeof ApiCronHubOutboxRoute
   '/api/melhorenvio/callback': typeof ApiMelhorenvioCallbackRoute
   '/api/webhooks/infinitepay': typeof ApiWebhooksInfinitepayRoute
+  '/api/webhooks/kiwify-plus': typeof ApiWebhooksKiwifyPlusRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/pagarme': typeof ApiWebhooksPagarmeRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
@@ -538,6 +547,7 @@ export interface FileRouteTypes {
     | '/api/cron/hub-outbox'
     | '/api/melhorenvio/callback'
     | '/api/webhooks/infinitepay'
+    | '/api/webhooks/kiwify-plus'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/pagarme'
     | '/api/webhooks/whatsapp'
@@ -590,6 +600,7 @@ export interface FileRouteTypes {
     | '/api/cron/hub-outbox'
     | '/api/melhorenvio/callback'
     | '/api/webhooks/infinitepay'
+    | '/api/webhooks/kiwify-plus'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/pagarme'
     | '/api/webhooks/whatsapp'
@@ -644,6 +655,7 @@ export interface FileRouteTypes {
     | '/api/cron/hub-outbox'
     | '/api/melhorenvio/callback'
     | '/api/webhooks/infinitepay'
+    | '/api/webhooks/kiwify-plus'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/pagarme'
     | '/api/webhooks/whatsapp'
@@ -675,6 +687,7 @@ export interface RootRouteChildren {
   ApiCronHubOutboxRoute: typeof ApiCronHubOutboxRoute
   ApiMelhorenvioCallbackRoute: typeof ApiMelhorenvioCallbackRoute
   ApiWebhooksInfinitepayRoute: typeof ApiWebhooksInfinitepayRoute
+  ApiWebhooksKiwifyPlusRoute: typeof ApiWebhooksKiwifyPlusRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
   ApiWebhooksPagarmeRoute: typeof ApiWebhooksPagarmeRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
@@ -1012,6 +1025,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksInfinitepayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/kiwify-plus': {
+      id: '/api/webhooks/kiwify-plus'
+      path: '/api/webhooks/kiwify-plus'
+      fullPath: '/api/webhooks/kiwify-plus'
+      preLoaderRoute: typeof ApiWebhooksKiwifyPlusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/webhooks/mercadopago': {
       id: '/api/webhooks/mercadopago'
       path: '/api/webhooks/mercadopago'
@@ -1142,6 +1162,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronHubOutboxRoute: ApiCronHubOutboxRoute,
   ApiMelhorenvioCallbackRoute: ApiMelhorenvioCallbackRoute,
   ApiWebhooksInfinitepayRoute: ApiWebhooksInfinitepayRoute,
+  ApiWebhooksKiwifyPlusRoute: ApiWebhooksKiwifyPlusRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
   ApiWebhooksPagarmeRoute: ApiWebhooksPagarmeRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,

@@ -11,7 +11,11 @@ export type EventType =
   | "pedido_pago"
   | "codigo_ativado"
   | "destino_alterado"
-  | "qr_baixado";
+  | "qr_baixado"
+  | "plus_assinado"
+  | "plus_atrasado"
+  | "plus_cancelado"
+  | "qr_criado";
 
 /** First-touch do cookie da requisição atual (servidor). Nunca confia: o banco limpa de novo. */
 export function firstTouchFromRequest(): FirstTouch | null {
