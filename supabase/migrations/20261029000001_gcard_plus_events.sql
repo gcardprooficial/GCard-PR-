@@ -1,3 +1,5 @@
+BEGIN;
+
 -- GCard Plus: novos tipos de evento para o Hub. ADITIVA e idempotente.
 --  plus_assinado / plus_atrasado / plus_cancelado (data: plan) e qr_criado (data: só o host, nunca a URL).
 -- Só amplia (1) o CHECK de events.type e (2) a lista de chaves permitidas no gatilho do Hub (resto da função idêntico a 20261018000000).
@@ -16,6 +18,16 @@ BEGIN
     'conta_criada', 'email_confirmado', 'produto_visto', 'checkout_iniciado',
     'pagamento_iniciado', 'pedido_pago', 'codigo_ativado', 'destino_alterado', 'qr_baixado',
     'plus_assinado', 'plus_atrasado', 'plus_cancelado', 'qr_criado'));
+END
+$$;
+
+-- Trava: só segue se a função do banco for a conferida em produção (md5 5b6ff4fc84a44b620dc8d26df9964231) ou já tiver os tipos plus.
+DO $$
+DECLARE def TEXT := pg_get_functiondef('public.hub_outbox_from_events'::regproc);
+BEGIN
+  IF position('plus_assinado' IN def) = 0 AND md5(def) <> '5b6ff4fc84a44b620dc8d26df9964231' THEN
+    RAISE EXCEPTION 'hub_outbox_from_events mudou desde a versão conferida (md5 atual %). Nada foi alterado.', md5(def);
+  END IF;
 END
 $$;
 
@@ -43,7 +55,6 @@ BEGIN
     IF mail IS NULL AND NEW.person_id IS NOT NULL THEN
       SELECT lower(email) INTO mail FROM auth.users WHERE id = NEW.person_id;
     END IF;
-    -- Visitante anônimo vendo produto: é o evento mais frequente e nunca seria enviado. Nem guarda.
     IF mail IS NULL AND NEW.type = 'produto_visto' THEN RETURN NEW; END IF;
 
     -- data só com as chaves do contrato (nunca a URL de destino, nada de dados pessoais)
@@ -97,3 +108,5 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION public.hub_outbox_from_events() FROM PUBLIC, anon, authenticated;
+
+COMMIT;
