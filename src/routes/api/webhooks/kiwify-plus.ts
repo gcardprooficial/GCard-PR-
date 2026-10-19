@@ -18,7 +18,12 @@ export const Route = createFileRoute("/api/webhooks/kiwify-plus")({
           }
           const products = (process.env["KIWIFY_PLUS_PRODUCT_IDS"] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
           const c = parseKiwifyPlus(body, products);
-          if (!c) return Response.json({ ok: true, ignored: true });
+          if (!c) {
+            // Sem dado pessoal: só o tipo do aviso e a frequência, para saber se uma venda real foi ignorada.
+            const b = body as { webhook_event_type?: string; Subscription?: { plan?: { frequency?: string } } };
+            console.warn("kiwify-plus ignorado", { event: b?.webhook_event_type, freq: b?.Subscription?.plan?.frequency });
+            return Response.json({ ok: true, ignored: true });
+          }
 
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { untyped } = await import("@/lib/db-untyped");

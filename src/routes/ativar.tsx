@@ -10,6 +10,7 @@ import { ReviewLinkPicker } from "@/components/ReviewLinkPicker";
 import { AuthForm } from "@/components/AuthForm";
 import { PlateQrDownload } from "@/components/PlateQrDownload";
 import { AvisosPorEmail } from "@/components/AvisosPorEmail";
+import { PlusSection } from "@/components/PlusSection";
 import { PlateScanStats } from "@/components/PlateScanStats";
 import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
 import { requestDestinationRelease } from "@/lib/destination.functions";
@@ -398,6 +399,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
           </div>
         )}
 
+        <PlusSection />
         <AvisosPorEmail />
 
         {batches.length === 0 ? (
