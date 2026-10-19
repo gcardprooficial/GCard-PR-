@@ -59,6 +59,7 @@ import { Route as ApiWebhooksInfinitepayRouteImport } from './routes/api/webhook
 import { Route as ApiWebhooksKiwifyPlusRouteImport } from './routes/api/webhooks/kiwify-plus'
 import { Route as ApiWebhooksMercadopagoRouteImport } from './routes/api/webhooks/mercadopago'
 import { Route as ApiWebhooksPagarmeRouteImport } from './routes/api/webhooks/pagarme'
+import { Route as ApiWebhooksResendRouteImport } from './routes/api/webhooks/resend'
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks/whatsapp'
 import { Route as ApiWebhooksZapiRouteImport } from './routes/api/webhooks/zapi'
 import { Route as PainelDossieOrderIdRouteImport } from './routes/painel.dossie.$orderId'
@@ -317,6 +318,11 @@ const ApiWebhooksPagarmeRoute = ApiWebhooksPagarmeRouteImport.update({
   path: '/api/webhooks/pagarme',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebhooksResendRoute = ApiWebhooksResendRouteImport.update({
+  id: '/api/webhooks/resend',
+  path: '/api/webhooks/resend',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiWebhooksWhatsappRoute = ApiWebhooksWhatsappRouteImport.update({
   id: '/api/webhooks/whatsapp',
   path: '/api/webhooks/whatsapp',
@@ -384,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/api/webhooks/kiwify-plus': typeof ApiWebhooksKiwifyPlusRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/pagarme': typeof ApiWebhooksPagarmeRoute
+  '/api/webhooks/resend': typeof ApiWebhooksResendRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
   '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
@@ -437,6 +444,7 @@ export interface FileRoutesByTo {
   '/api/webhooks/kiwify-plus': typeof ApiWebhooksKiwifyPlusRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/pagarme': typeof ApiWebhooksPagarmeRoute
+  '/api/webhooks/resend': typeof ApiWebhooksResendRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
   '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
@@ -493,6 +501,7 @@ export interface FileRoutesById {
   '/api/webhooks/kiwify-plus': typeof ApiWebhooksKiwifyPlusRoute
   '/api/webhooks/mercadopago': typeof ApiWebhooksMercadopagoRoute
   '/api/webhooks/pagarme': typeof ApiWebhooksPagarmeRoute
+  '/api/webhooks/resend': typeof ApiWebhooksResendRoute
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
   '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
@@ -550,6 +559,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/kiwify-plus'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/pagarme'
+    | '/api/webhooks/resend'
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
     | '/painel/dossie/$orderId'
@@ -603,6 +613,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/kiwify-plus'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/pagarme'
+    | '/api/webhooks/resend'
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
     | '/painel/dossie/$orderId'
@@ -658,6 +669,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/kiwify-plus'
     | '/api/webhooks/mercadopago'
     | '/api/webhooks/pagarme'
+    | '/api/webhooks/resend'
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
     | '/painel/dossie/$orderId'
@@ -690,6 +702,7 @@ export interface RootRouteChildren {
   ApiWebhooksKiwifyPlusRoute: typeof ApiWebhooksKiwifyPlusRoute
   ApiWebhooksMercadopagoRoute: typeof ApiWebhooksMercadopagoRoute
   ApiWebhooksPagarmeRoute: typeof ApiWebhooksPagarmeRoute
+  ApiWebhooksResendRoute: typeof ApiWebhooksResendRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
   ApiWebhooksZapiRoute: typeof ApiWebhooksZapiRoute
 }
@@ -1046,6 +1059,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiWebhooksPagarmeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/webhooks/resend': {
+      id: '/api/webhooks/resend'
+      path: '/api/webhooks/resend'
+      fullPath: '/api/webhooks/resend'
+      preLoaderRoute: typeof ApiWebhooksResendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/webhooks/whatsapp': {
       id: '/api/webhooks/whatsapp'
       path: '/api/webhooks/whatsapp'
@@ -1165,6 +1185,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWebhooksKiwifyPlusRoute: ApiWebhooksKiwifyPlusRoute,
   ApiWebhooksMercadopagoRoute: ApiWebhooksMercadopagoRoute,
   ApiWebhooksPagarmeRoute: ApiWebhooksPagarmeRoute,
+  ApiWebhooksResendRoute: ApiWebhooksResendRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
   ApiWebhooksZapiRoute: ApiWebhooksZapiRoute,
 }

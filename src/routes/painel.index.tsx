@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { untyped } from "@/lib/db-untyped";
+import { OrderEmailStatus, type EmailEventRow } from "@/components/OrderEmailStatus";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
@@ -403,6 +405,7 @@ function Orders() {
   const [sortBy, setSortBy] = useState<SortBy>("recentes");
   const [sendingPaymentFor, setSendingPaymentFor] = useState<string | null>(null);
   const [deletingFor, setDeletingFor] = useState<string | null>(null);
+  const [emailEvents, setEmailEvents] = useState<Record<string, EmailEventRow[]>>({});
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -417,6 +420,17 @@ function Orders() {
       return;
     }
     setRows((data ?? []) as unknown as OrderRow[]);
+
+    // Estado dos e-mails de pedido (entregue / bounce / suprimido). Falha aqui não impede de ver os pedidos.
+    const { data: ee } = await untyped(supabase)
+      .from("email_events")
+      .select("order_id, event_type, status, delivery_status, delivery_detail")
+      .in("event_type", ["pedido_recebido", "pagamento_confirmado"])
+      .order("created_at", { ascending: false })
+      .limit(2000);
+    const emap: Record<string, EmailEventRow[]> = {};
+    for (const e of (ee ?? []) as EmailEventRow[]) (emap[e.order_id] ??= []).push(e);
+    setEmailEvents(emap);
 
     const { data: batches } = await supabase
       .from("batches")
@@ -1013,7 +1027,10 @@ function Orders() {
                     <dt className="text-muted-foreground">Nome:</dt>
                     <dd>{r.customer_name}</dd>
                     <dt className="text-muted-foreground">E-mail:</dt>
-                    <dd>{r.customer_email}</dd>
+                    <dd>
+                      {r.customer_email}
+                      <OrderEmailStatus orderId={r.id} events={emailEvents[r.id] ?? []} onFixed={() => void load()} />
+                    </dd>
                     <dt className="text-muted-foreground">WhatsApp:</dt>
                     <dd>{r.customer_phone || "—"}</dd>
                     <dt className="text-muted-foreground">CPF:</dt>

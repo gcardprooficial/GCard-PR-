@@ -229,7 +229,8 @@ async function sendWithResend(input: { to: string; subject: string; html: string
     }),
   });
   if (!response.ok) throw new Error(`Resend falhou [${response.status}]: ${await response.text()}`);
-  return { sent: true };
+  const sentBody = (await response.json().catch(() => null)) as { id?: string } | null;
+  return { sent: true, id: sentBody?.id ?? null };
 }
 
 /** Lista de placas (código + link do QR) do lote do pedido, pra e-mails de revenda. */
@@ -260,7 +261,7 @@ async function plateManifest(db: any, orderId: string) {
 export async function dispatchOrderEmailEvent(
   orderId: string,
   event: OrderEmailEvent,
-  extra?: { paymentUrl?: string; force?: boolean },
+  extra?: { paymentUrl?: string; force?: boolean; skipWhatsApp?: boolean },
 ) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -460,11 +461,13 @@ export async function dispatchOrderEmailEvent(
         status: result.sent ? "sent" : "queued",
         provider: result.sent ? "resend" : null,
         sent_at: result.sent ? new Date().toISOString() : null,
+        ...("id" in result && result.id ? { provider_message_id: result.id } : {}),
       })
       .eq("id", inserted.id);
 
     // Mesmo aviso por WhatsApp (isolado: falha aqui nunca afeta o e-mail nem o pedido).
     try {
+      if (extra?.skipWhatsApp) return { sent: result.sent, queued: !result.sent };
       const { dispatchOrderWhatsApp } = await import("@/lib/whatsapp/notify.server");
       await dispatchOrderWhatsApp(orderId, event, {
         ...(extra?.paymentUrl ? { paymentUrl: extra.paymentUrl } : {}),
@@ -721,4 +724,33 @@ export async function queueStrategicUpdate(input: {
 
 export function unsubscribeUrl(token: string) {
   return `${process.env["PUBLIC_APP_URL"] ?? "https://gcardpro.com.br"}/api/unsubscribe?token=${encodeURIComponent(token)}`;
+}
+
+/** Cliente não recebeu o e-mail do pedido (bounce/suprimido/reclamação): avisa o admin com o que precisa para falar por outro canal. */
+export async function notifyAdminEmailProblem(o: {
+  order_number: number;
+  event_type: string;
+  status: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string | null;
+  detail: string | null;
+}) {
+  const to = process.env["ADMIN_NOTIFY_EMAIL"];
+  if (!to) return { skipped: true, reason: "ADMIN_NOTIFY_EMAIL ausente" };
+  const html = emailShell({
+    title: "E-mail do pedido não chegou",
+    bodyHtml:
+      `<p>O e-mail <strong>${escapeHtml(o.event_type)}</strong> do pedido <strong>#${escapeHtml(o.order_number)}</strong> teve resultado ` +
+      `<strong>${escapeHtml(o.status)}</strong>.</p>` +
+      `<p>Cliente: ${escapeHtml(o.customer_name)}<br>E-mail digitado: ${escapeHtml(o.customer_email)}<br>WhatsApp: <strong>${escapeHtml(o.customer_phone || "sem número")}</strong></p>` +
+      (o.detail ? `<p style="font-size:13px;color:#555;">${escapeHtml(o.detail)}</p>` : "") +
+      `<p>Avise o cliente por WhatsApp. No painel, abra o pedido, corrija o e-mail e reenvie as confirmações.</p>`,
+  });
+  try {
+    return await sendWithResend({ to, subject: `⚠️ E-mail não entregue — pedido #${o.order_number}`, html });
+  } catch (error) {
+    console.error("Falha ao avisar admin sobre e-mail não entregue", error);
+    return { sent: false };
+  }
 }
