@@ -5,9 +5,9 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { TUTORIAL_NFC_URL, TUTORIAL_QR_URL, TUTORIAL_VIDEOS } from "../src/lib/tutorial-videos";
 
-assert.equal(TUTORIAL_VIDEOS.nfc, "8szG1_t3t-I");
+assert.equal(TUTORIAL_VIDEOS.nfc, "hO66jMPCPcA");
 assert.equal(TUTORIAL_VIDEOS.qr, "nsWdLR_xl_I");
-assert.equal(TUTORIAL_NFC_URL, "https://youtube.com/shorts/8szG1_t3t-I");
+assert.equal(TUTORIAL_NFC_URL, "https://youtube.com/shorts/hO66jMPCPcA");
 assert.equal(TUTORIAL_QR_URL, "https://youtube.com/shorts/nsWdLR_xl_I");
 
 const files: string[] = [];
