@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { replyToField } from "@/lib/reply-to";
+import { TUTORIAL_NFC_URL, TUTORIAL_QR_URL } from "@/lib/tutorial-videos";
 import { money, resolveUnitPrice, type PriceTier } from "@/lib/pricing";
 import { pixDiscountActive, PIX_DISCOUNT_PCT } from "@/lib/promo";
 import { outboundEnabled, sendAudio, sendImage, sendText } from "./transport.server";
@@ -359,7 +360,7 @@ PAGAMENTO: Pix (Stone) ou cartão (Stone ou InfinitePay) no site. Compra em http
 COMPATIBILIDADE NFC: iPhone XS ou mais novo e a maioria dos Androids com NFC. O QR Code funciona em qualquer celular com câmera.
 CONFIGURAR (uso no próprio negócio): o cliente informa o negócio na compra e a GCard grava o link antes de enviar; chega pronto.
 CONFIGURAR (revenda/troca de link): escanear o QR da placa mostra o código dela (ex.: GCARD-00061); entrar em https://www.gcardpro.com.br/ativar com o e-mail da compra; achar a placa pelo código; colar o link de avaliação do Google do cliente.
-VÍDEOS: configurar QR Code https://youtube.com/shorts/zeA8QT-3Ltc · configurar NFC https://youtube.com/shorts/q8W2ojaF5vE
+VÍDEOS: configurar QR Code ${TUTORIAL_QR_URL} · configurar NFC ${TUTORIAL_NFC_URL}
 ACRÍLICO LISO (sem arte): placa de acrílico 2mm sem impressão, kit mínimo de 10 unidades, frete grátis; chip NFC avulso é opcional e cobrado à parte por unidade.
 `.trim();
 

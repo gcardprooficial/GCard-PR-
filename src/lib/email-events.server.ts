@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { replyToField } from "@/lib/reply-to";
+import { TUTORIAL_NFC_URL, TUTORIAL_QR_URL } from "@/lib/tutorial-videos";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY_ADDRESS, COMPANY_ID_LINE, GOOGLE_REVIEW_URL } from "@/lib/company";
 import { carrierLabel, trackingUrl } from "@/lib/shipping";
@@ -150,8 +151,8 @@ function videoTutorialLinks() {
   return (
     `<p style="margin:16px 0 6px;font-weight:700;">Vídeos de configuração (2 min)</p>` +
     `<ul style="margin:0;padding-left:20px;">` +
-    `<li><a href="https://youtube.com/shorts/zeA8QT-3Ltc" style="color:#1A1A1A;font-weight:600;">Parte 1 -- como configurar o QR Code</a></li>` +
-    `<li><a href="https://youtube.com/shorts/q8W2ojaF5vE" style="color:#1A1A1A;font-weight:600;">Parte 2 -- como configurar o NFC</a></li>` +
+    `<li><a href="${TUTORIAL_QR_URL}" style="color:#1A1A1A;font-weight:600;">Parte 1 -- como configurar o QR Code</a></li>` +
+    `<li><a href="${TUTORIAL_NFC_URL}" style="color:#1A1A1A;font-weight:600;">Parte 2 -- como configurar o NFC</a></li>` +
     `</ul>`
   );
 }
@@ -379,7 +380,7 @@ export async function dispatchOrderEmailEvent(
         } else if (cardOnly && isRevenda) {
           body +=
             `<p>Estamos separando os seus cartões de PVC com NFC. Avisamos quando entrar em produção e quando forem enviados, com o código de rastreio.</p>` +
-            `<p style="margin-top:8px;"><a href="https://youtube.com/shorts/q8W2ojaF5vE" style="color:#1A1A1A;font-weight:600;">Vídeo -- como configurar o NFC</a></p>`;
+            `<p style="margin-top:8px;"><a href="${TUTORIAL_NFC_URL}" style="color:#1A1A1A;font-weight:600;">Vídeo -- como configurar o NFC</a></p>`;
         } else if (isRevenda) {
           body +=
             `<p>As plaquinhas do kit de revenda chegam <strong>sem link de avaliação configurado</strong> — é o modelo de revenda: você ativa cada uma pro negócio do seu cliente.</p>` +

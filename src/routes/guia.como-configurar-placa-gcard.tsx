@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
+import { TUTORIAL_VIDEOS } from "@/lib/tutorial-videos";
 
-const VIDEO_QR = "zeA8QT-3Ltc";
-const VIDEO_NFC = "q8W2ojaF5vE";
+const VIDEO_QR = TUTORIAL_VIDEOS.qr;
+const VIDEO_NFC = TUTORIAL_VIDEOS.nfc;
 
 function Video({ id, title }: { id: string; title: string }) {
   return (
