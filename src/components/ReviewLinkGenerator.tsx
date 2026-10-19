@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { emailReviewLink, submitToolLead } from "@/lib/leads.functions";
-import { CONSENT_TEXT } from "@/lib/consent";
+import { CONSENT_TEXT, MARUSSO_CONSENT_TEXT } from "@/lib/consent";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ export function ReviewLinkGenerator() {
   const runEmailLink = useServerFn(emailReviewLink);
   // Receber o link por e-mail: o aceite de novidades é opcional e nunca vem marcado.
   const [mailConsent, setMailConsent] = useState(false);
+  const [marussoConsent, setMarussoConsent] = useState(false);
   const [mailSending, setMailSending] = useState(false);
   const [mailSent, setMailSent] = useState<string | null>(null);
   const [leadUrl, setLeadUrl] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export function ReviewLinkGenerator() {
     if (!leadBusiness || !leadUrl) return;
     setMailSending(true);
     try {
-      const res = await runEmailLink({ data: { businessName: leadBusiness.name, placeId: leadBusiness.placeId, reviewUrl: leadUrl, consent: mailConsent } });
+      const res = await runEmailLink({ data: { businessName: leadBusiness.name, placeId: leadBusiness.placeId, reviewUrl: leadUrl, consent: mailConsent, marussoConsent } });
       if (res.ok) {
         setMailSent(leadBusiness.name);
         toast.success("Enviamos o link para o e-mail da sua conta.");
@@ -272,6 +273,10 @@ export function ReviewLinkGenerator() {
                     <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs leading-relaxed text-foreground/80">
                       <input type="checkbox" checked={mailConsent} onChange={(e) => setMailConsent(e.target.checked)} className="mt-0.5 size-4 accent-primary" />
                       <span>{CONSENT_TEXT} (Marque para receber também dicas para aumentar suas avaliações.)</span>
+                    </label>
+                    <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs leading-relaxed text-foreground/80">
+                      <input type="checkbox" checked={marussoConsent} onChange={(e) => setMarussoConsent(e.target.checked)} className="mt-0.5 size-4 accent-primary" />
+                      <span>{MARUSSO_CONSENT_TEXT}</span>
                     </label>
                     <Button type="button" size="sm" variant="outline" disabled={mailSending} onClick={() => void sendEmail()} className="mt-2 h-10 rounded-xl bg-background">
                       {mailSending ? "Enviando…" : "Enviar para o meu e-mail"}

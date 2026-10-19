@@ -10,7 +10,7 @@ import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 import { checkSignupEmail } from "@/lib/auth-check.functions";
 import { suggestEmailDomain } from "@/lib/email-typo";
 import { getFirstTouch } from "@/lib/first-touch";
-import { CONSENT_TEXT, CONSENT_TEXT_VERSION } from "@/lib/consent";
+import { CONSENT_TEXT, CONSENT_TEXT_VERSION, MARUSSO_CONSENT_TEXT } from "@/lib/consent";
 
 /** Login / cadastro / esqueci a senha. redirectPath = para onde o e-mail de confirmação volta. */
 export function AuthForm({ redirectPath, title, subtitle }: { redirectPath: string; title: string; subtitle: string }) {
@@ -22,6 +22,8 @@ export function AuthForm({ redirectPath, title, subtitle }: { redirectPath: stri
   const [resetSent, setResetSent] = useState(false);
   // Aceite de novidades: nunca marcado de antemão.
   const [marketing, setMarketing] = useState(false);
+  // Segundo aceite (Marusso): caixa separada, também nunca marcada de antemão.
+  const [marusso, setMarusso] = useState(false);
   // E-mail com conta criada e ainda não confirmada: permite reenviar ou corrigir.
   const [unconfirmed, setUnconfirmed] = useState<string | null>(null);
 
@@ -54,7 +56,7 @@ export function AuthForm({ redirectPath, title, subtitle }: { redirectPath: stri
             options: {
               emailRedirectTo: redirectTo(),
               // O gatilho do banco lê isto: origem da primeira visita e a escolha de marketing (com a versão do texto).
-              data: { first_touch: getFirstTouch(), marketing_consent: marketing, consent_version: CONSENT_TEXT_VERSION },
+              data: { first_touch: getFirstTouch(), marketing_consent: marketing, consent_version: CONSENT_TEXT_VERSION, marusso_consent: marusso },
             },
           });
     setBusy(false);
@@ -145,6 +147,12 @@ export function AuthForm({ redirectPath, title, subtitle }: { redirectPath: stri
             <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-muted-foreground">
               <input type="checkbox" checked={marketing} onChange={(ev) => setMarketing(ev.target.checked)} className="mt-0.5 size-4 accent-primary" />
               <span>{CONSENT_TEXT}</span>
+            </label>
+          )}
+          {mode === "signup" && (
+            <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-muted-foreground">
+              <input type="checkbox" checked={marusso} onChange={(ev) => setMarusso(ev.target.checked)} className="mt-0.5 size-4 accent-primary" />
+              <span>{MARUSSO_CONSENT_TEXT}</span>
             </label>
           )}
         </div>

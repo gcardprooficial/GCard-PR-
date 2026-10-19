@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { ReviewLinkPicker } from "@/components/ReviewLinkPicker";
 import { AuthForm } from "@/components/AuthForm";
 import { PlateQrDownload } from "@/components/PlateQrDownload";
+import { AvisosPorEmail } from "@/components/AvisosPorEmail";
 import { PlateScanStats } from "@/components/PlateScanStats";
 import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
 import { requestDestinationRelease } from "@/lib/destination.functions";
@@ -396,6 +397,8 @@ function Lote({ email, userId }: { email: string; userId: string }) {
             </div>
           </div>
         )}
+
+        <AvisosPorEmail />
 
         {batches.length === 0 ? (
           <div className="rounded-2xl bg-card p-6 card-soft">

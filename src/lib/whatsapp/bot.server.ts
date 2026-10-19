@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { replyToField } from "@/lib/reply-to";
 import { money, resolveUnitPrice, type PriceTier } from "@/lib/pricing";
 import { pixDiscountActive, PIX_DISCOUNT_PCT } from "@/lib/promo";
 import { outboundEnabled, sendAudio, sendImage, sendText } from "./transport.server";
@@ -453,6 +454,7 @@ export async function handoff(conv: Conv, announce = true) {
         headers: { Authorization: `Bearer ${resend}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           from: process.env["RESEND_FROM"] ?? "GCard-PRÓ <noreply@gcardpro.com.br>",
+          ...replyToField(),
           to,
           subject: `WhatsApp: ${conv.name ?? conv.wa_id} precisa de atendente`,
           text: `Uma conversa foi encaminhada pra equipe. Abra o painel: https://www.gcardpro.com.br/painel/whatsapp`,

@@ -59,6 +59,14 @@ function Privacidade() {
               você sai da lista quando quiser pelo link no fim de cada e-mail. Não vendemos seus
               dados nem os compartilhamos com terceiros para fins de marketing.
             </p>
+            <p>
+              Há uma segunda caixa, separada da anterior, nunca marcada e nunca obrigatória: se você marcar, a{" "}
+              <strong>Marusso Produções</strong>, CNPJ 68.194.199/0001-70, Indaiatuba/SP, envia por e-mail
+              novidades e ofertas dos seus produtos (TOQY, GCard-PRÓ, cursos e outros produtos). A finalidade é
+              apenas essa comunicação. Guardamos a data, a origem e a versão do texto que você viu. Você pode sair
+              quando quiser: nas Configurações da conta (em gcardpro.com.br/ativar) ou pelo link no fim de cada
+              e-mail. Desativar cancela todos os e-mails de novidades e ofertas.
+            </p>
           </Section>
 
           <Section n="3" title="Leitura das placas" icon="scan">
