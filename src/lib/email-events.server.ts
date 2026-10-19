@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { replyToField } from "@/lib/reply-to";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY_ADDRESS, COMPANY_ID_LINE, GOOGLE_REVIEW_URL } from "@/lib/company";
 import { carrierLabel, trackingUrl } from "@/lib/shipping";
@@ -214,6 +215,7 @@ async function sendWithResend(input: { to: string; subject: string; html: string
       to: [input.to],
       subject: input.subject,
       html: input.html,
+      ...replyToField(),
       // RFC 8058: o provedor de e-mail faz POST no link (one-click). O GET desse mesmo link só abre a página /sair.
       ...(input.unsubscribeToken
         ? {
@@ -668,6 +670,27 @@ export async function upsertCustomerConsent(input: {
     if (recordError) console.error("falha ao registrar consentimento", recordError);
   }
   return contact?.unsubscribe_token ?? randomUUID();
+}
+
+/** Aceite Marusso (caixa separada): grava uma linha em consent_records; o gatilho do banco enfileira consentimento_dado. */
+export async function recordMarussoConsent(input: {
+  email: string;
+  source: "cadastro" | "checkout" | "gerador" | "configuracoes";
+  orderId?: string;
+  userId?: string;
+}) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { MARUSSO_CONSENT_VERSION } = await import("@/lib/consent");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabaseAdmin as any).from("consent_records").insert({
+    email: input.email.toLowerCase(),
+    user_id: input.userId ?? null,
+    order_id: input.orderId ?? null,
+    accepted: true,
+    text_version: MARUSSO_CONSENT_VERSION,
+    source: input.source,
+  });
+  if (error) throw error;
 }
 
 export async function queueStrategicUpdate(input: {

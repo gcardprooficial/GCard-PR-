@@ -51,6 +51,8 @@ const emailSchema = z.object({
   reviewUrl: z.string().trim().url().max(500),
   /** Aceite de novidades (com o texto versionado exibido). Sem aceite, o e-mail leva só o link. */
   consent: z.boolean(),
+  /** Segundo aceite (Marusso): caixa separada, desmarcada por padrão. */
+  marussoConsent: z.boolean().default(false),
 });
 
 /** "Receber esse link por e-mail": manda para o e-mail da conta; salva o lead com origem gerador e o aceite. */
@@ -79,6 +81,14 @@ export const emailReviewLink = createServerFn({ method: "POST" })
     const { firstTouchFromRequest } = await import("@/lib/events.server");
     const fullName = (user.user?.user_metadata?.["full_name"] as string | undefined) ?? "";
     await upsertCustomerConsent({ email, name: fullName, consent: data.consent, source: "gerador", userId: context.userId });
+    if (data.marussoConsent) {
+      try {
+        const { recordMarussoConsent } = await import("@/lib/email-events.server");
+        await recordMarussoConsent({ email, source: "gerador", userId: context.userId });
+      } catch (error) {
+        console.error("Falha ao salvar aceite Marusso (gerador)", error);
+      }
+    }
     const { error } = await untyped(supabaseAdmin).from("tool_leads").insert({
       business_name: data.businessName,
       place_id: data.placeId || null,

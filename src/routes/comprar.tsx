@@ -15,7 +15,7 @@ import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions"
 import { ProductionNotice } from "@/components/ProductionNotice";
 import { nonBusinessDayNotice } from "@/lib/business-hours";
 import { suggestEmailDomain } from "@/lib/email-typo";
-import { CONSENT_TEXT } from "@/lib/consent";
+import { CONSENT_TEXT, MARUSSO_CONSENT_TEXT } from "@/lib/consent";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { createPagarmeCardCheckout, createPagarmeCheckout } from "@/lib/payments/pagarme.functions";
 import { gatewayOptions, type Gateway } from "@/lib/gateways";
@@ -490,6 +490,7 @@ function Comprar() {
     email: "",
   });
   const [marketingConsent, setMarketingConsent] = useState(false);
+  const [marussoConsent, setMarussoConsent] = useState(false);
 
   // Assim que e-mail + CPF ficam válidos, confere se a pessoa já comprou (pago) antes --
   // se já comprou, o tutorial de QR/NFC não precisa aparecer de novo.
@@ -736,6 +737,7 @@ function Comprar() {
           })),
           customer,
           marketingConsent,
+          marussoConsent,
           couponCode: coupon?.code ?? null,
           address: { ...address, complement: address.complement || null },
         },
@@ -2051,6 +2053,15 @@ function Comprar() {
                   className="mt-1 size-4 accent-primary"
                 />
                 <span className="leading-relaxed text-muted-foreground">{CONSENT_TEXT}</span>
+              </label>
+              <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-background p-4 text-sm">
+                <input
+                  type="checkbox"
+                  checked={marussoConsent}
+                  onChange={(event) => setMarussoConsent(event.target.checked)}
+                  className="mt-1 size-4 accent-primary"
+                />
+                <span className="leading-relaxed text-muted-foreground">{MARUSSO_CONSENT_TEXT}</span>
               </label>
             </div>
           )}

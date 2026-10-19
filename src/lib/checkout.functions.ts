@@ -341,6 +341,8 @@ const cartOrderSchema = z.object({
     .min(1)
     .max(20),
   marketingConsent: z.boolean().default(false),
+  /** Segundo aceite (Marusso): caixa separada, desmarcada por padrão. */
+  marussoConsent: z.boolean().default(false),
   /** Cupom do parceiro (link /c/{code}). Só o código -- % e valores vêm do banco. */
   couponCode: z.string().trim().max(40).optional().nullable(),
   customer: orderSchema.shape.customer,
@@ -502,6 +504,15 @@ export const createCartOrder = createServerFn({ method: "POST" })
       });
     } catch (error) {
       console.error("createCartOrder: falha ao salvar consentimento", { orderId: order.id, error });
+    }
+
+    if (data.marussoConsent) {
+      try {
+        const { recordMarussoConsent } = await import("@/lib/email-events.server");
+        await recordMarussoConsent({ email: data.customer.email, source: "checkout", orderId: order.id });
+      } catch (error) {
+        console.error("createCartOrder: falha ao salvar aceite Marusso", { orderId: order.id, error });
+      }
     }
 
     try {
