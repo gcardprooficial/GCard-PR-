@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GOOGLE_REVIEW_URL } from "@/lib/company";
+import { TUTORIAL_NFC_URL, TUTORIAL_QR_URL } from "@/lib/tutorial-videos";
 import { carrierLabel, trackingUrl } from "@/lib/shipping";
 import { phoneExists } from "./zapi.server";
 import { outboundEnabled, provider, sendText } from "./transport.server";
@@ -34,7 +35,7 @@ export function normalizeBrPhone(raw: string | null | undefined): string | null 
 }
 
 const videos = () =>
-  "▶️ QR Code: https://youtube.com/shorts/zeA8QT-3Ltc\n▶️ NFC: https://youtube.com/shorts/q8W2ojaF5vE";
+  `▶️ QR Code: ${TUTORIAL_QR_URL}\n▶️ NFC: ${TUTORIAL_NFC_URL}`;
 
 const activation = () =>
   `Como ativar cada placa:\n1) Escaneie o QR dela: abre uma página com o código (ex.: GCARD-00061)\n2) Entre em ${siteUrl()}/ativar com o e-mail da compra\n3) Informe o negócio e cole o link de avaliação do Google\n${videos()}`;
@@ -78,7 +79,7 @@ function build(event: NotifyEvent, c: Ctx): string {
       if (c.isBlank) {
         t += "Seu pedido é de *acrílico puro* (sem impressão, QR ou NFC), pra você aplicar a sua arte. Avisamos quando entrar em produção e quando for enviado.";
       } else if (c.cardOnly && c.isRevenda) {
-        t += `Estamos separando os seus cartões de PVC com NFC. Avisamos quando entrar em produção e quando forem enviados.\n▶️ Como configurar o NFC: https://youtube.com/shorts/q8W2ojaF5vE`;
+        t += `Estamos separando os seus cartões de PVC com NFC. Avisamos quando entrar em produção e quando forem enviados.\n▶️ Como configurar o NFC: ${TUTORIAL_NFC_URL}`;
       } else if (c.isRevenda) {
         t += `As plaquinhas do kit de revenda chegam *sem link configurado*: você ativa cada uma pro negócio do seu cliente. Quando o lote ficar pronto, mandamos o código por aqui.\n\n${activation()}`;
       } else {

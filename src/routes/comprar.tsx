@@ -10,6 +10,7 @@ import { getCatalog, type CatalogProduct, type ColorVariant } from "@/lib/catalo
 import { searchBusinesses, type BusinessResult } from "@/lib/places.functions";
 import { createCartOrder, checkReturningCustomer } from "@/lib/checkout.functions";
 import { trackClientEvent } from "@/lib/events.functions";
+import { TUTORIAL_VIDEOS } from "@/lib/tutorial-videos";
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { createInfinitePayCheckout } from "@/lib/payments/infinitepay.functions";
 import { ProductionNotice } from "@/components/ProductionNotice";
@@ -217,110 +218,39 @@ type CartLine = {
   qrCodeQty: number;
 };
 
-declare global {
-  interface Window {
-    YT?: {
-      Player: new (
-        el: HTMLElement,
-        opts: {
-          videoId: string;
-          playerVars?: Record<string, number>;
-          events?: { onStateChange?: (e: { data: number }) => void };
-        },
-      ) => unknown;
-      PlayerState: { ENDED: number };
-    };
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
-
-let ytApiPromise: Promise<void> | null = null;
-/** Carrega a API do YouTube 1x só, mesmo com 2 players na tela. */
-function loadYouTubeApi(): Promise<void> {
-  if (window.YT) return Promise.resolve();
-  if (ytApiPromise) return ytApiPromise;
-  ytApiPromise = new Promise((resolve) => {
-    window.onYouTubeIframeAPIReady = () => resolve();
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
-  });
-  return ytApiPromise;
-}
-
-/**
- * Vídeo obrigatório: sem controles visíveis (sem pausar/pular pela barra), libera o
- * "assistido" só quando o player emite ENDED. Aviso honesto: não dá pra bloquear teclas
- * de mídia do sistema operacional -- é o limite técnico de um embed do YouTube.
- */
-function RequiredVideo({ videoId, label, done, onDone }: { videoId: string; label: string; done: boolean; onDone: () => void }) {
-  const hostRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    void loadYouTubeApi().then(() => {
-      if (cancelled || !hostRef.current || !window.YT) return;
-      new window.YT.Player(hostRef.current, {
-        videoId,
-        playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, playsinline: 1 },
-        events: {
-          onStateChange: (e) => {
-            if (window.YT && e.data === window.YT.PlayerState.ENDED) onDone();
-          },
-        },
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId]);
-
+/** Vídeo tutorial (opcional): player normal do YouTube, com controles. Não bloqueia nada. */
+function TutorialVideo({ videoId, label }: { videoId: string; label: string }) {
   return (
     <div className="rounded-2xl border-2 border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-bold">{label}</p>
-        {done && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-g-green/15 px-2.5 py-1 text-xs font-black text-g-green">
-            ✓ Assistido
-          </span>
-        )}
-      </div>
-      <div className="mt-3 mx-auto aspect-[9/16] max-w-[220px] overflow-hidden rounded-xl bg-black">
-        <div ref={hostRef} className="size-full" />
+      <p className="text-sm font-bold">{label}</p>
+      <div className="mx-auto mt-3 aspect-[9/16] max-w-[220px] overflow-hidden rounded-xl bg-black">
+        <iframe
+          className="size-full"
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`}
+          title={label}
+          loading="lazy"
+          allow="encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+        />
       </div>
     </div>
   );
 }
 
-function VideoGate({
-  watched1,
-  watched2,
-  onDone1,
-  onDone2,
-}: {
-  watched1: boolean;
-  watched2: boolean;
-  onDone1: () => void;
-  onDone2: () => void;
-}) {
+function VideoGate() {
   return (
     <div>
       <h1 className="text-2xl leading-tight sm:text-3xl">
-        Antes de pagar, <span className="highlight-yellow">2 vídeos rápidos</span>
+        Quer ver como configurar? <span className="highlight-yellow">2 vídeos rápidos</span>
       </h1>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-        Assista os dois até o final pra saber configurar o QR Code e o NFC assim que sua placa
-        chegar. É rápido (menos de 2 min no total) e o botão de pagamento só libera depois.
+        É opcional. Se quiser, assista para saber configurar o QR Code e o NFC assim que sua placa chegar
+        (menos de 2 min no total). Pode pular e continuar para o pagamento quando quiser.
       </p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <RequiredVideo videoId="zeA8QT-3Ltc" label="Parte 1 — Configurar o QR Code" done={watched1} onDone={onDone1} />
-        <RequiredVideo videoId="q8W2ojaF5vE" label="Parte 2 — Configurar o NFC" done={watched2} onDone={onDone2} />
+        <TutorialVideo videoId={TUTORIAL_VIDEOS.qr} label="Parte 1 — Configurar o QR Code" />
+        <TutorialVideo videoId={TUTORIAL_VIDEOS.nfc} label="Parte 2 — Configurar o NFC" />
       </div>
-      {!(watched1 && watched2) && (
-        <p className="mt-4 text-center text-xs font-semibold text-muted-foreground">
-          Assista os dois vídeos até o final para continuar.
-        </p>
-      )}
     </div>
   );
 }
@@ -449,8 +379,6 @@ function Comprar() {
   }, [isResale]);
 
   const [stepIndex, setStepIndex] = useState(0);
-  const [video1Watched, setVideo1Watched] = useState(false);
-  const [video2Watched, setVideo2Watched] = useState(false);
   // null = ainda não sabemos (mostra o tutorial por padrão, mais seguro que pular à toa).
   const [isReturningCustomer, setIsReturningCustomer] = useState<boolean | null>(null);
   const runCheckReturning = useServerFn(checkReturningCustomer);
@@ -1063,8 +991,6 @@ function Comprar() {
           address.city.length >= 2 &&
           address.state.length >= 2
         );
-      case "videos":
-        return video1Watched && video2Watched;
       case "carrinho":
         return cart.length > 0 || !!product;
       default:
@@ -2263,12 +2189,7 @@ function Comprar() {
           )}
 
           {step === "videos" && (
-            <VideoGate
-              watched1={video1Watched}
-              watched2={video2Watched}
-              onDone1={() => setVideo1Watched(true)}
-              onDone2={() => setVideo2Watched(true)}
-            />
+            <VideoGate />
           )}
 
           {step === "revisao" && (
