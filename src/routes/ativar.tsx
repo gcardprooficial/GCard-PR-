@@ -12,6 +12,7 @@ import { PlateQrDownload } from "@/components/PlateQrDownload";
 import { usePlus } from "@/lib/use-plus";
 import { AtivarTabs, ABAS, type Aba } from "@/components/ativar/AtivarTabs";
 import { PlusHub } from "@/components/ativar/PlusHub";
+import { ToqyStrip } from "@/components/ativar/ToqyStrip";
 import { AjudaTab, ContaTab } from "@/components/ativar/AjudaConta";
 import { BookOpen, Crown, LayoutGrid, Plus, User } from "lucide-react";
 import { PlateScanStats } from "@/components/PlateScanStats";
@@ -747,14 +748,6 @@ function PlateCard({
             🔎 Não tem o link? Buscar pelo nome do negócio
           </button>
           {toqy && <p className="mt-2 text-xs text-green-700">Sua placa já leva para a sua página TOQY.</p>}
-          <a
-            href={toqyOnboardingUrl(plate.short_code)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex h-9 items-center gap-1 rounded-xl border border-dashed border-foreground/30 px-3 text-xs font-semibold hover:bg-muted"
-          >
-            ✨ Criar minha página no TOQY
-          </a>
           <ReviewLinkPicker
             open={picking}
             onOpenChange={setPicking}
@@ -787,6 +780,7 @@ function PlateCard({
       </div>
       <PlateQrDownload plateId={plate.id} />
       <PlateScanStats plateId={plate.id} />
+      {!toqy && <ToqyStrip href={toqyOnboardingUrl(plate.short_code)} />}
     </div>
   );
 }
