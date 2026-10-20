@@ -9,6 +9,14 @@ import { buildQrMatrix, downloadBlob, qrFilename, qrToPngBlob, qrToSvg } from "@
 
 type Made = { token: string; short_code: string };
 
+/** Baixa o QR (com ?s=q para contar leituras de QR). */
+export async function downloadQr(m: Made, ext: "png" | "svg") {
+  const matrix = await buildQrMatrix(`${window.location.origin}/r/${m.token}?s=q`);
+  const opt = { mirrored: false };
+  if (ext === "png") downloadBlob(await qrToPngBlob(matrix, opt), qrFilename(m.short_code, "png", false));
+  else downloadBlob(new Blob([qrToSvg(matrix, opt)], { type: "image/svg+xml" }), qrFilename(m.short_code, "svg", false));
+}
+
 /** Plus: cria um QR Code próprio (com leituras contadas) para imprimir onde quiser. Sem assinatura: 1 teste grátis. */
 export function PlusQrCreator({ rules, allowedUrls, active, onDone }: { rules: DestinationRule[]; allowedUrls: string[]; active: boolean; onDone: () => void }) {
   const [name, setName] = useState("");
@@ -30,13 +38,6 @@ export function PlusQrCreator({ rules, allowedUrls, active, onDone }: { rules: D
     onDone();
   }
 
-  async function download(m: Made, ext: "png" | "svg") {
-    const matrix = await buildQrMatrix(`${window.location.origin}/r/${m.token}?s=q`);
-    const opt = { mirrored: false };
-    if (ext === "png") downloadBlob(await qrToPngBlob(matrix, opt), qrFilename(m.short_code, "png", false));
-    else downloadBlob(new Blob([qrToSvg(matrix, opt)], { type: "image/svg+xml" }), qrFilename(m.short_code, "svg", false));
-  }
-
   return (
     <section className="mb-6 rounded-2xl border border-border bg-card p-5 card-soft">
       <h2 className="text-base font-bold">
@@ -56,8 +57,8 @@ export function PlusQrCreator({ rules, allowedUrls, active, onDone }: { rules: D
             Código <strong className="font-mono">{made.short_code}</strong> criado. Baixe o QR e mande imprimir:
           </p>
           <div className="mt-2 flex gap-2">
-            <Button size="sm" variant="outline" className="rounded-lg" onClick={() => void download(made, "png")}>Baixar PNG</Button>
-            <Button size="sm" variant="outline" className="rounded-lg" onClick={() => void download(made, "svg")}>Baixar SVG</Button>
+            <Button size="sm" variant="outline" className="rounded-lg" onClick={() => void downloadQr(made, "png")}>Baixar PNG</Button>
+            <Button size="sm" variant="outline" className="rounded-lg" onClick={() => void downloadQr(made, "svg")}>Baixar SVG</Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">Ele também aparece na lista de códigos abaixo, no lote "Meus QR Codes".</p>
         </div>

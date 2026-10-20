@@ -59,6 +59,7 @@ type Plate = {
   scan_count: number;
   activated_at: string | null;
   tracking_v2: boolean;
+  plus_created?: boolean;
 };
 
 function Ativar() {
@@ -222,7 +223,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       const p = await supabase
         .from("plates")
         .select(
-          "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count, activated_at, tracking_v2",
+          "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count, activated_at, tracking_v2, plus_created",
         )
         .in("batch_id", batchIds)
         .order("short_code", { ascending: true });
@@ -410,7 +411,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
 
       <div className="mx-auto max-w-4xl px-5 py-8">
         {aba === "plus" && showPlus && (
-          <PlusHub plates={plates} rules={rules} allowedUrls={allowedUrls} active={plus.active} sub={plus.sub} onDone={() => void load()} />
+          <PlusHub plates={plates} rules={rules} allowedUrls={allowedUrls} active={plus.active} sub={plus.sub} onDone={() => void load()} onRemove={(p) => void removePlate(p as Plate)} />
         )}
         {aba === "ajuda" && <AjudaTab />}
         {aba === "conta" && <ContaTab email={email} onSignOut={() => supabase.auth.signOut()} />}

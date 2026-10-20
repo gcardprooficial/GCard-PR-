@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { QrCode, Radio, Eye } from "lucide-react";
+import { QrCode, Radio, Eye, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { untyped } from "@/lib/db-untyped";
+import { AreaChart, Donut } from "@/components/ativar/Charts";
 
 type Row = { plate_id: string; day: string; nfc: number; qr: number; desconhecido: number; leituras: number };
 type P = { id: string; short_code: string; business_name: string | null };
@@ -18,7 +19,7 @@ function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: strin
   );
 }
 
-/** Plus: toques NFC e leituras de QR por dia, com período, gráfico e total por código. Só números agregados (nada de pessoa). */
+/** Plus: leituras por dia (gráfico), origem (rosca) e ranking de códigos, com período. Só números agregados (nada de pessoa). */
 export function PlusStats({ plates }: { plates: P[] }) {
   const [days, setDays] = useState<(typeof PERIODS)[number]>(30);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -40,11 +41,20 @@ export function PlusStats({ plates }: { plates: P[] }) {
       .then(({ data, error: e }: { data: Row[] | null; error: unknown }) => (e ? setError(true) : setRows(data ?? [])));
   }, [idsKey, days]);
 
-  const byDay = useMemo(() => {
+  const { series, firstDay, lastDay } = useMemo(() => {
+    // todos os dias do período (dia sem leitura = 0), para o gráfico não "pular"
     const m = new Map<string, number>();
     for (const r of rows ?? []) m.set(r.day, (m.get(r.day) ?? 0) + Number(r.leituras));
-    return [...m.entries()];
-  }, [rows]);
+    const out: number[] = [];
+    let first = "", last = "";
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+      if (i === days - 1) first = d;
+      last = d;
+      out.push(m.get(d) ?? 0);
+    }
+    return { series: out, firstDay: first, lastDay: last };
+  }, [rows, days]);
   const byCode = useMemo(() => {
     const m = new Map<string, { nfc: number; qr: number; total: number }>();
     for (const r of rows ?? []) {
@@ -56,18 +66,15 @@ export function PlusStats({ plates }: { plates: P[] }) {
     }
     return plates.map((p) => ({ p, c: m.get(p.id) ?? { nfc: 0, qr: 0, total: 0 } })).sort((a, b) => b.c.total - a.c.total);
   }, [rows, plates]);
-  const total = byDay.reduce((s, [, n]) => s + n, 0);
+  const total = series.reduce((s, n) => s + n, 0);
   const nfc = byCode.reduce((s, x) => s + x.c.nfc, 0);
   const qr = byCode.reduce((s, x) => s + x.c.qr, 0);
-  const max = Math.max(1, ...byDay.map(([, n]) => n));
+  const other = Math.max(0, total - nfc - qr);
+  const topMax = Math.max(1, ...byCode.map((x) => x.c.total));
   const fmt = (d: string) => d.split("-").reverse().slice(0, 2).join("/");
 
   if (plates.length === 0) {
-    return (
-      <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
-        Ative um código para ver as estatísticas aqui.
-      </p>
-    );
+    return <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">Ative um código para ver as estatísticas aqui.</p>;
   }
   return (
     <div>
@@ -75,12 +82,7 @@ export function PlusStats({ plates }: { plates: P[] }) {
         <h3 className="font-display text-lg font-bold">Visão geral</h3>
         <div className="flex gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
           {PERIODS.map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setDays(d)}
-              className={`rounded-full px-3 py-1.5 transition-colors ${d === days ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-            >
+            <button key={d} type="button" onClick={() => setDays(d)} className={`rounded-full px-3 py-1.5 transition-colors ${d === days ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
               {d} dias
             </button>
           ))}
@@ -99,54 +101,49 @@ export function PlusStats({ plates }: { plates: P[] }) {
             <Kpi icon={<QrCode className="size-4" />} label="Leituras de QR" value={qr} tone="bg-muted text-foreground" />
           </div>
 
-          <div className="mt-4 rounded-2xl border border-border bg-card p-4 card-soft">
-            <p className="text-sm font-semibold">Leituras por dia</p>
-            {byDay.length === 0 ? (
-              <p className="mt-6 pb-4 text-center text-sm text-muted-foreground">Nenhuma leitura neste período.</p>
-            ) : (
-              <>
-                <div className="mt-3 flex h-36 items-end gap-[3px]" role="img" aria-label={`Gráfico de leituras por dia, total ${total}`}>
-                  {byDay.map(([d, n]) => (
-                    <div key={d} className="group relative flex h-full min-w-[3px] flex-1 items-end" title={`${fmt(d)}: ${n}`}>
-                      <div className="w-full rounded-t bg-primary transition-colors group-hover:bg-foreground" style={{ height: `${Math.max(4, (n / max) * 100)}%` }} />
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                  <span>{fmt(byDay[0]![0])}</span>
-                  <span>{fmt(byDay[byDay.length - 1]![0])}</span>
-                </div>
-              </>
-            )}
-            <p className="mt-2 text-[11px] text-muted-foreground">Só pessoas, sem robôs. Números agregados por dia.</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-[1.6fr_1fr]">
+            <div className="rounded-2xl border border-border bg-card p-4 card-soft">
+              <p className="text-sm font-semibold">Leituras por dia</p>
+              <div className="mt-3">
+                <AreaChart values={series} labels={[fmt(firstDay), fmt(lastDay)]} />
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">Só pessoas, sem robôs. Números agregados por dia.</p>
+            </div>
+            <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-4 card-soft">
+              <p className="self-start text-sm font-semibold">De onde vêm</p>
+              <div className="mt-2">
+                <Donut
+                  parts={[
+                    { value: nfc, color: "var(--secondary)", label: "NFC" },
+                    { value: qr, color: "var(--primary)", label: "QR" },
+                    { value: other, color: "#CBD5E1", label: "Sem origem" },
+                  ]}
+                />
+              </div>
+              <ul className="mt-2 w-full space-y-1 text-xs">
+                <li className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-secondary" />NFC <b className="ml-auto">{nfc}</b></li>
+                <li className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-primary" />QR <b className="ml-auto">{qr}</b></li>
+                <li className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-slate-300" />Placas antigas <b className="ml-auto">{other}</b></li>
+              </ul>
+            </div>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card card-soft">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/60 text-left text-xs text-muted-foreground">
-                  <th className="px-4 py-2.5 font-semibold">Código</th>
-                  <th className="px-2 font-semibold">NFC</th>
-                  <th className="px-2 font-semibold">QR</th>
-                  <th className="px-4 text-right font-semibold">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {byCode.map(({ p, c }) => (
-                  <tr key={p.id} className="border-t border-border">
-                    <td className="px-4 py-2.5">
-                      <span className="font-mono text-xs font-bold">{p.short_code}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">{p.business_name ?? ""}</span>
-                    </td>
-                    <td className="px-2">{c.nfc}</td>
-                    <td className="px-2">{c.qr}</td>
-                    <td className="px-4 text-right font-bold">{c.total}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-4 rounded-2xl border border-border bg-card p-4 card-soft">
+            <p className="flex items-center gap-2 text-sm font-semibold"><Trophy className="size-4 text-primary" /> Códigos mais lidos</p>
+            <ul className="mt-3 space-y-3">
+              {byCode.slice(0, 8).map(({ p, c }, i) => (
+                <li key={p.id}>
+                  <div className="flex items-baseline justify-between gap-2 text-sm">
+                    <span className="min-w-0 truncate"><span className="mr-2 text-xs text-muted-foreground">{i + 1}º</span><b>{p.business_name || p.short_code}</b> <span className="font-mono text-[11px] text-muted-foreground">{p.short_code}</span></span>
+                    <span className="font-display font-black">{c.total}</span>
+                  </div>
+                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(c.total ? 4 : 0, (c.total / topMax) * 100)}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">Placas antigas não separam NFC de QR: entram só no total.</p>
         </>
       )}
     </div>
