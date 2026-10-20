@@ -642,7 +642,7 @@ function Lotes() {
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+                  <div className="flex flex-wrap gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
                     <button
                       type="button"
                       onClick={() => {
@@ -957,7 +957,7 @@ function Lotes() {
           </p>
 
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+            <div className="flex gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
               {(
                 [
                   ["all", `Todos (${batches.length})`],

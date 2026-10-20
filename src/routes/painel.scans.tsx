@@ -121,7 +121,7 @@ function Scans() {
         </p>
       )}
 
-      <div className="mt-2 flex flex-wrap gap-1 rounded-full bg-secondary p-1 text-xs font-semibold w-fit">
+      <div className="mt-2 flex flex-wrap gap-1 rounded-full bg-muted p-1 text-xs font-semibold w-fit">
         {(
           [
             ["all", `Todos (${loteCounts.all})`],

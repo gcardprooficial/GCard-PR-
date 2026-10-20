@@ -497,7 +497,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
               </select>
             </div>
 
-            <div className="mt-3 flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+            <div className="mt-3 flex gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
               {(
                 [
                   ["all", `Todos (${counts.total})`],

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { QrCode, Radio, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { untyped } from "@/lib/db-untyped";
 
@@ -7,7 +8,17 @@ type P = { id: string; short_code: string; business_name: string | null };
 
 const PERIODS = [7, 30, 90] as const;
 
-/** Plus: toques NFC e leituras de QR por dia, com período e total por código. Só números agregados (nada de pessoa). */
+function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: number; tone: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 card-soft">
+      <span className={`inline-flex size-9 items-center justify-center rounded-xl ${tone}`}>{icon}</span>
+      <p className="mt-3 font-display text-3xl font-black leading-none">{value}</p>
+      <p className="mt-1 text-xs font-semibold text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+/** Plus: toques NFC e leituras de QR por dia, com período, gráfico e total por código. Só números agregados (nada de pessoa). */
 export function PlusStats({ plates }: { plates: P[] }) {
   const [days, setDays] = useState<(typeof PERIODS)[number]>(30);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -43,78 +54,101 @@ export function PlusStats({ plates }: { plates: P[] }) {
       c.total += Number(r.leituras);
       m.set(r.plate_id, c);
     }
-    return plates
-      .map((p) => ({ p, c: m.get(p.id) ?? { nfc: 0, qr: 0, total: 0 } }))
-      .sort((a, b) => b.c.total - a.c.total);
+    return plates.map((p) => ({ p, c: m.get(p.id) ?? { nfc: 0, qr: 0, total: 0 } })).sort((a, b) => b.c.total - a.c.total);
   }, [rows, plates]);
-  const max = Math.max(1, ...byDay.map(([, n]) => n));
   const total = byDay.reduce((s, [, n]) => s + n, 0);
+  const nfc = byCode.reduce((s, x) => s + x.c.nfc, 0);
+  const qr = byCode.reduce((s, x) => s + x.c.qr, 0);
+  const max = Math.max(1, ...byDay.map(([, n]) => n));
+  const fmt = (d: string) => d.split("-").reverse().slice(0, 2).join("/");
 
-  if (plates.length === 0) return null;
+  if (plates.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+        Ative um código para ver as estatísticas aqui.
+      </p>
+    );
+  }
   return (
-    <section className="mb-6 rounded-2xl border border-border bg-card p-5 card-soft">
+    <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-bold">
-          Estatísticas <span className="ml-1 rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground">Plus</span>
-        </h2>
-        <div className="flex gap-1 text-xs">
+        <h3 className="font-display text-lg font-bold">Visão geral</h3>
+        <div className="flex gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
           {PERIODS.map((d) => (
             <button
               key={d}
               type="button"
               onClick={() => setDays(d)}
-              className={`rounded-lg border px-2.5 py-1 ${d === days ? "bg-primary font-semibold text-primary-foreground" : "hover:bg-muted"}`}
+              className={`rounded-full px-3 py-1.5 transition-colors ${d === days ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
             >
               {d} dias
             </button>
           ))}
         </div>
       </div>
+
       {error ? (
         <p className="mt-3 text-sm text-muted-foreground">Não consegui carregar agora.</p>
       ) : rows === null ? (
         <p className="mt-3 text-sm text-muted-foreground">Carregando…</p>
       ) : (
         <>
-          <p className="mt-3 text-sm">
-            <strong>{total}</strong> leituras nos últimos {days} dias (só pessoas, sem robôs). Números agregados por dia.
-          </p>
-          {byDay.length > 0 && (
-            <ul className="mt-2 max-h-48 space-y-0.5 overflow-auto text-xs">
-              {byDay.map(([d, n]) => (
-                <li key={d} className="flex items-center gap-2">
-                  <span className="w-20 shrink-0 text-muted-foreground">{d.split("-").reverse().slice(0, 2).join("/")}</span>
-                  <span className="h-2 rounded bg-primary" style={{ width: `${(n / max) * 100}%`, minWidth: 2 }} />
-                  <span>{n}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <table className="mt-3 w-full text-xs">
-            <thead>
-              <tr className="text-left text-muted-foreground">
-                <th className="py-1">Código</th>
-                <th>NFC</th>
-                <th>QR</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {byCode.map(({ p, c }) => (
-                <tr key={p.id} className="border-t border-border">
-                  <td className="py-1">
-                    <span className="font-mono">{p.short_code}</span> <span className="text-muted-foreground">{p.business_name ?? ""}</span>
-                  </td>
-                  <td>{c.nfc}</td>
-                  <td>{c.qr}</td>
-                  <td className="font-semibold">{c.total}</td>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <Kpi icon={<Eye className="size-4" />} label="Leituras" value={total} tone="bg-primary/20 text-foreground" />
+            <Kpi icon={<Radio className="size-4" />} label="Toques NFC" value={nfc} tone="bg-secondary text-secondary-foreground" />
+            <Kpi icon={<QrCode className="size-4" />} label="Leituras de QR" value={qr} tone="bg-muted text-foreground" />
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-border bg-card p-4 card-soft">
+            <p className="text-sm font-semibold">Leituras por dia</p>
+            {byDay.length === 0 ? (
+              <p className="mt-6 pb-4 text-center text-sm text-muted-foreground">Nenhuma leitura neste período.</p>
+            ) : (
+              <>
+                <div className="mt-3 flex h-36 items-end gap-[3px]" role="img" aria-label={`Gráfico de leituras por dia, total ${total}`}>
+                  {byDay.map(([d, n]) => (
+                    <div key={d} className="group relative flex h-full min-w-[3px] flex-1 items-end" title={`${fmt(d)}: ${n}`}>
+                      <div className="w-full rounded-t bg-primary transition-colors group-hover:bg-foreground" style={{ height: `${Math.max(4, (n / max) * 100)}%` }} />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                  <span>{fmt(byDay[0]![0])}</span>
+                  <span>{fmt(byDay[byDay.length - 1]![0])}</span>
+                </div>
+              </>
+            )}
+            <p className="mt-2 text-[11px] text-muted-foreground">Só pessoas, sem robôs. Números agregados por dia.</p>
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card card-soft">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/60 text-left text-xs text-muted-foreground">
+                  <th className="px-4 py-2.5 font-semibold">Código</th>
+                  <th className="px-2 font-semibold">NFC</th>
+                  <th className="px-2 font-semibold">QR</th>
+                  <th className="px-4 text-right font-semibold">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-2 text-xs text-muted-foreground">Placas antigas não separam NFC de QR: entram só no total.</p>
+              </thead>
+              <tbody>
+                {byCode.map(({ p, c }) => (
+                  <tr key={p.id} className="border-t border-border">
+                    <td className="px-4 py-2.5">
+                      <span className="font-mono text-xs font-bold">{p.short_code}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">{p.business_name ?? ""}</span>
+                    </td>
+                    <td className="px-2">{c.nfc}</td>
+                    <td className="px-2">{c.qr}</td>
+                    <td className="px-4 text-right font-bold">{c.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">Placas antigas não separam NFC de QR: entram só no total.</p>
         </>
       )}
-    </section>
+    </div>
   );
 }

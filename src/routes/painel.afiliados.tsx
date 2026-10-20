@@ -300,7 +300,7 @@ function Afiliados() {
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                       a.is_active
                         ? "bg-green-100 text-green-800"
-                        : "bg-secondary text-muted-foreground"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {a.is_active ? "Ativo" : "Pausado"}
@@ -355,7 +355,7 @@ function Afiliados() {
 
 function Mini({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className={`rounded-xl px-2 py-2 ${highlight ? "bg-amber-100" : "bg-secondary"}`}>
+    <div className={`rounded-xl px-2 py-2 ${highlight ? "bg-amber-100" : "bg-muted"}`}>
       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
