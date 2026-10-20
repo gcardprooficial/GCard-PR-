@@ -14,7 +14,8 @@ import { AtivarTabs, ABAS, type Aba } from "@/components/ativar/AtivarTabs";
 import { PlusHub } from "@/components/ativar/PlusHub";
 import { ToqyStrip } from "@/components/ativar/ToqyStrip";
 import { AjudaTab, ContaTab } from "@/components/ativar/AjudaConta";
-import { BookOpen, Crown, LayoutGrid, Plus, User } from "lucide-react";
+import { BookOpen, Crown, LayoutGrid, Pencil, Plus, Trash2, User } from "lucide-react";
+import { releasePlate, renameMyBatch } from "@/lib/plates.functions";
 import { PlateScanStats } from "@/components/PlateScanStats";
 import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
 import { requestDestinationRelease } from "@/lib/destination.functions";
@@ -355,6 +356,38 @@ function Lote({ email, userId }: { email: string; userId: string }) {
     return map;
   }, [filtered]);
 
+  const runRelease = useServerFn(releasePlate);
+  const runRename = useServerFn(renameMyBatch);
+
+  async function removePlate(plate: Plate) {
+    const ok = window.confirm(
+      `Remover o código ${plate.short_code} da sua conta?\n\n` +
+        "• Se ele veio da GCard, volta limpo para o estoque e pode ir para outra pessoa.\n" +
+        "• Se foi um QR que você criou no Plus, ele é apagado.\n" +
+        "• O link, o nome e as leituras deste código somem. Uma placa já impressa com ele para de funcionar.",
+    );
+    if (!ok) return;
+    try {
+      const r = await runRelease({ data: { plateId: plate.id } });
+      toast.success(r.apagado ? `QR ${plate.short_code} apagado.` : `Código ${plate.short_code} devolvido ao estoque da GCard.`);
+      void load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível remover agora.");
+    }
+  }
+
+  async function renameBatch(b: Batch) {
+    const label = window.prompt("Nome deste grupo de códigos (ex.: Cartões da Barbearia):", b.label ?? "");
+    if (label === null) return;
+    try {
+      await runRename({ data: { batchId: b.id, label } });
+      toast.success("Nome salvo.");
+      void load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível salvar o nome.");
+    }
+  }
+
   if (batches === null) return <Center>Carregando…</Center>;
 
   return (
@@ -493,6 +526,8 @@ function Lote({ email, userId }: { email: string; userId: string }) {
                     forceOpen={isFiltering}
                     onActivate={activate}
                     onDeactivate={deactivate}
+                    onRelease={removePlate}
+                    onRename={renameBatch}
                   />
                 );
               })}
@@ -577,6 +612,8 @@ function BatchSection({
   forceOpen,
   onActivate,
   onDeactivate,
+  onRelease,
+  onRename,
 }: {
   batch: Batch | null;
   number: number;
@@ -584,6 +621,8 @@ function BatchSection({
   forceOpen: boolean;
   onActivate: (p: Plate, name: string, url: string, soldTo: string) => void;
   onDeactivate: (p: Plate) => void;
+  onRelease: (p: Plate) => void;
+  onRename: (b: Batch) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
@@ -598,12 +637,11 @@ function BatchSection({
   const pageSafe = Math.min(page, totalPages);
   const pagePlates = plates.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
 
+  void number;
   const title = batch
-    ? `Lote ${String(number).padStart(2, "0")}`
-    : "Sem lote";
-  const subtitle = batch
-    ? `${batch.products?.name ?? "Cartão de bolso"} · ${batch.quantity} un.${batch.label ? ` · ${batch.label}` : ""}`
+    ? batch.label?.trim() || `Compra de ${new Date(batch.created_at).toLocaleDateString("pt-BR")}`
     : "Cartões avulsos";
+  const subtitle = batch ? `${batch.products?.name ?? "Cartão de bolso"} · ${batch.quantity} un.` : "Cartões avulsos";
 
   return (
     <div className="rounded-2xl bg-card card-soft border border-border overflow-hidden">
@@ -637,8 +675,13 @@ function BatchSection({
 
       {isOpen && (
         <div className="border-t border-border p-4 pt-3 space-y-3">
+          {batch && (
+            <button type="button" onClick={() => onRename(batch)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <Pencil className="size-3.5" /> Dar um nome a este grupo
+            </button>
+          )}
           {pagePlates.map((p) => (
-            <PlateCard key={p.id} plate={p} onActivate={onActivate} onDeactivate={onDeactivate} />
+            <PlateCard key={p.id} plate={p} onActivate={onActivate} onDeactivate={onDeactivate} onRelease={onRelease} />
           ))}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-1 text-xs font-semibold">
@@ -661,10 +704,12 @@ function PlateCard({
   plate,
   onActivate,
   onDeactivate,
+  onRelease,
 }: {
   plate: Plate;
   onActivate: (p: Plate, name: string, url: string, soldTo: string) => void;
   onDeactivate: (p: Plate) => void;
+  onRelease: (p: Plate) => void;
 }) {
   const [name, setName] = useState(plate.business_name ?? "");
   const [url, setUrl] = useState(plate.destination_url ?? "");
@@ -715,11 +760,11 @@ function PlateCard({
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <Label className="text-xs font-semibold">Nome do negócio / Loja</Label>
+          <Label className="text-xs font-semibold">Nome deste código (o que ele é)</Label>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ex: Barbearia Silva"
+            placeholder="Ex: Barbearia Silva, Cardápio, Meu Instagram"
             className="mt-1 h-10 input-soft rounded-xl"
           />
         </div>
@@ -777,6 +822,9 @@ function PlateCard({
             </Button>
           </>
         )}
+        <Button size="sm" variant="ghost" onClick={() => onRelease(plate)} className="ml-auto gap-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive">
+          <Trash2 className="size-3.5" /> Remover
+        </Button>
       </div>
       <PlateQrDownload plateId={plate.id} />
       <PlateScanStats plateId={plate.id} />
