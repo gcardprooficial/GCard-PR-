@@ -52,6 +52,7 @@ import { Route as ParceiroTokenRouteImport } from './routes/parceiro.$token'
 import { Route as ProdutosIndexRouteImport } from './routes/produtos.index'
 import { Route as ProdutosSlugRouteImport } from './routes/produtos.$slug'
 import { Route as RTokenRouteImport } from './routes/r.$token'
+import { Route as RelatorioTokenRouteImport } from './routes/relatorio.$token'
 import { Route as ApiCronDailyRouteImport } from './routes/api/cron/daily'
 import { Route as ApiCronHubOutboxRouteImport } from './routes/api/cron/hub-outbox'
 import { Route as ApiMelhorenvioCallbackRouteImport } from './routes/api/melhorenvio/callback'
@@ -283,6 +284,11 @@ const RTokenRoute = RTokenRouteImport.update({
   path: '/r/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RelatorioTokenRoute = RelatorioTokenRouteImport.update({
+  id: '/relatorio/$token',
+  path: '/relatorio/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCronDailyRoute = ApiCronDailyRouteImport.update({
   id: '/api/cron/daily',
   path: '/api/cron/daily',
@@ -380,6 +386,7 @@ export interface FileRoutesByFullPath {
   '/parceiro/$token': typeof ParceiroTokenRoute
   '/produtos/$slug': typeof ProdutosSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/relatorio/$token': typeof RelatorioTokenRoute
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
   '/produtos/': typeof ProdutosIndexRoute
@@ -434,6 +441,7 @@ export interface FileRoutesByTo {
   '/parceiro/$token': typeof ParceiroTokenRoute
   '/produtos/$slug': typeof ProdutosSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/relatorio/$token': typeof RelatorioTokenRoute
   '/guia': typeof GuiaIndexRoute
   '/painel': typeof PainelIndexRoute
   '/produtos': typeof ProdutosIndexRoute
@@ -491,6 +499,7 @@ export interface FileRoutesById {
   '/parceiro/$token': typeof ParceiroTokenRoute
   '/produtos/$slug': typeof ProdutosSlugRoute
   '/r/$token': typeof RTokenRoute
+  '/relatorio/$token': typeof RelatorioTokenRoute
   '/guia/': typeof GuiaIndexRoute
   '/painel/': typeof PainelIndexRoute
   '/produtos/': typeof ProdutosIndexRoute
@@ -549,6 +558,7 @@ export interface FileRouteTypes {
     | '/parceiro/$token'
     | '/produtos/$slug'
     | '/r/$token'
+    | '/relatorio/$token'
     | '/guia/'
     | '/painel/'
     | '/produtos/'
@@ -603,6 +613,7 @@ export interface FileRouteTypes {
     | '/parceiro/$token'
     | '/produtos/$slug'
     | '/r/$token'
+    | '/relatorio/$token'
     | '/guia'
     | '/painel'
     | '/produtos'
@@ -659,6 +670,7 @@ export interface FileRouteTypes {
     | '/parceiro/$token'
     | '/produtos/$slug'
     | '/r/$token'
+    | '/relatorio/$token'
     | '/guia/'
     | '/painel/'
     | '/produtos/'
@@ -694,6 +706,7 @@ export interface RootRouteChildren {
   ParceiroTokenRoute: typeof ParceiroTokenRoute
   ProdutosSlugRoute: typeof ProdutosSlugRoute
   RTokenRoute: typeof RTokenRoute
+  RelatorioTokenRoute: typeof RelatorioTokenRoute
   ProdutosIndexRoute: typeof ProdutosIndexRoute
   ApiCronDailyRoute: typeof ApiCronDailyRoute
   ApiCronHubOutboxRoute: typeof ApiCronHubOutboxRoute
@@ -1010,6 +1023,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/relatorio/$token': {
+      id: '/relatorio/$token'
+      path: '/relatorio/$token'
+      fullPath: '/relatorio/$token'
+      preLoaderRoute: typeof RelatorioTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cron/daily': {
       id: '/api/cron/daily'
       path: '/api/cron/daily'
@@ -1177,6 +1197,7 @@ const rootRouteChildren: RootRouteChildren = {
   ParceiroTokenRoute: ParceiroTokenRoute,
   ProdutosSlugRoute: ProdutosSlugRoute,
   RTokenRoute: RTokenRoute,
+  RelatorioTokenRoute: RelatorioTokenRoute,
   ProdutosIndexRoute: ProdutosIndexRoute,
   ApiCronDailyRoute: ApiCronDailyRoute,
   ApiCronHubOutboxRoute: ApiCronHubOutboxRoute,
