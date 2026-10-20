@@ -1,22 +1,61 @@
 import { useEffect, useRef, useState } from "react";
 import { ImagePlus, Palette } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { buildQrMatrix, downloadBlob, qrFilename } from "@/lib/qr-export";
 import { CAPTION_MAX, DEFAULT_STYLE, PRESETS, renderStyledQr, styleProblem, type QrStyle } from "@/lib/qr-style";
 
-type Target = { token: string; short_code: string; business_name: string | null };
+type Saved = { fg: string; bg: string; rounded: boolean; caption: string; logo: string | null };
+type Target = { id: string; token: string; short_code: string; business_name: string | null; qr_style?: unknown };
+
+/** Logo reduzido (até 256 px) em PNG: pequeno o bastante para guardar junto do código. */
+function logoToDataUrl(img: CanvasImageSource & { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number }, max = 256): string {
+  const w = img.naturalWidth ?? img.width ?? max;
+  const h = img.naturalHeight ?? img.height ?? max;
+  const k = Math.min(1, max / Math.max(w, h));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * k));
+  c.height = Math.max(1, Math.round(h * k));
+  c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/png");
+}
+
+function readSaved(v: unknown): Saved | null {
+  const s = v as Partial<Saved> | null;
+  if (!s || typeof s !== "object" || typeof s.fg !== "string" || typeof s.bg !== "string") return null;
+  return { fg: s.fg, bg: s.bg, rounded: s.rounded !== false, caption: typeof s.caption === "string" ? s.caption : "", logo: typeof s.logo === "string" ? s.logo : null };
+}
 
 /** Plus: QR com a cara da marca (cor, cantos, logo, frase). Mostra o resultado antes de baixar e recusa o que o celular não leria. */
-export function QrStyleStudio({ target, onClose }: { target: Target | null; onClose: () => void }) {
+export function QrStyleStudio({ target, onClose, onSaved }: { target: Target | null; onClose: () => void; onSaved?: () => void }) {
   const [style, setStyle] = useState<QrStyle>(DEFAULT_STYLE);
   const [logoName, setLogoName] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
   const matrixKey = useRef("");
   const problem = styleProblem(style);
+
+  // Ao abrir um código, carrega o estilo que já foi salvo para ele (ou o padrão).
+  useEffect(() => {
+    if (!target) return;
+    const saved = readSaved(target.qr_style);
+    if (!saved) {
+      setStyle(DEFAULT_STYLE);
+      setLogoName(null);
+      return;
+    }
+    setStyle({ fg: saved.fg, bg: saved.bg, rounded: saved.rounded, caption: saved.caption, logo: null });
+    setLogoName(saved.logo ? "logo salvo" : null);
+    if (saved.logo) {
+      const img = new Image();
+      img.onload = () => setStyle((s) => ({ ...s, logo: img }));
+      img.src = saved.logo;
+    }
+  }, [target?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!target) return;
@@ -49,6 +88,23 @@ export function QrStyleStudio({ target, onClose }: { target: Target | null; onCl
     };
     img.onerror = () => toast.error("Não consegui ler essa imagem.");
     img.src = url;
+  }
+
+  async function save() {
+    if (!target || problem) return;
+    setSaving(true);
+    const payload: Saved = {
+      fg: style.fg,
+      bg: style.bg,
+      rounded: style.rounded,
+      caption: style.caption.trim(),
+      logo: style.logo ? logoToDataUrl(style.logo as HTMLImageElement) : null,
+    };
+    const { error } = await supabase.from("plates").update({ qr_style: payload } as never).eq("id", target.id);
+    setSaving(false);
+    if (error) return void toast.error(error.message);
+    toast.success("Estilo salvo para este QR.");
+    onSaved?.();
   }
 
   async function download() {
@@ -122,9 +178,14 @@ export function QrStyleStudio({ target, onClose }: { target: Target | null; onCl
               <p className="mt-1 text-[11px] text-muted-foreground">O logo ocupa só o centro (até 20%) para o QR continuar legível. A imagem não é enviada para lugar nenhum.</p>
             </div>
             {problem && <p className="rounded-xl bg-destructive/10 p-2 text-xs font-semibold text-destructive">{problem}</p>}
-            <Button onClick={() => void download()} disabled={busy || !!problem} className="w-full rounded-xl font-bold">
-              {busy ? "Gerando…" : "Baixar PNG com a minha marca"}
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button onClick={() => void save()} disabled={saving || !!problem} variant="outline" className="flex-1 rounded-xl font-bold">
+                {saving ? "Salvando…" : "Salvar estilo"}
+              </Button>
+              <Button onClick={() => void download()} disabled={busy || !!problem} className="flex-1 rounded-xl font-bold">
+                {busy ? "Gerando…" : "Baixar PNG"}
+              </Button>
+            </div>
             <p className="text-[11px] text-muted-foreground"><strong>Teste a leitura no celular antes de imprimir.</strong> Tamanho mínimo de 2,5 a 3 cm.</p>
           </div>
         </div>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { checkDestination, type DestinationRule } from "@/lib/destination";
 import { downloadQr } from "@/components/PlusQrCreator";
 
-export type QrPlate = { id: string; token: string; short_code: string; business_name: string | null; destination_url: string | null; scan_count: number; plus_created?: boolean; tag?: string | null };
+export type QrPlate = { id: string; token: string; short_code: string; business_name: string | null; destination_url: string | null; scan_count: number; plus_created?: boolean; tag?: string | null; qr_style?: unknown };
 
 type P = QrPlate;
 
