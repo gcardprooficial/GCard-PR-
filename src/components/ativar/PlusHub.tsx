@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, BarChart3, Bell, Check, ChevronDown, Crown, ExternalLink, Layers, Palette, QrCode, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { QrStyleStudio } from "@/components/ativar/QrStyleStudio";
+import { PlusRules } from "@/components/ativar/PlusRules";
 import { PlusStats } from "@/components/PlusStats";
 import { BulkDestino } from "@/components/BulkDestino";
 import { PlusQrCreator } from "@/components/PlusQrCreator";
@@ -100,6 +101,7 @@ export function PlusHub(props: {
           </div>
         </section>
         <PlusStats plates={[detail]} />
+        <PlusRules plateId={detail.id} defaultUrl={detail.destination_url} rules={rules} allowedUrls={allowedUrls} />
         <QrStyleStudio target={styleTarget} onClose={() => setStyleTarget(null)} />
       </div>
     );
