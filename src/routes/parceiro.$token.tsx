@@ -18,7 +18,7 @@ type Dashboard = Extract<Awaited<ReturnType<typeof getAffiliateDashboard>>, { ok
 const STATUS: Record<string, { label: string; cls: string }> = {
   pendente: { label: "A receber", cls: "bg-amber-100 text-amber-900" },
   paga: { label: "Pago", cls: "bg-green-100 text-green-800" },
-  cancelada: { label: "Cancelada", cls: "bg-secondary text-muted-foreground" },
+  cancelada: { label: "Cancelada", cls: "bg-muted text-muted-foreground" },
 };
 
 function Parceiro() {
