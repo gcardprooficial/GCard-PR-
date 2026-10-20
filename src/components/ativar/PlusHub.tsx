@@ -1,5 +1,9 @@
-import { useState } from "react";
-import { ArrowLeft, BarChart3, Bell, Check, ChevronDown, Crown, ExternalLink, Layers, Palette, QrCode, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Folder } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, BarChart3, Bell, CalendarClock, Check, ChevronDown, Crown, ExternalLink, Layers, Link2, Palette, QrCode, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { QrStyleStudio } from "@/components/ativar/QrStyleStudio";
 import { PlusRules } from "@/components/ativar/PlusRules";
 import { PlusReportLinks } from "@/components/ativar/PlusReportLinks";
@@ -16,10 +20,13 @@ type P = QrPlate & { status: string };
 
 const BENEFITS = [
   { icon: RefreshCw, title: "QR dinâmico: troque sem reimprimir", text: "Imprima o QR uma vez. Mude o link quando quiser e o mesmo QR já leva para o novo destino." },
-  { icon: QrCode, title: "QR Codes ilimitados", text: "Crie quantos precisar para cardápio, Instagram, WhatsApp, catálogo, avaliação…" },
-  { icon: BarChart3, title: "Painel com estatísticas", text: "Leituras por dia, origem NFC ou QR e os códigos mais lidos, com gráficos." },
-  { icon: Layers, title: "Tudo organizado num só lugar", text: "Veja todas as suas placas e troque o destino de várias de uma vez." },
-  { icon: Bell, title: "Relatório e alerta por e-mail", text: "Resumo todo mês e aviso se algum destino sair do ar." },
+  { icon: CalendarClock, title: "Destino por horário e data", text: "No almoço abre o cardápio, à noite o WhatsApp. A promoção acaba sozinha no domingo." },
+  { icon: Palette, title: "QR com a sua marca", text: "Cores, cantos arredondados, logo no centro e uma frase embaixo, sempre legível no celular." },
+  { icon: BarChart3, title: "Painel e estatísticas por código", text: "Leituras por dia, NFC ou QR, ranking e o painel de cada código separado." },
+  { icon: Link2, title: "Relatório para o seu cliente", text: "Link privado ou PDF com as leituras do código dele. Só números, nada de dados pessoais." },
+  { icon: Layers, title: "Pastas e troca em lote", text: "Organize dezenas de QR por cliente e mude o destino de vários de uma vez." },
+  { icon: QrCode, title: "QR Codes ilimitados", text: "Crie quantos precisar para cardápio, Instagram, WhatsApp, catálogo, avaliação." },
+  { icon: Bell, title: "Relatório mensal e alerta", text: "Resumo no seu e-mail todo mês e aviso se algum destino sair do ar." },
   { icon: ShieldCheck, title: "Sua placa nunca para", text: "Cancelou? Nada deixa de funcionar. Os destinos ficam como estavam." },
 ];
 
@@ -76,6 +83,18 @@ export function PlusHub(props: {
   const fim = sub?.current_period_end ? new Date(sub.current_period_end).toLocaleDateString("pt-BR") : null;
   const ativadas = plates.filter((p) => p.status === "ativada");
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [tagDraft, setTagDraft] = useState<string | null>(null);
+  const tags = useMemo(() => [...new Set(plates.map((p) => p.tag).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, "pt-BR")), [plates]);
+  const inTag = (p: P) => tagFilter === null || p.tag === tagFilter;
+  async function saveTag(id: string) {
+    const v = (tagDraft ?? "").trim().slice(0, 40);
+    const { error } = await supabase.from("plates").update({ tag: v || null } as never).eq("id", id);
+    if (error) return void toast.error(error.message);
+    toast.success(v ? "Pasta salva." : "Pasta removida.");
+    setTagDraft(null);
+    onDone();
+  }
   const [styleTarget, setStyleTarget] = useState<QrPlate | null>(null);
   const detail = active ? plates.find((p) => p.id === detailId) ?? null : null;
 
@@ -95,6 +114,21 @@ export function PlusHub(props: {
               <ExternalLink className="size-3.5 shrink-0" /> {detail.destination_url}
             </a>
           )}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Folder className="size-4 text-white/60" />
+            <Input
+              list="plus-tags"
+              value={tagDraft ?? detail.tag ?? ""}
+              onChange={(e) => setTagDraft(e.target.value)}
+              maxLength={40}
+              placeholder="Pasta / etiqueta"
+              className="h-9 w-56 rounded-lg border-white/20 bg-white/10 text-sm text-white placeholder:text-white/40"
+            />
+            <datalist id="plus-tags">{tags.map((t) => <option key={t} value={t} />)}</datalist>
+            {tagDraft !== null && tagDraft !== (detail.tag ?? "") && (
+              <button type="button" onClick={() => void saveTag(detail.id)} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Salvar pasta</button>
+            )}
+          </div>
           <div className="mt-4">
             <button type="button" onClick={() => setStyleTarget(detail)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">
               <Palette className="size-4" /> QR com a minha marca
@@ -133,7 +167,7 @@ export function PlusHub(props: {
                   QR Code que <span className="text-primary">você troca</span> sem reimprimir
                 </h2>
                 <p className="mt-3 max-w-md text-sm text-white/70">
-                  Crie QR Codes ilimitados, acompanhe as leituras num painel e organize todas as suas placas. Sem promessa de resultado: ferramentas para você ter controle.
+                  Crie QR Codes ilimitados com a sua marca, programe o destino por horário e mande relatórios para os seus clientes. Sem promessa de resultado: ferramentas para você ter controle.
                 </p>
                 <div className="mt-5 flex flex-wrap items-center gap-3">
                   <a href={PLUS_CHECKOUT.anual} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 text-sm font-black text-primary-foreground shadow-lg shadow-primary/30 transition-transform hover:-translate-y-0.5">
@@ -192,7 +226,7 @@ export function PlusHub(props: {
                 <p className="mt-2 font-display text-4xl font-black">{p === "mensal" ? "R$ 19,90" : "R$ 15,90"}<span className="text-base font-semibold text-muted-foreground">/mês</span></p>
                 <p className="mt-1 text-xs text-muted-foreground">{p === "mensal" ? "Cobrado todo mês" : "R$ 190,80 cobrados uma vez por ano"}</p>
                 <ul className="mt-4 space-y-1.5 text-sm">
-                  {["QR Codes ilimitados e dinâmicos", "Painel e estatísticas", "Relatório e alerta por e-mail"].map((x) => (
+                  {["QR dinâmico ilimitado, com a sua marca", "Destino por horário e data", "Estatísticas e relatório para o cliente"].map((x) => (
                     <li key={x} className="flex items-center gap-2"><Check className="size-4 text-primary" />{x}</li>
                   ))}
                 </ul>
@@ -228,8 +262,18 @@ export function PlusHub(props: {
 
       {active && (
         <>
-          <PlusStats plates={ativadas} onOpen={setDetailId} />
-          <PlusQrList plates={plates} rules={rules} allowedUrls={allowedUrls} active={active} onRemove={onRemove} onDone={onDone} onOpen={setDetailId} onStyle={setStyleTarget} />
+          {tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Folder className="size-4 text-muted-foreground" />
+              {[null, ...tags].map((t) => (
+                <button key={t ?? "todas"} type="button" onClick={() => setTagFilter(t)} className={`rounded-full border px-3 py-1 text-xs font-semibold ${tagFilter === t ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
+                  {t ?? "Todas as pastas"}
+                </button>
+              ))}
+            </div>
+          )}
+          <PlusStats plates={ativadas.filter(inTag)} onOpen={setDetailId} />
+          <PlusQrList plates={plates.filter(inTag)} rules={rules} allowedUrls={allowedUrls} active={active} onRemove={onRemove} onDone={onDone} onOpen={setDetailId} onStyle={setStyleTarget} />
         </>
       )}
 
