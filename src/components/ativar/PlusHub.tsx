@@ -1,4 +1,6 @@
-import { BarChart3, Bell, Check, ChevronDown, Crown, Layers, QrCode, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, BarChart3, Bell, Check, ChevronDown, Crown, ExternalLink, Layers, Palette, QrCode, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { QrStyleStudio } from "@/components/ativar/QrStyleStudio";
 import { PlusStats } from "@/components/PlusStats";
 import { BulkDestino } from "@/components/BulkDestino";
 import { PlusQrCreator } from "@/components/PlusQrCreator";
@@ -71,6 +73,37 @@ export function PlusHub(props: {
   const { plates, rules, allowedUrls, active, sub, onDone, onRemove } = props;
   const fim = sub?.current_period_end ? new Date(sub.current_period_end).toLocaleDateString("pt-BR") : null;
   const ativadas = plates.filter((p) => p.status === "ativada");
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [styleTarget, setStyleTarget] = useState<QrPlate | null>(null);
+  const detail = active ? plates.find((p) => p.id === detailId) ?? null : null;
+
+  // Visão de um código só: o mesmo painel, filtrado.
+  if (detail) {
+    return (
+      <div className="space-y-6">
+        <button type="button" onClick={() => setDetailId(null)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-4" /> Voltar para o geral
+        </button>
+        <section className="rounded-3xl bg-secondary p-6 text-secondary-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-black text-primary-foreground"><Crown className="size-3.5" /> GCARD PLUS</span>
+          <h2 className="mt-3 font-display text-2xl font-bold">{detail.business_name || detail.short_code}</h2>
+          <p className="mt-1 font-mono text-xs text-white/60">{detail.short_code}</p>
+          {detail.destination_url && (
+            <a href={detail.destination_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex max-w-full items-center gap-1.5 truncate text-sm text-white/80 underline">
+              <ExternalLink className="size-3.5 shrink-0" /> {detail.destination_url}
+            </a>
+          )}
+          <div className="mt-4">
+            <button type="button" onClick={() => setStyleTarget(detail)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">
+              <Palette className="size-4" /> QR com a minha marca
+            </button>
+          </div>
+        </section>
+        <PlusStats plates={[detail]} />
+        <QrStyleStudio target={styleTarget} onClose={() => setStyleTarget(null)} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -191,8 +224,8 @@ export function PlusHub(props: {
 
       {active && (
         <>
-          <PlusStats plates={ativadas} />
-          <PlusQrList plates={plates} rules={rules} allowedUrls={allowedUrls} active={active} onRemove={onRemove} onDone={onDone} />
+          <PlusStats plates={ativadas} onOpen={setDetailId} />
+          <PlusQrList plates={plates} rules={rules} allowedUrls={allowedUrls} active={active} onRemove={onRemove} onDone={onDone} onOpen={setDetailId} onStyle={setStyleTarget} />
         </>
       )}
 
@@ -200,6 +233,7 @@ export function PlusHub(props: {
       {!active && <PlusQrList plates={plates} rules={rules} allowedUrls={allowedUrls} active={active} onRemove={onRemove} onDone={onDone} />}
 
       {active && <BulkDestino plates={plates} rules={rules} allowedUrls={allowedUrls} onDone={onDone} />}
+      <QrStyleStudio target={styleTarget} onClose={() => setStyleTarget(null)} />
     </div>
   );
 }

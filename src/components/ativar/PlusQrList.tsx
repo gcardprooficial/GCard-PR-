@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, QrCode, Save, Trash2 } from "lucide-react";
+import { BarChart3, Download, Palette, QrCode, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,9 @@ export type QrPlate = { id: string; token: string; short_code: string; business_
 
 type P = QrPlate;
 
-function Row({ p, rules, allowedUrls, active, onRemove, onDone }: { p: P; rules: DestinationRule[]; allowedUrls: string[]; active: boolean; onRemove: (p: P) => void; onDone: () => void }) {
+type Hooks = { onOpen?: ((id: string) => void) | undefined; onStyle?: ((p: QrPlate) => void) | undefined };
+
+function Row({ p, rules, allowedUrls, active, onRemove, onDone, onOpen, onStyle }: { p: P; rules: DestinationRule[]; allowedUrls: string[]; active: boolean; onRemove: (p: P) => void; onDone: () => void } & Hooks) {
   const [url, setUrl] = useState(p.destination_url ?? "");
   const [busy, setBusy] = useState(false);
   const changed = url.trim() !== (p.destination_url ?? "");
@@ -38,6 +40,8 @@ function Row({ p, rules, allowedUrls, active, onRemove, onDone }: { p: P; rules:
           </div>
         </div>
         <div className="flex shrink-0 gap-1">
+          {onOpen && <Button size="icon" variant="outline" className="size-9 rounded-xl" aria-label="Estatísticas deste QR" title="Estatísticas deste QR" onClick={() => onOpen(p.id)}><BarChart3 className="size-4" /></Button>}
+          {onStyle && <Button size="icon" variant="outline" className="size-9 rounded-xl" aria-label="QR com a minha marca" title="QR com a minha marca" onClick={() => onStyle(p)}><Palette className="size-4" /></Button>}
           <Button size="icon" variant="outline" className="size-9 rounded-xl" aria-label="Baixar PNG" title="Baixar PNG" onClick={() => void downloadQr(p, "png")}><Download className="size-4" /></Button>
           <Button size="icon" variant="ghost" className="size-9 rounded-xl text-destructive hover:bg-destructive/10" aria-label="Apagar QR" title="Apagar QR" onClick={() => onRemove(p)}><Trash2 className="size-4" /></Button>
         </div>
@@ -52,7 +56,7 @@ function Row({ p, rules, allowedUrls, active, onRemove, onDone }: { p: P; rules:
 }
 
 /** Central dos QR Codes dinâmicos: troca de destino sem reimprimir, download e apagar. */
-export function PlusQrList({ plates, rules, allowedUrls, active, onRemove, onDone }: { plates: P[]; rules: DestinationRule[]; allowedUrls: string[]; active: boolean; onRemove: (p: P) => void; onDone: () => void }) {
+export function PlusQrList({ plates, rules, allowedUrls, active, onRemove, onDone, onOpen, onStyle }: { plates: P[]; rules: DestinationRule[]; allowedUrls: string[]; active: boolean; onRemove: (p: P) => void; onDone: () => void } & Hooks) {
   const mine = plates.filter((p) => p.plus_created);
   if (mine.length === 0) return null;
   return (
@@ -61,7 +65,7 @@ export function PlusQrList({ plates, rules, allowedUrls, active, onRemove, onDon
       <p className="mt-0.5 text-sm text-muted-foreground">Imprima uma vez. Troque o destino quando quiser, sem reimprimir.</p>
       <ul className="mt-3 space-y-3">
         {mine.map((p) => (
-          <Row key={p.id} p={p} rules={rules} allowedUrls={allowedUrls} active={active} onRemove={onRemove} onDone={onDone} />
+          <Row key={p.id} p={p} rules={rules} allowedUrls={allowedUrls} active={active} onRemove={onRemove} onDone={onDone} onOpen={active ? onOpen : undefined} onStyle={active ? onStyle : undefined} />
         ))}
       </ul>
     </section>

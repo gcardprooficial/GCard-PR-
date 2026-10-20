@@ -20,7 +20,7 @@ function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: strin
 }
 
 /** Plus: leituras por dia (gráfico), origem (rosca) e ranking de códigos, com período. Só números agregados (nada de pessoa). */
-export function PlusStats({ plates }: { plates: P[] }) {
+export function PlusStats({ plates, onOpen }: { plates: P[]; onOpen?: (id: string) => void }) {
   const [days, setDays] = useState<(typeof PERIODS)[number]>(30);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState(false);
@@ -128,13 +128,14 @@ export function PlusStats({ plates }: { plates: P[] }) {
             </div>
           </div>
 
+          {plates.length > 1 && (
           <div className="mt-4 rounded-2xl border border-border bg-card p-4 card-soft">
             <p className="flex items-center gap-2 text-sm font-semibold"><Trophy className="size-4 text-primary" /> Códigos mais lidos</p>
             <ul className="mt-3 space-y-3">
               {byCode.slice(0, 8).map(({ p, c }, i) => (
                 <li key={p.id}>
                   <div className="flex items-baseline justify-between gap-2 text-sm">
-                    <span className="min-w-0 truncate"><span className="mr-2 text-xs text-muted-foreground">{i + 1}º</span><b>{p.business_name || p.short_code}</b> <span className="font-mono text-[11px] text-muted-foreground">{p.short_code}</span></span>
+                    <button type="button" disabled={!onOpen} onClick={() => onOpen?.(p.id)} className="min-w-0 truncate text-left enabled:hover:underline" title={onOpen ? "Ver só este código" : undefined}><span className="mr-2 text-xs text-muted-foreground">{i + 1}º</span><b>{p.business_name || p.short_code}</b> <span className="font-mono text-[11px] text-muted-foreground">{p.short_code}</span></button>
                     <span className="font-display font-black">{c.total}</span>
                   </div>
                   <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
@@ -144,6 +145,7 @@ export function PlusStats({ plates }: { plates: P[] }) {
               ))}
             </ul>
           </div>
+          )}
         </>
       )}
     </div>
