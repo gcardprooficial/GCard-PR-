@@ -136,7 +136,7 @@ function Overview() {
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${isLive ? "bg-green-100 text-green-800" : "bg-secondary text-muted-foreground"}`}
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${isLive ? "bg-green-100 text-green-800" : "bg-muted text-muted-foreground"}`}
           >
             <span
               className={`size-2 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-slate-400"}`}
@@ -198,7 +198,7 @@ function Overview() {
                   className="grid grid-cols-[110px_1fr_38px] items-center gap-3 text-sm"
                 >
                   <span className="text-muted-foreground">{label}</span>
-                  <div className="h-3 overflow-hidden rounded-full bg-secondary">
+                  <div className="h-3 overflow-hidden rounded-full bg-muted">
                     <div
                       className={`h-full rounded-full ${color}`}
                       style={{ width: `${Math.max((value / max) * 100, value ? 8 : 0)}%` }}
@@ -283,7 +283,7 @@ function Overview() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-semibold">{money(order.total_cents)}</span>
-                <span className="rounded-full bg-secondary px-2.5 py-1 text-xs">
+                <span className="rounded-full bg-muted px-2.5 py-1 text-xs">
                   {statusLabels[order.fulfillment_status] ?? order.fulfillment_status}
                 </span>
               </div>

@@ -382,7 +382,7 @@ function Financeiro() {
             <option value="valor_asc">Valor (menor primeiro)</option>
           </select>
         </div>
-        <div className="flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+        <div className="flex gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
           {([["todos", "Todos"], ["entrada", "Entradas"], ["saida", "Saídas"]] as const).map(([k, label]) => (
             <button
               key={k}

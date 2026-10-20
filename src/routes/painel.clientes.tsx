@@ -195,7 +195,7 @@ function Customers() {
                 key={key}
                 type="button"
                 onClick={() => setSegment(key)}
-                className={`rounded-full px-3 py-2 text-xs font-semibold ${segment === key ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}
+                className={`rounded-full px-3 py-2 text-xs font-semibold ${segment === key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
               >
                 {label}
               </button>
@@ -216,7 +216,7 @@ function Customers() {
             </thead>
             <tbody className="divide-y divide-border">
               {visible.map((contact) => (
-                <tr key={contact.email} className="hover:bg-secondary/40">
+                <tr key={contact.email} className="hover:bg-muted/60">
                   <td className="px-3 py-4">
                     <p className="font-semibold">{contact.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -239,7 +239,7 @@ function Customers() {
                         Consentido
                       </span>
                     ) : (
-                      <span className="rounded-full bg-secondary px-2 py-1 text-xs text-muted-foreground">
+                      <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
                         Transacional
                       </span>
                     )}

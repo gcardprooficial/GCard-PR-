@@ -9,12 +9,11 @@ import { Label } from "@/components/ui/label";
 import { ReviewLinkPicker } from "@/components/ReviewLinkPicker";
 import { AuthForm } from "@/components/AuthForm";
 import { PlateQrDownload } from "@/components/PlateQrDownload";
-import { AvisosPorEmail } from "@/components/AvisosPorEmail";
-import { PlusSection } from "@/components/PlusSection";
-import { BulkDestino } from "@/components/BulkDestino";
-import { PlusStats } from "@/components/PlusStats";
-import { PlusQrCreator } from "@/components/PlusQrCreator";
 import { usePlus } from "@/lib/use-plus";
+import { AtivarTabs, ABAS, type Aba } from "@/components/ativar/AtivarTabs";
+import { PlusHub } from "@/components/ativar/PlusHub";
+import { AjudaTab, ContaTab } from "@/components/ativar/AjudaConta";
+import { BookOpen, Crown, LayoutGrid, Plus, User } from "lucide-react";
 import { PlateScanStats } from "@/components/PlateScanStats";
 import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
 import { requestDestinationRelease } from "@/lib/destination.functions";
@@ -32,6 +31,7 @@ export const Route = createFileRoute("/ativar")({
       { name: "robots", content: "noindex" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { aba?: Aba } => (ABAS.includes(s["aba"] as Aba) ? { aba: s["aba"] as Aba } : {}),
   component: Ativar,
 });
 
@@ -144,6 +144,14 @@ function Center({ children }: { children: ReactNode }) {
 
 function Lote({ email, userId }: { email: string; userId: string }) {
   const plus = usePlus();
+  const aba: Aba = Route.useSearch().aba ?? "codigos";
+  const navigate = Route.useNavigate();
+  const goAba = (a: Aba) => {
+    void navigate({ search: { aba: a } });
+    window.scrollTo({ top: 0 });
+  };
+  // Aba do Plus aparece quando a venda está liberada (ou para a equipe, que enxerga mesmo com a flag desligada).
+  const showPlus = plus.enabled;
   const [batches, setBatches] = useState<Batch[] | null>(null);
   const [plates, setPlates] = useState<Plate[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -363,19 +371,17 @@ function Lote({ email, userId }: { email: string; userId: string }) {
             </Button>
           </div>
         </div>
-        <div className="mx-auto max-w-4xl px-5 pb-6 pt-2">
-          <p className="text-sm text-white/60">Olá 👋</p>
-          <h1 className="font-display text-2xl leading-tight sm:text-3xl">Meus códigos</h1>
-          <a
-            href="#resgatar"
-            className="mt-4 inline-flex h-12 items-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
-          >
-            + Ativar / resgatar lote
-          </a>
-        </div>
       </header>
+      <AtivarTabs aba={showPlus || aba !== "plus" ? aba : "codigos"} onChange={goAba} showPlus={showPlus} />
 
       <div className="mx-auto max-w-4xl px-5 py-8">
+        {aba === "plus" && showPlus && (
+          <PlusHub plates={plates} rules={rules} allowedUrls={allowedUrls} active={plus.active} sub={plus.sub} onDone={() => void load()} />
+        )}
+        {aba === "ajuda" && <AjudaTab />}
+        {aba === "conta" && <ContaTab email={email} onSignOut={() => supabase.auth.signOut()} />}
+        {(aba === "codigos" || (aba === "plus" && !showPlus)) && (
+        <>
         <form id="resgatar" onSubmit={redeem} className="scroll-mt-24 rounded-2xl bg-card p-5 card-soft border border-dashed border-primary/40 mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
             <Label className="text-xs font-semibold">Recebeu um lote novo? Resgate pelo código</Label>
@@ -404,11 +410,6 @@ function Lote({ email, userId }: { email: string; userId: string }) {
           </div>
         )}
 
-        <PlusSection />
-        {plus.enabled && <PlusQrCreator rules={rules} allowedUrls={allowedUrls} active={plus.active} onDone={() => void load()} />}
-        {plus.active && <PlusStats plates={plates.filter((p) => p.status === "ativada")} />}
-        {plus.active && <BulkDestino plates={plates} rules={rules} allowedUrls={allowedUrls} onDone={() => void load()} />}
-        <AvisosPorEmail />
 
         {batches.length === 0 ? (
           <div className="rounded-2xl bg-card p-6 card-soft">
@@ -432,46 +433,6 @@ function Lote({ email, userId }: { email: string; userId: string }) {
             </div>
 
             <div className="mt-5" />
-            <div id="ajuda" className="scroll-mt-24 rounded-2xl bg-card p-6 card-soft border border-border">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <span className="badge-pill bg-primary/20 text-foreground font-black text-xs">
-                    Meus códigos
-                  </span>
-                  <h2 className="mt-2 font-display text-xl font-bold">Como gerenciar e ativar seus cartões</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Todos os seus cartões funcionam com <strong>QR Code e chip dinâmico</strong>. O link de avaliação do seu cliente pode ser atualizado por você a qualquer momento.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-border bg-surface p-4 text-xs leading-relaxed">
-                  <p className="font-bold text-foreground text-sm flex items-center gap-2">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-black text-xs">1</span>
-                    Ativar o link da loja
-                  </p>
-                  <p className="mt-2 text-muted-foreground">
-                    Localize o código do cartão na lista abaixo, informe o <strong>Nome do Negócio</strong> e cole o <strong>Link de Avaliação do Google</strong> da loja que você atendeu. Clique em <em>Ativar</em>.
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-border bg-surface p-4 text-xs leading-relaxed">
-                  <p className="font-bold text-foreground text-sm flex items-center gap-2">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-secondary text-secondary-foreground font-black text-xs">2</span>
-                    Gravar aproximação (NFC Tools)
-                  </p>
-                  <p className="mt-2 text-muted-foreground">
-                    Abra o app <strong>NFC Tools</strong> (grátis para Android/iPhone) &gt; <em>Escrever</em> &gt; <em>Adicionar Registro</em> &gt; <em>URL</em>. Cole o link dinâmico do cartão e encoste no chip!
-                  </p>
-                  <p className="mt-2 text-muted-foreground">
-                    Para pegar esse link, use o botão <strong>📋 Copiar URL NFC</strong> do seu código: ele já leva a marca que separa os toques de NFC das leituras de QR.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-
             <div id="placas" className="mt-5 flex scroll-mt-24 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-lg font-bold">Cartões por lote</h2>
@@ -497,7 +458,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
               </select>
             </div>
 
-            <div className="mt-3 flex gap-1 rounded-full bg-secondary p-1 text-xs font-semibold">
+            <div className="mt-3 flex gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
               {(
                 [
                   ["all", `Todos (${counts.total})`],
@@ -537,6 +498,8 @@ function Lote({ email, userId }: { email: string; userId: string }) {
             </div>
           </>
         )}
+        </>
+        )}
       </div>
 
       <Dialog open={release !== null} onOpenChange={(o) => !o && setRelease(null)}>
@@ -558,32 +521,44 @@ function Lote({ email, userId }: { email: string; userId: string }) {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card md:hidden" aria-label="Painel">
         <ul className="mx-auto grid h-16 max-w-md grid-cols-5 items-center text-[11px] font-semibold text-muted-foreground">
-          {[
-            ["#topo", "Início", "⌂"],
-            ["#placas", "Placas", "▦"],
-          ].map(([href, label, icon]) => (
-            <li key={href}>
-              <a href={href} className="flex flex-col items-center gap-0.5">
-                <span className="text-lg leading-none">{icon}</span>
-                {label}
-              </a>
-            </li>
-          ))}
+          {(
+            [
+              ["codigos", "Códigos", LayoutGrid],
+              ["plus", "Plus", Crown],
+            ] as const
+          )
+            .filter(([k]) => k !== "plus" || showPlus)
+            .map(([k, label, Icon]) => (
+              <li key={k}>
+                <button type="button" onClick={() => goAba(k)} className={`mx-auto flex flex-col items-center gap-0.5 ${aba === k ? "text-foreground" : ""}`}>
+                  <Icon className={`size-5 ${k === "plus" ? "text-primary" : ""}`} />
+                  {label}
+                </button>
+              </li>
+            ))}
           <li className="flex justify-center">
-            <a href="#resgatar" aria-label="Ativar lote" className="-mt-6 flex size-14 items-center justify-center rounded-full bg-primary text-2xl font-black text-primary-foreground shadow-lg">
-              +
-            </a>
+            <button
+              type="button"
+              aria-label="Resgatar lote"
+              onClick={() => {
+                goAba("codigos");
+                setTimeout(() => document.getElementById("resgatar")?.scrollIntoView({ behavior: "smooth" }), 80);
+              }}
+              className="-mt-6 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
+            >
+              <Plus className="size-7" />
+            </button>
           </li>
           <li>
-            <a href="#ajuda" className="flex flex-col items-center gap-0.5">
-              <span className="text-lg leading-none">?</span>
+            <button type="button" onClick={() => goAba("ajuda")} className={`mx-auto flex flex-col items-center gap-0.5 ${aba === "ajuda" ? "text-foreground" : ""}`}>
+              <BookOpen className="size-5" />
               Ajuda
-            </a>
+            </button>
           </li>
           <li>
-            <button type="button" onClick={() => supabase.auth.signOut()} className="mx-auto flex flex-col items-center gap-0.5">
-              <span className="text-lg leading-none">⏻</span>
-              Sair
+            <button type="button" onClick={() => goAba("conta")} className={`mx-auto flex flex-col items-center gap-0.5 ${aba === "conta" ? "text-foreground" : ""}`}>
+              <User className="size-5" />
+              Conta
             </button>
           </li>
         </ul>
