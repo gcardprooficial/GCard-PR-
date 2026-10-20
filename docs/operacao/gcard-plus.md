@@ -19,3 +19,11 @@ Só depois do teste do QR e da primeira venda real combinada com o Hub:
 ## Conferir a 1ª venda
 `SELECT kiwify_product_id, plan, status, last_event, created_at FROM public.plus_subscriptions ORDER BY created_at DESC LIMIT 5;`
 Avisos ignorados aparecem na Vercel como `kiwify-plus ignorado` (tipo e frequência, sem dado pessoal).
+
+## Recursos adicionados (2026-10)
+- **Detalhe por código:** clicar num código (ranking ou lista de QR) abre o painel só dele (estatísticas, regras, link de relatório, pasta).
+- **QR com a marca** (`src/lib/qr-style.ts`): cor, cantos, logo e frase. Recusa estilo sem contraste (mín. 4,5:1, QR mais escuro que o fundo); logo até 20% do lado. O arquivo nunca sai do navegador.
+- **Destino por horário/dia/validade** (`plate_rules`, até 10 por código): o `/r` avalia em São Paulo, só com o dono em dia no Plus; sem Plus volta ao destino normal. Lógica em `src/lib/plate-rules.ts`.
+- **Relatório para o cliente** (`plate_report_links`, rota `/relatorio/$token`): link privado, só agregados por dia, vale com Plus em dia e link não revogado; "Salvar em PDF" usa a impressão do navegador.
+- **Pastas** (`plates.tag`): organização por cliente/campanha; filtro na central e "Mover para a pasta" no lote.
+- Migrações: `...0006_plus_regras_destino`, `...0007_plus_relatorio_cliente`, `...0008_plates_tag`.

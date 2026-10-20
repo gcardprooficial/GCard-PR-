@@ -3,6 +3,7 @@ import { rateLimit, clientKey } from "@/lib/rateLimit";
 import { untyped } from "@/lib/db-untyped";
 import { isAllowedHost, isPublicHost, rulesOrFallback, type DestinationRule } from "@/lib/destination";
 import { classifyScan, parseScanSource, scanCountry, visitorHash } from "@/lib/scan-filter";
+import { pickRuleDestination, type PlateRule } from "@/lib/plate-rules";
 
 // Redirecionamento do QR/NFC. Sempre 302 e no-store: mudar o destino vale na hora, sem cache para invalidar.
 // ?s=q (QR) / ?s=n (NFC) só serve para contar a origem da leitura: qualquer outro valor é ignorado e
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/r/$token")({
         const supabaseAdmin = untyped(admin);
         const { data: plate } = await supabaseAdmin
           .from("plates")
-          .select("id, status, destination_url, business_id, short_code")
+          .select("id, status, destination_url, business_id, short_code, batch_id")
           .eq("token", token)
           .maybeSingle();
 
@@ -73,6 +74,28 @@ export const Route = createFileRoute("/r/$token")({
             .eq("id", plate.business_id)
             .maybeSingle();
           destination = business?.review_url ?? null;
+        }
+
+        // Regras de horário/dia/validade do Plus. Só valem com o dono em dia: sem Plus, o destino normal segue como está.
+        if (plate.status === "ativada") {
+          try {
+            const { data: rr } = await supabaseAdmin
+              .from("plate_rules")
+              .select("id, label, destination_url, days, start_time, end_time, valid_from, valid_until, enabled, position")
+              .eq("plate_id", plate.id)
+              .eq("enabled", true);
+            const picked = rr && rr.length ? pickRuleDestination(rr as PlateRule[]) : null;
+            if (picked && plate.batch_id) {
+              const { data: b } = await supabaseAdmin.from("batches").select("owner_email").eq("id", plate.batch_id).maybeSingle();
+              const mail = (b?.owner_email as string | null)?.toLowerCase();
+              if (mail) {
+                const { data: s } = await supabaseAdmin.from("plus_subscriptions").select("id").eq("email", mail).eq("status", "ativa").limit(1);
+                if (s && s.length) destination = picked;
+              }
+            }
+          } catch (error) {
+            console.error("falha ao avaliar regras do código", { token, error }); // cai no destino normal
+          }
         }
 
         if (plate.status !== "ativada" || !destination) {

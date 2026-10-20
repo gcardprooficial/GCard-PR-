@@ -12,10 +12,24 @@ export function BulkDestino({ plates, rules, allowedUrls, onDone }: { plates: P[
   const ativadas = useMemo(() => plates.filter((p) => p.status === "ativada"), [plates]);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [url, setUrl] = useState("");
+  const [pasta, setPasta] = useState("");
   const [busy, setBusy] = useState(false);
   if (ativadas.length < 2) return null;
 
   const toggle = (id: string) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  async function applyTag() {
+    if (sel.size === 0) return void toast.error("Marque pelo menos uma placa.");
+    const tag = pasta.trim().slice(0, 40);
+    setBusy(true);
+    const { error } = await supabase.from("plates").update({ tag: tag || null } as never).in("id", [...sel]);
+    setBusy(false);
+    if (error) return void toast.error(error.message);
+    toast.success(tag ? `${sel.size} código(s) movidos para "${tag}".` : "Pasta removida.");
+    setSel(new Set());
+    setPasta("");
+    onDone();
+  }
 
   async function apply() {
     const checked = checkDestination(url, rules, allowedUrls);
@@ -54,6 +68,10 @@ export function BulkDestino({ plates, rules, allowedUrls, onDone }: { plates: P[
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… novo destino" className="h-10 input-soft rounded-xl" />
         <Button onClick={() => void apply()} disabled={busy} className="rounded-xl">{busy ? "Trocando…" : "Trocar"}</Button>
+      </div>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <Input value={pasta} onChange={(e) => setPasta(e.target.value)} maxLength={40} placeholder="Pasta / etiqueta (ex.: Cliente Padaria). Vazio remove." className="h-10 input-soft rounded-xl" />
+        <Button variant="outline" onClick={() => void applyTag()} disabled={busy} className="rounded-xl">Mover para a pasta</Button>
       </div>
     </section>
   );
