@@ -15,7 +15,7 @@ import { PlusHub } from "@/components/ativar/PlusHub";
 import { ToqyStrip } from "@/components/ativar/ToqyStrip";
 import { AjudaTab, ContaTab } from "@/components/ativar/AjudaConta";
 import { BookOpen, Crown, LayoutGrid, Pencil, Plus, Trash2, User } from "lucide-react";
-import { releasePlate, renameMyBatch } from "@/lib/plates.functions";
+import { releaseBatch, releasePlate, renameMyBatch } from "@/lib/plates.functions";
 import { PlateScanStats } from "@/components/PlateScanStats";
 import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
 import { requestDestinationRelease } from "@/lib/destination.functions";
@@ -371,6 +371,26 @@ function Lote({ email, userId }: { email: string; userId: string }) {
 
   const runRelease = useServerFn(releasePlate);
   const runRename = useServerFn(renameMyBatch);
+  const runReleaseBatch = useServerFn(releaseBatch);
+
+  async function removeBatch(b: Batch, count: number) {
+    const ok = window.confirm(
+      count === 0
+        ? "Remover este grupo vazio da sua conta?"
+        : `Remover este grupo e os ${count} código(s) dele da sua conta?\n\n` +
+            "• Os que vieram da GCard voltam limpos ao estoque e podem ir para outra pessoa.\n" +
+            "• Os QR que você criou no Plus são apagados.\n" +
+            "• Links, nomes e leituras somem. Placas já impressas com esses códigos param de funcionar.",
+    );
+    if (!ok) return;
+    try {
+      const r = await runReleaseBatch({ data: { batchId: b.id } });
+      toast.success(r.devolvidas + r.apagados === 0 ? "Grupo removido." : `Grupo removido: ${r.devolvidas} devolvido(s) ao estoque, ${r.apagados} QR apagado(s).`);
+      void load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível remover agora.");
+    }
+  }
 
   async function removePlate(plate: Plate) {
     const ok = window.confirm(
@@ -541,6 +561,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
                     onDeactivate={deactivate}
                     onRelease={removePlate}
                     onRename={renameBatch}
+                    onRemoveBatch={removeBatch}
                     plusActive={plus.active}
                     plusEnabled={showPlus}
                     onOpenPlus={(id) => (plus.active ? goDetail(id) : goAba("plus"))}
@@ -630,6 +651,7 @@ function BatchSection({
   onDeactivate,
   onRelease,
   onRename,
+  onRemoveBatch,
   plusActive,
   plusEnabled,
   onOpenPlus,
@@ -642,6 +664,7 @@ function BatchSection({
   onDeactivate: (p: Plate) => void;
   onRelease: (p: Plate) => void;
   onRename: (b: Batch) => void;
+  onRemoveBatch: (b: Batch, count: number) => void;
   plusActive: boolean;
   plusEnabled: boolean;
   onOpenPlus: (id: string) => void;
@@ -698,9 +721,14 @@ function BatchSection({
       {isOpen && (
         <div className="border-t border-border p-4 pt-3 space-y-3">
           {batch && (
-            <button type="button" onClick={() => onRename(batch)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground">
-              <Pencil className="size-3.5" /> Dar um nome a este grupo
-            </button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button type="button" onClick={() => onRename(batch)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground">
+                <Pencil className="size-3.5" /> Dar um nome a este grupo
+              </button>
+              <button type="button" onClick={() => onRemoveBatch(batch, plates.length)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-destructive hover:underline">
+                <Trash2 className="size-3.5" /> Remover este grupo
+              </button>
+            </div>
           )}
           {pagePlates.map((p) => (
             <PlateCard key={p.id} plate={p} onActivate={onActivate} onDeactivate={onDeactivate} onRelease={onRelease} plusActive={plusActive} plusEnabled={plusEnabled} onOpenPlus={onOpenPlus} />
