@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Play } from "lucide-react";
+import { TUTORIAL_VIDEOS } from "@/lib/tutorial-videos";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
-const VIDEO_ID = "6nDW3OCKcAA";
+const VIDEO_ID = TUTORIAL_VIDEOS.qr;
 const TITLE = "Aprenda a Configurar o QRCODE";
 
 /**
