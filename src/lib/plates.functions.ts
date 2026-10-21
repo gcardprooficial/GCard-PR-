@@ -81,3 +81,48 @@ export const renameMyBatch = createServerFn({ method: "POST" })
     if (error) throw new Error("Não foi possível salvar o nome.");
     return { ok: true as const };
   });
+
+/**
+ * Remover um grupo inteiro de códigos da minha conta.
+ * Cada código segue a mesma regra de "Remover": os que vieram da GCard voltam limpos ao estoque (nunca são apagados) e os
+ * QR criados no Plus são apagados. No fim, o grupo (já vazio) é apagado.
+ */
+export const releaseBatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ batchId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: batch } = await db.from("batches").select("id, code, owner_user_id").eq("id", data.batchId).maybeSingle();
+    if (!batch || batch.owner_user_id !== context.userId) throw new Error("Esse grupo não é seu.");
+    const { data: plates } = await db.from("plates").select("id, short_code, plus_created").eq("batch_id", batch.id);
+    let devolvidas = 0;
+    let apagados = 0;
+    for (const p of (plates ?? []) as { id: string; short_code: string; plus_created: boolean }[]) {
+      if (p.plus_created) {
+        const { error } = await db.from("plates").delete().eq("id", p.id);
+        if (error) throw new Error("Não foi possível remover tudo agora.");
+        apagados++;
+      } else {
+        const { error } = await db
+          .from("plates")
+          .update({
+            batch_id: null, order_id: null, status: "nao_ativada", destination_url: null, business_name: null, sold_to: null,
+            activated_at: null, activated_by: null, sold_at: null, scan_count: 0, bot_scan_count: 0, last_scan_at: null,
+          })
+          .eq("id", p.id);
+        if (error) throw new Error("Não foi possível devolver tudo agora.");
+        await db.from("plate_scan_events").delete().eq("plate_id", p.id);
+        devolvidas++;
+      }
+    }
+    const { error: delErr } = await db.from("batches").delete().eq("id", batch.id);
+    if (delErr) throw new Error("Os códigos foram liberados, mas não consegui apagar o grupo agora.");
+    await db.from("audit_log").insert({
+      action: "cliente_removeu_grupo",
+      entity: "batches",
+      entity_id: batch.id,
+      actor_id: context.userId,
+      details: { code: batch.code, devolvidas, apagados },
+    });
+    return { ok: true as const, devolvidas, apagados };
+  });
