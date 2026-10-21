@@ -414,6 +414,7 @@ export async function dispatchOrderEmailEvent(
 
       case "pedido_enviado": {
         body += `<p>Seu pedido foi <strong>enviado</strong>! O frete é por nossa conta.</p>${summary}${tracking}`;
+        body += `<p style="font-size:13px;color:#555;">Não gostou ou veio com defeito? Você tem 7 dias para desistir e a devolução pelos Correios é sem custo. <a href="${siteUrl()}/trocas-e-devolucoes" style="color:#1A1A1A;font-weight:600;">Veja como devolver</a>.</p>`;
         if (cardOnly) {
           body += cardUsageTips();
         } else if (isRevenda && !isBlank) {

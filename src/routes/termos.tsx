@@ -72,9 +72,15 @@ function Termos() {
 
           <Section n="5" title="Trocas e devoluções">
             <p>
-              Para produtos com defeito de fabricação, entre em contato em até 7 dias após o
-              recebimento. O direito de arrependimento previsto no Código de Defesa do Consumidor
-              (art. 49) se aplica a compras feitas neste site.
+              Você pode desistir da compra em até 7 dias corridos do recebimento (Código de Defesa do
+              Consumidor, art. 49), com devolução do valor pago, inclusive o frete. Para defeito de
+              fabricação, o prazo para avisar é de 90 dias do recebimento (produto durável, art. 26).
+              A devolução é feita pelos Correios com um código de postagem que enviamos, sem custo
+              para você.
+            </p>
+            <p>
+              Veja o passo a passo, o que fazer sem a embalagem ou a etiqueta e como pedir o código em{" "}
+              <a className="underline" href="/trocas-e-devolucoes">Trocas e devoluções</a>.
             </p>
           </Section>
 
