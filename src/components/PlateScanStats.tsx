@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { untyped } from "@/lib/db-untyped";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 type Daily = { leituras: number; leituras_unicas: number; nfc: number; qr: number; desconhecido: number; robos: number };
 
 /** Toques e leituras dos últimos 30 dias (só gente: robôs e pré-visualizações ficam separados). */
-export function PlateScanStats({ plateId }: { plateId: string }) {
+export function PlateScanStats({ plateId, extra }: { plateId: string; extra?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [stats, setStats] = useState<Daily | null>(null);
   const [error, setError] = useState(false);
@@ -38,9 +38,12 @@ export function PlateScanStats({ plateId }: { plateId: string }) {
 
   return (
     <div className="mt-3">
-      <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs underline" onClick={() => void toggle()}>
-        Ver toques e leituras
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs underline" onClick={() => void toggle()}>
+          Ver toques e leituras
+        </Button>
+        {extra}
+      </div>
       {open && (
         <div className="mt-1 rounded-xl border border-border bg-muted/50 p-3 text-xs">
           {error ? (
