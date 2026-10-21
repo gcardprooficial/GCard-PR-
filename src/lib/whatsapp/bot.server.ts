@@ -29,6 +29,7 @@ const SHORT_NAME: Record<string, string> = {
   "plaquinha-10x10": "Placa de acrílico 10x10 (NFC + QR)",
   "plaquinha-10x15-l": "Placa de acrílico 10x15 (NFC + QR)",
   "acrilico-10x10-sem-arte": "Acrílico liso 10x10 (sem arte)",
+  "tag-nfc-adesiva": "Tag NFC adesiva (só revenda, kits de 50 em 50)",
 };
 
 /** Fotos servidas pelo próprio site (public/wa). */

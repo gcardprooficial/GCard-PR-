@@ -38,6 +38,7 @@ import acrilico10x10Branco from "@/assets/acrilico-10x10-branco.jpg";
 import acrilico10x10Preto from "@/assets/acrilico-10x10-preto.jpg";
 import acrilico10x10Azul from "@/assets/acrilico-10x10-azul.jpg";
 import acrilicoLCristal from "@/assets/acrilico-l-cristal.jpg";
+import tagNfcAdesiva from "@/assets/tag-nfc-adesiva.webp";
 import acrilicoLBranco from "@/assets/acrilico-l-branco.jpg";
 import acrilicoLPreto from "@/assets/acrilico-l-preto.jpg";
 import acrilicoLAzul from "@/assets/acrilico-l-azul.jpg";
@@ -164,6 +165,7 @@ const IMAGES: Record<string, string> = {
   "plaquinha-10x15-l": produtoPlaquinhaL,
   "acrilico-10x10-sem-arte": acrilico10x10Cristal,
   "acrilico-15x10-l-sem-arte": acrilicoLCristal,
+  "tag-nfc-adesiva": tagNfcAdesiva,
 };
 
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
