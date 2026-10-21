@@ -199,7 +199,7 @@ function Home() {
           {[
             ["Compra segura", "Stone ou InfinitePay · Pix e cartão"],
             ["Frete grátis", "Todo o Brasil pelos Correios"],
-            ["Sem mensalidade", "Pague uma vez e use para sempre"],
+            ["Placa sem mensalidade", "Pague uma vez e use para sempre"],
             ["Suporte no WhatsApp", "Direto com quem fabrica"],
           ].map(([t, d]) => (
             <li key={t} className="flex items-start gap-3">
@@ -331,6 +331,43 @@ function Home() {
             </Button>
           </div>
           <PhoneMockup />
+        </div>
+      </section>
+
+      {/* ===== GCARD PLUS (assinatura opcional) ===== */}
+      <section id="plus" className="border-y border-border bg-primary/10">
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-14 md:grid-cols-[1.2fr_0.8fr] md:py-20">
+          <div>
+            <Eyebrow>GCard Plus</Eyebrow>
+            <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">Quer ir além da placa?</h2>
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Com o Plus você cria QR Codes ilimitados com a sua marca, programa o destino por horário e data, acompanha as leituras num painel e manda relatório para o seu cliente. Opcional, para quem usa os códigos no dia a dia.
+            </p>
+            <ul className="mt-6 grid gap-2 text-sm font-semibold sm:grid-cols-2">
+              {["QR dinâmico: troque o link sem reimprimir", "Destino por horário, dia e data", "Estatísticas por código e relatório em PDF", "Sua placa nunca para, mesmo se cancelar"].map((f) => (
+                <li key={f} className="flex items-center gap-2.5">
+                  <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">{CHECK}</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-7 flex flex-wrap items-center gap-4">
+              <Button asChild size="lg" className="btn-press btn-primary-shadow h-14 rounded-xl px-7 text-base font-bold">
+                <Link to="/plus">Conhecer o GCard Plus →</Link>
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                a partir de <strong className="text-foreground">R$ 15,90/mês</strong> no plano anual
+              </p>
+            </div>
+          </div>
+          <div className="rounded-3xl bg-secondary p-6 text-secondary-foreground shadow-xl">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Plus</p>
+            <p className="mt-2 font-display text-5xl font-black">R$ 19,90<span className="text-base font-semibold text-white/60">/mês</span></p>
+            <p className="mt-1 text-sm text-white/70">ou R$ 190,80 por ano. Cancele quando quiser.</p>
+            <p className="mt-4 rounded-2xl bg-white/10 p-3 text-xs leading-relaxed text-white/85">
+              <strong>Sua placa nunca para.</strong> Placas e ativação são grátis para sempre.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -562,7 +599,7 @@ function Home() {
 }
 
 const FAQ: [string, React.ReactNode][] = [
-  ["Tem mensalidade?", "Não. Você paga uma vez pelo cartão e usa para sempre. Nenhum custo recorrente, nenhuma assinatura escondida."],
+  ["Tem mensalidade?", <>A placa e o cartão <strong className="text-foreground">não têm mensalidade</strong>: você paga uma vez e usa para sempre, inclusive trocar o link. Existe o <Link to="/plus" className="font-bold text-foreground underline decoration-primary decoration-2 underline-offset-4">GCard Plus</Link>, uma assinatura <strong className="text-foreground">opcional</strong> com QR dinâmico ilimitado, estatísticas e relatórios. Se você não assinar ou cancelar, nada para de funcionar.</>],
   ["Funciona em qualquer celular?", "O cartão de bolso funciona por NFC em iPhone XS+ e na maioria dos Androids compatíveis."],
   ["Preciso configurar algo?", "Na loja própria, não: você informa o seu negócio durante a compra e nós gravamos o link antes de enviar. Na revenda, as placas chegam com o QR/NFC em branco e você ativa cada uma, com o link do seu cliente, em gcardpro.com.br/ativar."],
   ["Quanto custa o frete?", <>Frete <strong className="text-foreground">grátis</strong> para todo o território nacional. Enviamos pelos Correios (PAC ou Sedex, conforme o prazo disponível).</>],

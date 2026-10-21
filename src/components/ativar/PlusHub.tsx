@@ -18,7 +18,7 @@ import type { PlusSub } from "@/lib/use-plus";
 
 type P = QrPlate & { status: string };
 
-const BENEFITS = [
+export const BENEFITS = [
   { icon: RefreshCw, title: "QR dinâmico: troque sem reimprimir", text: "Imprima o QR uma vez. Mude o link quando quiser e o mesmo QR já leva para o novo destino." },
   { icon: CalendarClock, title: "Destino por horário e data", text: "No almoço abre o cardápio, à noite o WhatsApp. A promoção acaba sozinha no domingo." },
   { icon: Palette, title: "QR com a sua marca", text: "Cores, cantos arredondados, logo no centro e uma frase embaixo, sempre legível no celular." },
@@ -30,13 +30,13 @@ const BENEFITS = [
   { icon: ShieldCheck, title: "Sua placa nunca para", text: "Cancelou? Nada deixa de funcionar. Os destinos ficam como estavam." },
 ];
 
-const STEPS = [
+export const STEPS = [
   ["1", "Crie", "Dê um nome e cole o link de destino."],
   ["2", "Imprima uma vez", "Baixe o QR em PNG ou SVG e mande imprimir."],
   ["3", "Troque quando quiser", "Mudou o cardápio ou o site? Altere o link aqui. O QR impresso continua valendo."],
 ];
 
-const FAQ = [
+export const FAQ = [
   ["O que acontece se eu cancelar?", "Nenhuma placa e nenhum QR deixa de funcionar. Os destinos ficam como estavam; só os recursos do Plus (trocar destino dos QR criados no Plus, estatísticas, criar novos) ficam pausados até você reativar."],
   ["As placas que comprei mudam?", "Não. Placas e ativação são grátis para sempre, com ou sem Plus."],
   ["Como libero o Plus?", "Assine com o mesmo e-mail desta conta. A liberação é automática depois da confirmação do pagamento."],
@@ -44,7 +44,7 @@ const FAQ = [
 ];
 
 /** Exemplo ilustrativo do painel (números inventados, marcados como exemplo). Nada disto é dado de ninguém. */
-function Preview() {
+export function Preview() {
   const sample = [3, 5, 4, 7, 6, 9, 8, 12, 10, 14, 13, 17, 15, 19, 18, 22, 20, 24, 23, 27];
   return (
     <div className="relative mx-auto w-full max-w-md rotate-1 rounded-3xl border border-white/15 bg-white p-4 text-foreground shadow-2xl">
@@ -66,6 +66,34 @@ function Preview() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Cartões de preço do Plus (mensal e anual). */
+export function PricingCards() {
+  return (
+    <section className="grid gap-4 sm:grid-cols-2">
+      {(["mensal", "anual"] as const).map((p) => (
+        <a
+          key={p}
+          href={PLUS_CHECKOUT[p]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`relative rounded-3xl border-2 p-6 transition-shadow hover:shadow-xl ${p === "anual" ? "border-primary bg-primary/10" : "border-border bg-card"}`}
+        >
+          {p === "anual" && <span className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-0.5 text-[11px] font-black text-primary-foreground">MELHOR VALOR</span>}
+          <p className="font-display text-xl font-bold">{p === "mensal" ? "Mensal" : "Anual"}</p>
+          <p className="mt-2 font-display text-4xl font-black">{p === "mensal" ? "R$ 19,90" : "R$ 15,90"}<span className="text-base font-semibold text-muted-foreground">/mês</span></p>
+          <p className="mt-1 text-xs text-muted-foreground">{p === "mensal" ? "Cobrado todo mês" : "R$ 190,80 cobrados uma vez por ano"}</p>
+          <ul className="mt-4 space-y-1.5 text-sm">
+            {["QR dinâmico ilimitado, com a sua marca", "Destino por horário e data", "Estatísticas e relatório para o cliente"].map((x) => (
+              <li key={x} className="flex items-center gap-2"><Check className="size-4 text-primary" />{x}</li>
+            ))}
+          </ul>
+          <span className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-secondary text-sm font-bold text-secondary-foreground">Assinar {p}</span>
+        </a>
+      ))}
+    </section>
   );
 }
 
@@ -214,28 +242,7 @@ export function PlusHub(props: {
             </ol>
           </section>
 
-          <section className="grid gap-4 sm:grid-cols-2">
-            {(["mensal", "anual"] as const).map((p) => (
-              <a
-                key={p}
-                href={PLUS_CHECKOUT[p]}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`relative rounded-3xl border-2 p-6 transition-shadow hover:shadow-xl ${p === "anual" ? "border-primary bg-primary/10" : "border-border bg-card"}`}
-              >
-                {p === "anual" && <span className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-0.5 text-[11px] font-black text-primary-foreground">MELHOR VALOR</span>}
-                <p className="font-display text-xl font-bold">{p === "mensal" ? "Mensal" : "Anual"}</p>
-                <p className="mt-2 font-display text-4xl font-black">{p === "mensal" ? "R$ 19,90" : "R$ 15,90"}<span className="text-base font-semibold text-muted-foreground">/mês</span></p>
-                <p className="mt-1 text-xs text-muted-foreground">{p === "mensal" ? "Cobrado todo mês" : "R$ 190,80 cobrados uma vez por ano"}</p>
-                <ul className="mt-4 space-y-1.5 text-sm">
-                  {["QR dinâmico ilimitado, com a sua marca", "Destino por horário e data", "Estatísticas e relatório para o cliente"].map((x) => (
-                    <li key={x} className="flex items-center gap-2"><Check className="size-4 text-primary" />{x}</li>
-                  ))}
-                </ul>
-                <span className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-xl bg-secondary text-sm font-bold text-secondary-foreground">Assinar {p}</span>
-              </a>
-            ))}
-          </section>
+          <PricingCards />
           <p className="-mt-4 text-center text-xs text-muted-foreground">Na compra, use o mesmo e-mail desta conta. Com outro e-mail o Plus não é liberado aqui.</p>
 
           <section className="rounded-3xl border border-primary/40 bg-primary/10 p-5">
