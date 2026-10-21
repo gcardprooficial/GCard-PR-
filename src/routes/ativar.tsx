@@ -542,7 +542,8 @@ function Lote({ email, userId }: { email: string; userId: string }) {
                     onRelease={removePlate}
                     onRename={renameBatch}
                     plusActive={plus.active}
-                    onOpenPlus={goDetail}
+                    plusEnabled={showPlus}
+                    onOpenPlus={(id) => (plus.active ? goDetail(id) : goAba("plus"))}
                   />
                 );
               })}
@@ -630,6 +631,7 @@ function BatchSection({
   onRelease,
   onRename,
   plusActive,
+  plusEnabled,
   onOpenPlus,
 }: {
   batch: Batch | null;
@@ -641,6 +643,7 @@ function BatchSection({
   onRelease: (p: Plate) => void;
   onRename: (b: Batch) => void;
   plusActive: boolean;
+  plusEnabled: boolean;
   onOpenPlus: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -700,7 +703,7 @@ function BatchSection({
             </button>
           )}
           {pagePlates.map((p) => (
-            <PlateCard key={p.id} plate={p} onActivate={onActivate} onDeactivate={onDeactivate} onRelease={onRelease} plusActive={plusActive} onOpenPlus={onOpenPlus} />
+            <PlateCard key={p.id} plate={p} onActivate={onActivate} onDeactivate={onDeactivate} onRelease={onRelease} plusActive={plusActive} plusEnabled={plusEnabled} onOpenPlus={onOpenPlus} />
           ))}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-1 text-xs font-semibold">
@@ -725,10 +728,12 @@ function PlateCard({
   onDeactivate,
   onRelease,
   plusActive,
+  plusEnabled,
   onOpenPlus,
 }: {
   plate: Plate;
   plusActive: boolean;
+  plusEnabled: boolean;
   onOpenPlus: (id: string) => void;
   onActivate: (p: Plate, name: string, url: string, soldTo: string) => void;
   onDeactivate: (p: Plate) => void;
@@ -850,17 +855,20 @@ function PlateCard({
         </Button>
       </div>
       <PlateQrDownload plateId={plate.id} />
-      {plusActive && active ? (
-        <button
-          type="button"
-          onClick={() => onOpenPlus(plate.id)}
-          className="mt-3 inline-flex h-10 items-center gap-2 rounded-xl bg-secondary px-4 text-sm font-bold text-secondary-foreground hover:opacity-90"
-        >
-          <Crown className="size-4 text-primary" /> Abrir painel Plus deste código
-        </button>
-      ) : (
-        <PlateScanStats plateId={plate.id} />
-      )}
+      <PlateScanStats
+        plateId={plate.id}
+        extra={
+          plusEnabled ? (
+            <button
+              type="button"
+              onClick={() => onOpenPlus(plate.id)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-secondary px-3 text-xs font-bold text-secondary-foreground hover:opacity-90"
+            >
+              <Crown className="size-3.5 text-primary" /> {plusActive ? "Ver painel Plus" : "Conhecer o GCard Plus"}
+            </button>
+          ) : null
+        }
+      />
       {!toqy && <ToqyStrip href={toqyOnboardingUrl(plate.short_code)} />}
     </div>
   );
