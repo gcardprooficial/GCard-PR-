@@ -23,6 +23,7 @@ import { Route as SairRouteImport } from './routes/sair'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as TrocasEDevolucoesRouteImport } from './routes/trocas-e-devolucoes'
 import { Route as ApiUnsubscribeRouteImport } from './routes/api/unsubscribe'
+import { Route as BiparTokenRouteImport } from './routes/bipar.$token'
 import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as GuiaIndexRouteImport } from './routes/guia.index'
 import { Route as GuiaCartaoDeVisitaPorAproximacaoRouteImport } from './routes/guia.cartao-de-visita-por-aproximacao'
@@ -135,6 +136,11 @@ const TrocasEDevolucoesRoute = TrocasEDevolucoesRouteImport.update({
 const ApiUnsubscribeRoute = ApiUnsubscribeRouteImport.update({
   id: '/api/unsubscribe',
   path: '/api/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BiparTokenRoute = BiparTokenRouteImport.update({
+  id: '/bipar/$token',
+  path: '/bipar/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CCodeRoute = CCodeRouteImport.update({
@@ -372,6 +378,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/trocas-e-devolucoes': typeof TrocasEDevolucoesRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
+  '/bipar/$token': typeof BiparTokenRoute
   '/c/$code': typeof CCodeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
@@ -429,6 +436,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/trocas-e-devolucoes': typeof TrocasEDevolucoesRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
+  '/bipar/$token': typeof BiparTokenRoute
   '/c/$code': typeof CCodeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
@@ -489,6 +497,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/trocas-e-devolucoes': typeof TrocasEDevolucoesRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
+  '/bipar/$token': typeof BiparTokenRoute
   '/c/$code': typeof CCodeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
   '/guia/cartao-nfc-vs-cartao-digital': typeof GuiaCartaoNfcVsCartaoDigitalRoute
@@ -550,6 +559,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/trocas-e-devolucoes'
     | '/api/unsubscribe'
+    | '/bipar/$token'
     | '/c/$code'
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
@@ -607,6 +617,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/trocas-e-devolucoes'
     | '/api/unsubscribe'
+    | '/bipar/$token'
     | '/c/$code'
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
@@ -666,6 +677,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/trocas-e-devolucoes'
     | '/api/unsubscribe'
+    | '/bipar/$token'
     | '/c/$code'
     | '/guia/cartao-de-visita-por-aproximacao'
     | '/guia/cartao-nfc-vs-cartao-digital'
@@ -726,6 +738,7 @@ export interface RootRouteChildren {
   TermosRoute: typeof TermosRoute
   TrocasEDevolucoesRoute: typeof TrocasEDevolucoesRoute
   ApiUnsubscribeRoute: typeof ApiUnsubscribeRoute
+  BiparTokenRoute: typeof BiparTokenRoute
   CCodeRoute: typeof CCodeRoute
   PagamentoPixRoute: typeof PagamentoPixRoute
   PagamentoRetornoRoute: typeof PagamentoRetornoRoute
@@ -844,6 +857,13 @@ declare module '@tanstack/react-router' {
       path: '/api/unsubscribe'
       fullPath: '/api/unsubscribe'
       preLoaderRoute: typeof ApiUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bipar/$token': {
+      id: '/bipar/$token'
+      path: '/bipar/$token'
+      fullPath: '/bipar/$token'
+      preLoaderRoute: typeof BiparTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/c/$code': {
@@ -1233,6 +1253,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermosRoute: TermosRoute,
   TrocasEDevolucoesRoute: TrocasEDevolucoesRoute,
   ApiUnsubscribeRoute: ApiUnsubscribeRoute,
+  BiparTokenRoute: BiparTokenRoute,
   CCodeRoute: CCodeRoute,
   PagamentoPixRoute: PagamentoPixRoute,
   PagamentoRetornoRoute: PagamentoRetornoRoute,
