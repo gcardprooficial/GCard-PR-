@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { untyped } from "@/lib/db-untyped";
 import { createScanSession, pollScanSession } from "@/lib/scan-session.functions";
 
 /** Aceita o que a placa guarda: URL /r/<token>, GCARD-00001 ou o token em hex. Outra coisa (código de barras de rastreio, etc.) é ignorada. */
@@ -38,7 +39,7 @@ export function PhoneScanPanel({ onScan, already, onBack }: { onScan: (code: str
       seen.current.add(code.toLowerCase());
       let display = code;
       if (/^[0-9a-f]{32}$/i.test(code)) {
-        const { data } = await supabase.from("plates").select("short_code").eq("token", code).maybeSingle();
+        const { data } = (await untyped(supabase).from("plates").select("short_code").eq("token", code).maybeSingle()) as { data: { short_code?: string } | null };
         if (data?.short_code) {
           display = data.short_code;
           seen.current.add(display.toLowerCase());
