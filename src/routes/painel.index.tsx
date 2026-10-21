@@ -237,6 +237,7 @@ function CameraScanner({
   const [lastCode, setLastCode] = useState<string | null>(null);
   const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
   const [cameraIdx, setCameraIdx] = useState(0);
+  const [camLabel, setCamLabel] = useState("");
 
   // Celular com várias lentes traseiras (normal/ultra-wide/macro) -- o navegador escolhe
   // uma sozinha via facingMode e nem sempre é a que foca perto (câmera nativa troca de
@@ -246,6 +247,12 @@ function CameraScanner({
     if (cameras.length < 2 || !scannerRef.current) return;
     const next = (cameraIdx + 1) % cameras.length;
     setCameraIdx(next);
+    setCamLabel(cameras[next]!.label);
+    try {
+      localStorage.setItem("gcard_scan_cam", cameras[next]!.id);
+    } catch {
+      /* sem armazenamento: só não lembra da escolha */
+    }
     void scannerRef.current.setCamera(cameras[next]!.id).then(() => {
       // setCamera troca de lente mas volta a pedir resolução mínima -- força alta nessa também.
       const track = (videoRef.current?.srcObject as MediaStream | null)?.getVideoTracks()[0];
@@ -340,7 +347,29 @@ function CameraScanner({
       try {
         await scannerInstance.start();
         const list = await QrScanner.listCameras(true);
-        if (!stopped && list.length > 1) setCameras(list);
+        if (stopped) return;
+        const track = (videoRef.current?.srcObject as MediaStream | null)?.getVideoTracks()[0];
+        const activeId = track?.getSettings().deviceId;
+        let idx = Math.max(0, list.findIndex((c) => c.id === activeId));
+        let saved: string | null = null;
+        try {
+          saved = localStorage.getItem("gcard_scan_cam");
+        } catch {
+          saved = null;
+        }
+        const savedIdx = saved ? list.findIndex((c) => c.id === saved) : -1;
+        const virtual = /iriun|obs|virtual|droidcam|epoccam|manycam|snap camera/i;
+        const firstReal = list.findIndex((c) => !virtual.test(c.label));
+        const want = savedIdx >= 0 ? savedIdx : list[idx] && virtual.test(list[idx]!.label) && firstReal >= 0 ? firstReal : idx;
+        if (want !== idx && list[want]) {
+          await scannerInstance.setCamera(list[want]!.id);
+          const t2 = (videoRef.current?.srcObject as MediaStream | null)?.getVideoTracks()[0];
+          t2?.applyConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 } }).catch(() => {});
+          idx = want;
+        }
+        setCameraIdx(idx);
+        setCamLabel(list[idx]?.label ?? "");
+        if (list.length > 1) setCameras(list);
       } catch {
         setError("Não consegui acessar a câmera. Confere a permissão do navegador.");
       }
@@ -373,6 +402,12 @@ function CameraScanner({
         >
           🔄 Trocar câmera ({cameraIdx + 1}/{cameras.length}) -- se não focar, tenta outra lente
         </button>
+      )}
+      {camLabel && <p className="mt-2 max-w-sm truncate text-center text-xs text-white/50">Câmera: {camLabel}</p>}
+      {/iriun|obs|virtual|droidcam|epoccam|manycam/i.test(camLabel) && (
+        <p className="mt-2 max-w-sm text-center text-xs text-amber-200">
+          Essa é uma câmera virtual. Se aparecer "Please start…", abra o app no celular (mesma Wi-Fi ou cabo USB) ou toque em Trocar câmera.
+        </p>
       )}
       {error && <p className="mt-3 max-w-sm text-center text-sm text-amber-300">{error}</p>}
       {lastCode && !error && (
