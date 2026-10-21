@@ -32,7 +32,7 @@ function Produto() {
   useEffect(() => {
     void track({ data: { type: "produto_visto", slug } }).catch(() => {});
   }, [slug, track]);
-  const [modo, setModo] = useState<"lojista" | "revenda">(p?.is_blank ? "revenda" : "lojista");
+  const [modo, setModo] = useState<"lojista" | "revenda">(p?.is_blank || p?.is_supply ? "revenda" : "lojista");
   if (!p) throw notFound();
   const soon = p.status !== "ativo";
   const tiers = resaleLines(revenda, products).find((l) => l.slug === slug)?.tiers ?? [];
@@ -45,7 +45,7 @@ function Produto() {
       <section className="mx-auto grid max-w-7xl gap-8 px-5 py-8 md:grid-cols-2 md:gap-12">
         <div>
           <div className="overflow-hidden rounded-3xl border border-border bg-surface">
-            <img src={PRODUCT_IMAGES[p.slug] ?? produtoCartao} alt={p.name} className={`aspect-square w-full ${p.is_blank ? "object-contain p-8" : "object-cover"}`} />
+            <img src={PRODUCT_IMAGES[p.slug] ?? produtoCartao} alt={p.name} className={`aspect-square w-full ${p.is_blank || p.is_supply ? "object-contain p-8" : "object-cover"}`} />
           </div>
           <div className="mt-3 grid grid-cols-4 gap-2">
             {MOCKUPS.slice(0, 4).map((m, i) => (
@@ -60,7 +60,7 @@ function Produto() {
             {p.has_nfc && <span className="rounded-lg bg-primary/20 px-2.5 py-1 text-xs font-black">NFC</span>}
             {p.has_qr && <span className="rounded-lg bg-foreground/10 px-2.5 py-1 text-xs font-black">QR Code</span>}
           </div>
-          {!p.is_blank && !soon && (
+          {!p.is_blank && !p.is_supply && !soon && (
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2" role="tablist" aria-label="Como você vai usar">
               {([
                 ["lojista", "Loja própria", "Já configurado pra você"],
@@ -77,7 +77,7 @@ function Produto() {
               ))}
             </div>
           )}
-          {modo === "lojista" && !p.is_blank && !soon && (
+          {modo === "lojista" && !p.is_blank && !p.is_supply && !soon && (
             <>
               <p className="mt-6 font-display text-4xl">
                 {money(lojista.unit_price_cents + p.price_delta_cents)}
@@ -97,7 +97,8 @@ function Produto() {
                   </li>
                 ))}
               </ul>
-              {!p.is_blank && <p className="mt-3 text-xs text-muted-foreground">Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente.</p>}
+              {!p.is_blank && !p.is_supply && <p className="mt-3 text-xs text-muted-foreground">Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente.</p>}
+              {p.is_supply && <p className="mt-3 text-xs text-muted-foreground">Vendido só para revendedores, em kits de {p.quantity_step} em {p.quantity_step} unidades (mínimo {p.min_quantity}). A etiqueta chega vazia: você grava o link com o app NFC Tools.</p>}
             </div>
           )}
           {p.is_blank && (

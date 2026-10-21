@@ -218,11 +218,12 @@ export async function dispatchOrderWhatsApp(
   try {
     const { data: itemRows } = await db
       .from("order_items")
-      .select("product_name, quantity, products(is_blank, has_qr)")
+      .select("product_name, quantity, products(is_blank, has_qr, is_supply)")
       .eq("order_id", orderId);
     const items = (itemRows ?? []) as Ctx["items"];
     const isBlank = items.some((i) => i.products?.is_blank);
-    const cardOnly = items.length > 0 && items.every((i) => i.products?.has_qr === false && !i.products?.is_blank);
+    const isSupply = items.length > 0 && items.every((i) => (i.products as { is_supply?: boolean } | null | undefined)?.is_supply);
+    const cardOnly = !isSupply && items.length > 0 && items.every((i) => i.products?.has_qr === false && !i.products?.is_blank);
 
     let batch: Ctx["batch"] = null;
     if (event === "lote_criado" || event === "pedido_enviado") {

@@ -34,7 +34,7 @@ function Produtos() {
           return (
             <Link key={p.id} to="/produtos/$slug" params={{ slug: p.slug }} className="group overflow-hidden rounded-3xl border border-border bg-card card-soft card-soft-hover">
               <div className="relative aspect-square overflow-hidden bg-surface">
-                <img src={PRODUCT_IMAGES[p.slug] ?? produtoCartao} alt={p.name} loading="lazy" draggable={false} className={`h-full w-full transition-transform duration-700 group-hover:scale-105 ${p.is_blank ? "object-contain p-6" : "object-cover"}`} />
+                <img src={PRODUCT_IMAGES[p.slug] ?? produtoCartao} alt={p.name} loading="lazy" draggable={false} className={`h-full w-full transition-transform duration-700 group-hover:scale-105 ${p.is_blank || p.is_supply ? "object-contain p-6" : "object-cover"}`} />
                 {soon && <span className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-[11px] font-black text-primary-foreground">Em breve</span>}
               </div>
               <div className="p-5">

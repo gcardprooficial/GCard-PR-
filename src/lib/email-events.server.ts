@@ -114,7 +114,7 @@ type ItemRow = {
   product_name: string;
   quantity: number;
   unit_price_cents: number;
-  products?: { is_blank?: boolean; has_qr?: boolean } | null;
+  products?: { is_blank?: boolean; has_qr?: boolean; is_supply?: boolean } | null;
 };
 
 function orderSummary(order: OrderRow, items: ItemRow[]) {
@@ -315,13 +315,14 @@ export async function dispatchOrderEmailEvent(
   try {
     const { data: itemRows } = await db
       .from("order_items")
-      .select("product_name, quantity, unit_price_cents, products(is_blank, has_qr)")
+      .select("product_name, quantity, unit_price_cents, products(is_blank, has_qr, is_supply)")
       .eq("order_id", orderId);
     const items = (itemRows ?? []) as ItemRow[];
     const isBlank = items.some((i) => i.products?.is_blank);
     // Cartão de PVC: só NFC, sem QR e sem código -- não tem lote nem /ativar.
+    const isSupply = items.length > 0 && items.every((i) => i.products?.is_supply);
     const cardOnly =
-      items.length > 0 && items.every((i) => i.products?.has_qr === false && !i.products?.is_blank);
+      items.length > 0 && items.every((i) => i.products?.has_qr === false && !i.products?.is_blank && !i.products?.is_supply);
     const isRevenda = order.kind === "revenda";
     const first = escapeHtml(String(order.customer_name ?? "").split(" ")[0] || "cliente");
 
@@ -378,6 +379,10 @@ export async function dispatchOrderEmailEvent(
               );
             }
           }
+        } else if (isSupply) {
+          body +=
+            `<p>Estamos separando as suas <strong>tags NFC adesivas</strong>. Avisamos quando forem enviadas, com o código de rastreio.</p>` +
+            `<p>Elas chegam vazias (regraváveis, 13,56 MHz): grave o link com o app <strong>NFC Tools</strong> (grátis) e cole onde quiser.</p>`;
         } else if (cardOnly && isRevenda) {
           body +=
             `<p>Estamos separando os seus cartões de PVC com NFC. Avisamos quando entrar em produção e quando forem enviados, com o código de rastreio.</p>` +
@@ -415,7 +420,9 @@ export async function dispatchOrderEmailEvent(
       case "pedido_enviado": {
         body += `<p>Seu pedido foi <strong>enviado</strong>! O frete é por nossa conta.</p>${summary}${tracking}`;
         body += `<p style="font-size:13px;color:#555;">Não gostou ou veio com defeito? Você tem 7 dias para desistir e a devolução pelos Correios é sem custo. <a href="${siteUrl()}/trocas-e-devolucoes" style="color:#1A1A1A;font-weight:600;">Veja como devolver</a>.</p>`;
-        if (cardOnly) {
+        if (isSupply) {
+          body += `<p>As tags chegam vazias. Para gravar: abra o app NFC Tools (grátis), vá em Escrever &gt; Adicionar registro &gt; URL, cole o link e encoste no celular. Dá para regravar quando quiser.</p>`;
+        } else if (cardOnly) {
           body += cardUsageTips();
         } else if (isRevenda && !isBlank) {
           const manifest = await plateManifest(db, orderId);
@@ -433,6 +440,8 @@ export async function dispatchOrderEmailEvent(
         body += `<p>O seu pedido consta como <strong>entregue</strong>. Esperamos que chegue tudo certo!</p>${summary}`;
         if (isBlank) {
           body += `<p>Qualquer problema com o material, é só chamar no WhatsApp.</p>`;
+        } else if (isSupply) {
+          body += `<p>Qualquer dúvida para gravar as tags, é só chamar no WhatsApp.</p>`;
         } else if (cardOnly) {
           body += cardUsageTips();
         } else if (isRevenda) {
