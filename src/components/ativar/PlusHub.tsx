@@ -78,11 +78,13 @@ export function PlusHub(props: {
   sub: PlusSub | null;
   onDone: () => void;
   onRemove: (p: QrPlate) => void;
+  detailId: string | null;
+  onDetail: (id: string | null) => void;
 }) {
-  const { plates, rules, allowedUrls, active, sub, onDone, onRemove } = props;
+  const { plates, rules, allowedUrls, active, sub, onDone, onRemove, detailId, onDetail } = props;
+  const setDetailId = onDetail;
   const fim = sub?.current_period_end ? new Date(sub.current_period_end).toLocaleDateString("pt-BR") : null;
   const ativadas = plates.filter((p) => p.status === "ativada");
-  const [detailId, setDetailId] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState<string | null>(null);
   const tags = useMemo(() => [...new Set(plates.map((p) => p.tag).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, "pt-BR")), [plates]);
@@ -138,7 +140,7 @@ export function PlusHub(props: {
         <PlusStats plates={[detail]} />
         <PlusReportLinks plateId={detail.id} />
         <PlusRules plateId={detail.id} defaultUrl={detail.destination_url} rules={rules} allowedUrls={allowedUrls} />
-        <QrStyleStudio target={styleTarget} onClose={() => setStyleTarget(null)} />
+        <QrStyleStudio target={styleTarget} onClose={() => setStyleTarget(null)} onSaved={onDone} />
       </div>
     );
   }
@@ -281,7 +283,7 @@ export function PlusHub(props: {
       {!active && <PlusQrList plates={plates} rules={rules} allowedUrls={allowedUrls} active={active} onRemove={onRemove} onDone={onDone} />}
 
       {active && <BulkDestino plates={plates} rules={rules} allowedUrls={allowedUrls} onDone={onDone} />}
-      <QrStyleStudio target={styleTarget} onClose={() => setStyleTarget(null)} />
+      <QrStyleStudio target={styleTarget} onClose={() => setStyleTarget(null)} onSaved={onDone} />
     </div>
   );
 }

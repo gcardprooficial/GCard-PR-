@@ -33,7 +33,10 @@ export const Route = createFileRoute("/ativar")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { aba?: Aba } => (ABAS.includes(s["aba"] as Aba) ? { aba: s["aba"] as Aba } : {}),
+  validateSearch: (s: Record<string, unknown>): { aba?: Aba; codigo?: string } => ({
+    ...(ABAS.includes(s["aba"] as Aba) ? { aba: s["aba"] as Aba } : {}),
+    ...(typeof s["codigo"] === "string" && /^[0-9a-f-]{36}$/i.test(s["codigo"]) ? { codigo: s["codigo"] } : {}),
+  }),
   component: Ativar,
 });
 
@@ -61,6 +64,7 @@ type Plate = {
   tracking_v2: boolean;
   plus_created?: boolean;
   tag?: string | null;
+  qr_style?: unknown;
 };
 
 function Ativar() {
@@ -148,7 +152,14 @@ function Center({ children }: { children: ReactNode }) {
 
 function Lote({ email, userId }: { email: string; userId: string }) {
   const plus = usePlus();
-  const aba: Aba = Route.useSearch().aba ?? "codigos";
+  const search = Route.useSearch();
+  const aba: Aba = search.aba ?? "codigos";
+  const detailId = search.codigo ?? null;
+  // Abre o painel Plus de um código (ou volta ao geral com null).
+  const goDetail = (id: string | null) => {
+    void navigate({ search: { aba: "plus", ...(id ? { codigo: id } : {}) } });
+    window.scrollTo({ top: 0 });
+  };
   const navigate = Route.useNavigate();
   const goAba = (a: Aba) => {
     void navigate({ search: { aba: a } });
@@ -224,7 +235,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       const p = await supabase
         .from("plates")
         .select(
-          "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count, activated_at, tracking_v2, plus_created, tag",
+          "id, token, short_code, status, destination_url, business_name, sold_to, batch_id, last_scan_at, scan_count, activated_at, tracking_v2, plus_created, tag, qr_style",
         )
         .in("batch_id", batchIds)
         .order("short_code", { ascending: true });
@@ -412,7 +423,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
 
       <div className="mx-auto max-w-4xl px-5 py-8">
         {aba === "plus" && showPlus && (
-          <PlusHub plates={plates} rules={rules} allowedUrls={allowedUrls} active={plus.active} sub={plus.sub} onDone={() => void load()} onRemove={(p) => void removePlate(p as Plate)} />
+          <PlusHub plates={plates} rules={rules} allowedUrls={allowedUrls} active={plus.active} sub={plus.sub} onDone={() => void load()} onRemove={(p) => void removePlate(p as Plate)} detailId={detailId} onDetail={goDetail} />
         )}
         {aba === "ajuda" && <AjudaTab />}
         {aba === "conta" && <ContaTab email={email} onSignOut={() => supabase.auth.signOut()} />}
@@ -530,6 +541,8 @@ function Lote({ email, userId }: { email: string; userId: string }) {
                     onDeactivate={deactivate}
                     onRelease={removePlate}
                     onRename={renameBatch}
+                    plusActive={plus.active}
+                    onOpenPlus={goDetail}
                   />
                 );
               })}
@@ -616,6 +629,8 @@ function BatchSection({
   onDeactivate,
   onRelease,
   onRename,
+  plusActive,
+  onOpenPlus,
 }: {
   batch: Batch | null;
   number: number;
@@ -625,6 +640,8 @@ function BatchSection({
   onDeactivate: (p: Plate) => void;
   onRelease: (p: Plate) => void;
   onRename: (b: Batch) => void;
+  plusActive: boolean;
+  onOpenPlus: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
@@ -683,7 +700,7 @@ function BatchSection({
             </button>
           )}
           {pagePlates.map((p) => (
-            <PlateCard key={p.id} plate={p} onActivate={onActivate} onDeactivate={onDeactivate} onRelease={onRelease} />
+            <PlateCard key={p.id} plate={p} onActivate={onActivate} onDeactivate={onDeactivate} onRelease={onRelease} plusActive={plusActive} onOpenPlus={onOpenPlus} />
           ))}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-1 text-xs font-semibold">
@@ -707,8 +724,12 @@ function PlateCard({
   onActivate,
   onDeactivate,
   onRelease,
+  plusActive,
+  onOpenPlus,
 }: {
   plate: Plate;
+  plusActive: boolean;
+  onOpenPlus: (id: string) => void;
   onActivate: (p: Plate, name: string, url: string, soldTo: string) => void;
   onDeactivate: (p: Plate) => void;
   onRelease: (p: Plate) => void;
@@ -829,7 +850,17 @@ function PlateCard({
         </Button>
       </div>
       <PlateQrDownload plateId={plate.id} />
-      <PlateScanStats plateId={plate.id} />
+      {plusActive && active ? (
+        <button
+          type="button"
+          onClick={() => onOpenPlus(plate.id)}
+          className="mt-3 inline-flex h-10 items-center gap-2 rounded-xl bg-secondary px-4 text-sm font-bold text-secondary-foreground hover:opacity-90"
+        >
+          <Crown className="size-4 text-primary" /> Abrir painel Plus deste código
+        </button>
+      ) : (
+        <PlateScanStats plateId={plate.id} />
+      )}
       {!toqy && <ToqyStrip href={toqyOnboardingUrl(plate.short_code)} />}
     </div>
   );
