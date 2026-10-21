@@ -38,27 +38,58 @@ export const Route = createFileRoute("/painel")({
   component: PanelLayout,
 });
 
-const TABS = [
-  { to: "/painel/visao-geral", label: "Visão geral", icon: LayoutDashboard },
-  { to: "/painel", label: "Pedidos", exact: true, icon: Package },
-  { to: "/painel/clientes", label: "Clientes", icon: Users },
-  { to: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
-  { to: "/painel/lotes", label: "Lotes", icon: Boxes },
-  { to: "/painel/financeiro", label: "Financeiro", icon: Wallet },
-  { to: "/painel/afiliados", label: "Afiliados", icon: Handshake },
-  { to: "/painel/calculadora", label: "Calculadora", icon: Calculator },
-  { to: "/painel/placas", label: "Placas", icon: CreditCard },
-  { to: "/painel/whatsapp", label: "WhatsApp", icon: MessageCircle },
-  { to: "/painel/estoque", label: "Estoque", icon: Archive },
-  { to: "/painel/scans", label: "Scans", icon: ScanLine },
-  { to: "/painel/estatisticas", label: "Estatísticas (Plus)", icon: Activity },
-  { to: "/painel/denuncias", label: "Denúncias", icon: ShieldAlert },
-  { to: "/painel/liberacoes", label: "Liberações", icon: ShieldCheck },
-  { to: "/painel/frete", label: "Frete por estado", icon: Truck },
-  { to: "/painel/contador", label: "Contador", icon: FileSpreadsheet },
-  { to: "/painel/conciliacao", label: "Conciliação MP", icon: Wallet },
-  { to: "/painel/integracoes", label: "Integrações", icon: Plug },
+// Menu em grupos: o que a pessoa procura fica junto (antes era uma lista única de 19 itens).
+const GROUPS = [
+  {
+    title: "Vendas",
+    items: [
+      { to: "/painel/visao-geral", label: "Visão geral", icon: LayoutDashboard },
+      { to: "/painel", label: "Pedidos", exact: true, icon: Package },
+      { to: "/painel/clientes", label: "Clientes", icon: Users },
+      { to: "/painel/afiliados", label: "Afiliados", icon: Handshake },
+      { to: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
+    ],
+  },
+  {
+    title: "Produção e estoque",
+    items: [
+      { to: "/painel/lotes", label: "Lotes", icon: Boxes },
+      { to: "/painel/placas", label: "Placas", icon: CreditCard },
+      { to: "/painel/estoque", label: "Estoque", icon: Archive },
+      { to: "/painel/frete", label: "Frete por estado", icon: Truck },
+    ],
+  },
+  {
+    title: "Atendimento",
+    items: [{ to: "/painel/whatsapp", label: "WhatsApp", icon: MessageCircle }],
+  },
+  {
+    title: "Uso dos códigos",
+    items: [
+      { to: "/painel/scans", label: "Scans", icon: ScanLine },
+      { to: "/painel/estatisticas", label: "Estatísticas (Plus)", icon: Activity },
+      { to: "/painel/liberacoes", label: "Liberações de destino", icon: ShieldCheck },
+      { to: "/painel/denuncias", label: "Denúncias", icon: ShieldAlert },
+    ],
+  },
+  {
+    title: "Financeiro",
+    items: [
+      { to: "/painel/financeiro", label: "Financeiro", icon: Wallet },
+      { to: "/painel/calculadora", label: "Calculadora", icon: Calculator },
+      { to: "/painel/contador", label: "Contador", icon: FileSpreadsheet },
+      { to: "/painel/conciliacao", label: "Conciliação MP", icon: Wallet },
+    ],
+  },
+  {
+    title: "Sistema",
+    items: [{ to: "/painel/integracoes", label: "Integrações", icon: Plug }],
+  },
 ] as const;
+
+type Tab = (typeof GROUPS)[number]["items"][number];
+const TABS: readonly Tab[] = GROUPS.flatMap((g) => g.items as readonly Tab[]);
+const isActive = (t: Tab, pathname: string) => ("exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to));
 
 function PanelLayout() {
   const [session, setSession] = useState<Session | null>(null);
@@ -111,25 +142,31 @@ function PanelLayout() {
         <img src={logoIconBranco} alt="GCard-PRÓ" className="size-7 object-contain" draggable={false} />
         <span className="text-sm font-bold text-white/70">/ painel</span>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-        {TABS.map((t) => {
-          const active = "exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to);
-          const Icon = t.icon;
-          return (
-            <Link
-              key={t.to}
-              to={t.to}
-              className={`flex items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold transition-colors md:py-2.5 ${
-                active
-                  ? "bg-primary/15 text-primary"
-                  : "text-white/70 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <Icon className="size-[18px] shrink-0" />
-              {t.label}
-            </Link>
-          );
-        })}
+      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
+        {GROUPS.map((g) => (
+          <div key={g.title}>
+            <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/35">{g.title}</p>
+            <div className="flex flex-col gap-0.5">
+              {g.items.map((t) => {
+                const active = isActive(t, pathname);
+                const Icon = t.icon;
+                return (
+                  <Link
+                    key={t.to}
+                    to={t.to}
+                    className={`relative flex items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold transition-colors md:py-2 ${
+                      active ? "bg-primary/15 text-primary" : "text-white/70 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {active && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-primary" aria-hidden />}
+                    <Icon className="size-[18px] shrink-0" />
+                    {t.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       <div className="border-t border-white/10 px-5 py-4">
         <p className="break-all text-xs text-white/50">{session.user.email}</p>
@@ -145,7 +182,7 @@ function PanelLayout() {
     </>
   );
 
-  const current = TABS.find((t) => ("exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to)));
+  const current = TABS.find((t) => isActive(t, pathname));
 
   return (
     <div className="flex min-h-screen flex-col bg-surface md:flex-row">
@@ -189,7 +226,7 @@ function PanelLayout() {
         <ul className="grid h-16 grid-cols-5 items-center text-[11px] font-semibold">
           {(["/painel", "/painel/clientes", "/painel/whatsapp", "/painel/estoque"] as const).map((to) => {
             const t = TABS.find((x) => x.to === to)!;
-            const active = "exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to);
+            const active = isActive(t, pathname);
             const Icon = t.icon;
             return (
               <li key={to}>
