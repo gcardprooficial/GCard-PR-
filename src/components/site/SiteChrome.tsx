@@ -62,6 +62,7 @@ export function NoticeBar() {
 const NAV = [
   { label: "Início", to: "/", hash: undefined },
   { label: "Produtos", to: "/produtos", hash: undefined },
+  { label: "GCard Plus", to: "/plus", hash: undefined },
   { label: "Seja um revendedor", to: "/", hash: "revendedor" },
   { label: "Como funciona", to: "/", hash: "como-funciona" },
   { label: "Gerar link grátis", to: "/gerador", hash: undefined },
