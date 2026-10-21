@@ -2216,6 +2216,10 @@ function Comprar() {
 
           {step === "revisao" && (
             <div>
+              <p className="mb-4 rounded-2xl border border-border bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground">
+                <strong className="text-foreground">Compra tranquila:</strong> frete grátis e 7 dias para desistir, com devolução pelos Correios sem custo para você.{" "}
+                <a href="/trocas-e-devolucoes" target="_blank" rel="noopener noreferrer" className="font-semibold underline">Ver política de trocas</a>.
+              </p>
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h1 className="text-2xl leading-tight sm:text-3xl">

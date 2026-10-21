@@ -293,6 +293,11 @@ export function SiteFooter() {
                   </Link>
                 </li>
                 <li>
+                  <Link to="/trocas-e-devolucoes" className={footerLink}>
+                    Trocas e devoluções
+                  </Link>
+                </li>
+                <li>
                   <Link to="/privacidade" className={footerLink}>
                     Política de privacidade
                   </Link>

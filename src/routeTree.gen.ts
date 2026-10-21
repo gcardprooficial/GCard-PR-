@@ -20,6 +20,7 @@ import { Route as PersonalizarRouteImport } from './routes/personalizar'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as SairRouteImport } from './routes/sair'
 import { Route as TermosRouteImport } from './routes/termos'
+import { Route as TrocasEDevolucoesRouteImport } from './routes/trocas-e-devolucoes'
 import { Route as ApiUnsubscribeRouteImport } from './routes/api/unsubscribe'
 import { Route as CCodeRouteImport } from './routes/c.$code'
 import { Route as GuiaIndexRouteImport } from './routes/guia.index'
@@ -118,6 +119,11 @@ const SairRoute = SairRouteImport.update({
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
   path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrocasEDevolucoesRoute = TrocasEDevolucoesRouteImport.update({
+  id: '/trocas-e-devolucoes',
+  path: '/trocas-e-devolucoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiUnsubscribeRoute = ApiUnsubscribeRouteImport.update({
@@ -357,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/privacidade': typeof PrivacidadeRoute
   '/sair': typeof SairRoute
   '/termos': typeof TermosRoute
+  '/trocas-e-devolucoes': typeof TrocasEDevolucoesRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/c/$code': typeof CCodeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
@@ -412,6 +419,7 @@ export interface FileRoutesByTo {
   '/privacidade': typeof PrivacidadeRoute
   '/sair': typeof SairRoute
   '/termos': typeof TermosRoute
+  '/trocas-e-devolucoes': typeof TrocasEDevolucoesRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/c/$code': typeof CCodeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
@@ -470,6 +478,7 @@ export interface FileRoutesById {
   '/privacidade': typeof PrivacidadeRoute
   '/sair': typeof SairRoute
   '/termos': typeof TermosRoute
+  '/trocas-e-devolucoes': typeof TrocasEDevolucoesRoute
   '/api/unsubscribe': typeof ApiUnsubscribeRoute
   '/c/$code': typeof CCodeRoute
   '/guia/cartao-de-visita-por-aproximacao': typeof GuiaCartaoDeVisitaPorAproximacaoRoute
@@ -529,6 +538,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/sair'
     | '/termos'
+    | '/trocas-e-devolucoes'
     | '/api/unsubscribe'
     | '/c/$code'
     | '/guia/cartao-de-visita-por-aproximacao'
@@ -584,6 +594,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/sair'
     | '/termos'
+    | '/trocas-e-devolucoes'
     | '/api/unsubscribe'
     | '/c/$code'
     | '/guia/cartao-de-visita-por-aproximacao'
@@ -641,6 +652,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/sair'
     | '/termos'
+    | '/trocas-e-devolucoes'
     | '/api/unsubscribe'
     | '/c/$code'
     | '/guia/cartao-de-visita-por-aproximacao'
@@ -699,6 +711,7 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   SairRoute: typeof SairRoute
   TermosRoute: typeof TermosRoute
+  TrocasEDevolucoesRoute: typeof TrocasEDevolucoesRoute
   ApiUnsubscribeRoute: typeof ApiUnsubscribeRoute
   CCodeRoute: typeof CCodeRoute
   PagamentoPixRoute: typeof PagamentoPixRoute
@@ -797,6 +810,13 @@ declare module '@tanstack/react-router' {
       path: '/termos'
       fullPath: '/termos'
       preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trocas-e-devolucoes': {
+      id: '/trocas-e-devolucoes'
+      path: '/trocas-e-devolucoes'
+      fullPath: '/trocas-e-devolucoes'
+      preLoaderRoute: typeof TrocasEDevolucoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/unsubscribe': {
@@ -1190,6 +1210,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   SairRoute: SairRoute,
   TermosRoute: TermosRoute,
+  TrocasEDevolucoesRoute: TrocasEDevolucoesRoute,
   ApiUnsubscribeRoute: ApiUnsubscribeRoute,
   CCodeRoute: CCodeRoute,
   PagamentoPixRoute: PagamentoPixRoute,
