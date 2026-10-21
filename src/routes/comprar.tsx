@@ -83,7 +83,7 @@ export const Route = createFileRoute("/comprar")({
     const catalog = await getCatalog().catch(() => null);
     const lojista = catalog?.plans.find((p) => p.slug === "lojista");
     // Só o que o lojista pode comprar agora: ativo e não é acrílico sem arte (só revenda).
-    const offered = (catalog?.products ?? []).filter((p) => p.status === "ativo" && !p.is_blank);
+    const offered = (catalog?.products ?? []).filter((p) => p.status === "ativo" && !p.is_blank && !p.is_supply);
     return {
       meta: [
         { title: "Montar meu GCard-PRÓ | Cartão de avaliação do Google" },
@@ -181,6 +181,8 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     has_qr: false,
     has_nfc: true,
     is_blank: false,
+    is_supply: false,
+    quantity_step: 1,
     min_quantity: 1,
     color_variants: null,
     nfc_addon_price_cents: null,
@@ -357,7 +359,7 @@ function Comprar() {
     .filter((item) => item.status !== "oculto")
     // Acrílico puro (sem QR/NFC) só entra no fluxo de revenda/atacado — lojista
     // final só compra cartão de bolso e plaquinha 10x10 já prontos.
-    .filter((item) => !(!isResale && item.is_blank));
+    .filter((item) => !(!isResale && (item.is_blank || (item as { is_supply?: boolean }).is_supply)));
   // O checkout não pode ficar sem opções quando o catálogo ainda não foi publicado.
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
@@ -388,10 +390,15 @@ function Comprar() {
   // Acrílico puro pula negócio/Google (não tem link pra gravar) e ganha a etapa
   // de cor no lugar.
   const isBlank = product?.is_blank ?? false;
+  // Insumo de revenda (tag NFC): sem negócio, sem cor, sem QR; quantidade só em múltiplos do kit.
+  const isSupply = (product as { is_supply?: boolean } | null)?.is_supply ?? false;
+  const quantityStep = Math.max(1, (product as { quantity_step?: number } | null)?.quantity_step ?? 1);
   // Tutorial de QR/NFC só nas placas com arte do Google (10x10/10x15, has_qr). Acrílico liso
   // e cartão só NFC não têm QR pra configurar. Quem já comprou (pago) antes também pula.
   const skipVideos = isReturningCustomer === true || !product?.has_qr;
-  const steps = isBlank
+  const steps = isSupply
+    ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
+    : isBlank
     ? isResale
       ? (["estilo", "cor", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
       : (["estilo", "cor", "quantidade", "dados", "entrega", "revisao"] as const)
@@ -561,7 +568,11 @@ function Comprar() {
   // Trocar de produto zera a cor e reajusta a quantidade pro mínimo do kit.
   useEffect(() => {
     setColor(product?.color_variants?.[0] ?? null);
-    setQuantity((q) => Math.max(q, product?.min_quantity ?? 1));
+    setQuantity((q) => {
+      const min = product?.min_quantity ?? 1;
+      const step = Math.max(1, (product as { quantity_step?: number } | null)?.quantity_step ?? 1);
+      return Math.max(min, Math.ceil(q / step) * step);
+    });
   }, [product]);
 
   // Abre o produto do kit, pula a escolha de modelo (a cor é a próxima etapa) e registra a visita com origem "personalizar".
@@ -977,7 +988,7 @@ function Comprar() {
       case "confirmar":
         return !!business || manualLink.trim().length > 10;
       case "quantidade":
-        return quantity >= minQuantity && quantity <= maxQuantity;
+        return quantity >= minQuantity && quantity <= maxQuantity && quantity % quantityStep === 0;
       case "dados":
         return (
           customer.firstName.length >= 2 &&
@@ -1663,7 +1674,10 @@ function Comprar() {
               </div>
 
               <div className="mt-7 grid gap-4 sm:grid-cols-2 md:gap-5">
-                {plan.packages.map((pkg, i) => {
+                {(isSupply
+                  ? [50, 100, 150, 200].map((q) => ({ id: `tag-${q}`, quantity: q, label: `${q} unidades`, badge: q === 100 ? "Mais pedido" : null, note: null }))
+                  : plan.packages
+                ).map((pkg, i) => {
                   const price = resolveUnitPrice(plan, product, pkg.quantity, isResale);
                   const selected = quantity === pkg.quantity;
                   return (
@@ -1731,7 +1745,7 @@ function Comprar() {
                 <div className="mt-2 flex items-stretch gap-2">
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.max(minQuantity, q - 1))}
+                    onClick={() => setQuantity((q) => Math.max(minQuantity, q - quantityStep))}
                     className="btn-press inline-flex w-12 items-center justify-center rounded-2xl border-2 border-border bg-card text-2xl font-black text-foreground hover:border-primary hover:bg-primary/10"
                     aria-label="Diminuir quantidade"
                   >
@@ -1742,12 +1756,13 @@ function Comprar() {
                     type="number"
                     min={minQuantity}
                     max={maxQuantity}
+                    step={quantityStep}
                     value={quantity}
                     onChange={(e) =>
                       setQuantity(
                         Math.min(
-                          maxQuantity,
-                          Math.max(minQuantity, Number(e.target.value) || minQuantity),
+                          maxQuantity - (maxQuantity % quantityStep),
+                          Math.max(minQuantity, Math.ceil((Number(e.target.value) || minQuantity) / quantityStep) * quantityStep),
                         ),
                       )
                     }
@@ -1755,7 +1770,7 @@ function Comprar() {
                   />
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
+                    onClick={() => setQuantity((q) => Math.min(maxQuantity - (maxQuantity % quantityStep), q + quantityStep))}
                     className="btn-press inline-flex w-12 items-center justify-center rounded-2xl border-2 border-border bg-card text-2xl font-black text-foreground hover:border-primary hover:bg-primary/10"
                     aria-label="Aumentar quantidade"
                   >

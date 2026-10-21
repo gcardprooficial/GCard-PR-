@@ -123,7 +123,7 @@ type OrderRow = {
   order_items: {
     product_name: string;
     quantity: number;
-    products: { image_url: string | null; is_blank: boolean; has_qr: boolean } | null;
+    products: { image_url: string | null; is_blank: boolean; has_qr: boolean; is_supply?: boolean } | null;
   }[];
 };
 
@@ -470,7 +470,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, shipping_status, me_order_id, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_zip, internal_notes, first_touch, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr))",
+        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, shipping_status, me_order_id, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_zip, internal_notes, first_touch, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr, is_supply))",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -1073,6 +1073,8 @@ function Orders() {
               >
                 {r.order_items.some((it) => it.products?.is_blank)
                   ? "ACRÍLICO SEM ARTE — separar cor e quantidade. Se o cliente escolheu QR (item \"Código QR para ativar\"), os códigos saem sozinhos no pagamento e ele baixa em /ativar; o chip NFC vai vazio"
+                  : r.order_items.some((it) => it.products?.is_supply)
+                    ? "TAG NFC ADESIVA (revenda) — separar o kit na quantidade pedida; sem lote e sem código. Só enviar"
                   : r.order_items.some((it) => it.products?.has_qr === false)
                     ? "CARTÃO PVC (só NFC) — sem lote e sem código; desconta sozinho do Estoque de cartões (aba Placas)"
                     : r.kind === "individual"

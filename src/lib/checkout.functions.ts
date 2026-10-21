@@ -148,7 +148,7 @@ async function resolveOrderLine(
     supabaseAdmin
       .from("products")
       .select(
-        "id, name, slug, price_delta_cents, resale_delta_cents, status, is_blank, min_quantity, color_variants, nfc_addon_price_cents",
+        "id, name, slug, price_delta_cents, resale_delta_cents, status, is_blank, is_supply, quantity_step, min_quantity, color_variants, nfc_addon_price_cents",
       )
       .eq("slug", input.productSlug)
       .maybeSingle(),
@@ -158,9 +158,16 @@ async function resolveOrderLine(
   if (!product || product.status !== "ativo") throw new Error(`Produto "${input.productSlug}" indisponível no momento.`);
   const prod = product as typeof product & {
     is_blank?: boolean;
+    is_supply?: boolean;
+    quantity_step?: number;
     min_quantity?: number;
     color_variants?: { slug: string; name: string; delta_cents: number }[] | null;
   };
+  // Insumo (tag NFC): só revendedor compra, e só em múltiplos do kit. Nunca confia no navegador.
+  if (prod.is_supply && !plan.is_resale) throw new Error(`${product.name} é vendido só para revendedores.`);
+  if (prod.quantity_step && prod.quantity_step > 1 && input.quantity % prod.quantity_step !== 0) {
+    throw new Error(`${product.name} é vendido de ${prod.quantity_step} em ${prod.quantity_step} unidades.`);
+  }
   if (prod.min_quantity && input.quantity < prod.min_quantity) {
     throw new Error(`${product.name} é vendido em kit de ${prod.min_quantity} unidades ou mais.`);
   }

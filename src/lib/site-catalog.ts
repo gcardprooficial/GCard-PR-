@@ -6,6 +6,7 @@ import produtoPlaquinha10x10 from "@/assets/placa 10x10 avaliacao google.png";
 import produtoPlaquinhaL from "@/assets/placa 10x15 avaliacao google.png";
 import acrilico10x10Cristal from "@/assets/acrilico-10x10-cristal.jpg";
 import acrilicoLCristal from "@/assets/acrilico-l-cristal.jpg";
+import tagNfcAdesiva from "@/assets/tag-nfc-adesiva.webp";
 
 export const catalogQuery = queryOptions({
   queryKey: ["catalog"],
@@ -22,6 +23,7 @@ export const PRODUCT_IMAGES: Record<string, string> = {
   "plaquinha-10x15-l": produtoPlaquinhaL,
   "acrilico-10x10-sem-arte": acrilico10x10Cristal,
   "acrilico-15x10-l-sem-arte": acrilicoLCristal,
+  "tag-nfc-adesiva": tagNfcAdesiva,
 };
 
 /** Fotos de balcão (public/mockups), usadas no carrossel e na galeria dos produtos. */
@@ -40,6 +42,8 @@ export const FALLBACK_PRODUCTS = [
     has_nfc: true,
     has_qr: false,
     is_blank: false,
+    is_supply: false,
+    quantity_step: 1,
     price_delta_cents: 0,
     resale_delta_cents: 0,
     resale_tiers: [],
@@ -54,6 +58,8 @@ export const FALLBACK_PRODUCTS = [
     has_nfc: true,
     has_qr: true,
     is_blank: false,
+    is_supply: false,
+    quantity_step: 1,
     price_delta_cents: 2000,
     resale_delta_cents: 2000,
     resale_tiers: [],
@@ -68,6 +74,8 @@ export const FALLBACK_PRODUCTS = [
     has_nfc: false,
     has_qr: false,
     is_blank: true,
+    is_supply: false,
+    quantity_step: 1,
     price_delta_cents: 0,
     resale_delta_cents: 0,
     // Última tabela real conhecida (migração 20260916160000) — só usada se o catálogo não carregar.
@@ -126,6 +134,7 @@ export function resaleLines(
     { slug: "cartao-bolso", label: "Cartão de bolso", note: "PVC, só NFC" },
     { slug: "plaquinha-10x10", label: "Placa 10×10", note: "Acrílico, QR Code + NFC" },
     { slug: "acrilico-10x10-sem-arte", label: "Acrílico sem arte 10×10", note: "Só o material, sem QR/NFC" },
+    { slug: "tag-nfc-adesiva", label: "Tag NFC adesiva", note: "Kits de 50 em 50, regravável" },
   ]
     .map((line) => {
       const product = products.find((p) => p.slug === line.slug);
