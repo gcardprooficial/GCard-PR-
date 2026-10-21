@@ -64,7 +64,7 @@ export const getOrderFreightQuotes = createServerFn({ method: "POST" })
     return calculateFreight({ destinationCep: order.ship_zip, profile, quantity: order.quantity });
   });
 
-const buySchema = z.object({ orderId: z.string().uuid(), quoteId: z.number() });
+const buySchema = z.object({ orderId: z.string().uuid(), quoteId: z.number(), company: z.string().trim().max(60).optional() });
 
 export const buyOrderShippingLabel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -115,7 +115,8 @@ export const buyOrderShippingLabel = createServerFn({ method: "POST" })
       .from("orders")
       .update({
         tracking_code: result.trackingCode,
-        tracking_carrier: result.carrier,
+        tracking_carrier: (await import("./tracking-map")).carrierFromCompany(data.company) ?? result.carrier,
+        me_order_id: result.meOrderId,
         fulfillment_status: "enviado",
         shipped_at: new Date().toISOString(),
       })
@@ -189,4 +190,13 @@ export const getSuperFreteForState = createServerFn({ method: "POST" })
       return { cents: q?.priceCents ?? null, service: q?.name ?? null };
     };
     return { uf: data.uf, acrilico: await one("acrilico"), pvc: await one("pvc") };
+  });
+
+/** Consulta o Melhor Envio agora e atualiza os pedidos (enviado, entregue, rastreio, transportadora). */
+export const syncShippingNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertTeam(context.userId);
+    const { syncShippingStatuses } = await import("./sync.server");
+    return syncShippingStatuses();
   });
