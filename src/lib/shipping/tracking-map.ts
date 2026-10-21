@@ -38,3 +38,16 @@ export function nextFulfillment(current: string, stage: ShipStage): "enviado" | 
   if (!target) return null;
   return ORDER.indexOf(target) > ORDER.indexOf(current as (typeof ORDER)[number]) ? target : null;
 }
+
+/** Aviso (webhook) da SuperFrete: evento + código de rastreio. Tolerante a variações; sem código ou evento conhecido = null. */
+export function parseSuperFreteEvent(body: unknown): { stage: "enviado" | "entregue"; tracking: string; postedAt: string | null } | null {
+  const b = body as { event?: unknown; type?: unknown; data?: Record<string, unknown> } | null;
+  const ev = String(b?.event ?? b?.type ?? "").toLowerCase();
+  const d = b?.data;
+  const tracking = typeof d?.["tracking"] === "string" ? (d["tracking"] as string).trim() : "";
+  if (!tracking) return null;
+  const stage = ev.endsWith("delivered") ? "entregue" : ev.endsWith("posted") ? "enviado" : null;
+  if (!stage) return null;
+  const posted = typeof d?.["posted_at"] === "string" ? (d["posted_at"] as string) : null;
+  return { stage, tracking, postedAt: posted && !Number.isNaN(Date.parse(posted)) ? new Date(posted).toISOString() : null };
+}

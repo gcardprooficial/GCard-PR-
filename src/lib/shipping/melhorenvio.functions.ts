@@ -200,3 +200,23 @@ export const syncShippingNow = createServerFn({ method: "POST" })
     const { syncShippingStatuses } = await import("./sync.server");
     return syncShippingStatuses();
   });
+
+/** Registra na SuperFrete o aviso de "postado/entregue" para o GCard (uma vez). Precisa de SUPERFRETE_TOKEN e SUPERFRETE_WEBHOOK_SECRET. */
+export const registerSuperFreteWebhook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertTeam(context.userId);
+    const token = process.env["SUPERFRETE_TOKEN"];
+    const secret = process.env["SUPERFRETE_WEBHOOK_SECRET"];
+    if (!token || !secret) return { ok: false as const, error: "Falta SUPERFRETE_TOKEN ou SUPERFRETE_WEBHOOK_SECRET na Vercel." };
+    const base = (process.env["SUPERFRETE_API_URL"] ?? "https://api.superfrete.com").replace(/\/$/, "");
+    const site = (process.env["PUBLIC_APP_URL"] ?? "https://www.gcardpro.com.br").replace(/\/$/, "");
+    const res = await fetch(`${base}/api/v0/webhooks`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json", "User-Agent": "GCard-PRO site (gcardpro.oficial@gmail.com)" },
+      body: JSON.stringify({ url: `${site}/api/webhooks/superfrete?secret=${encodeURIComponent(secret)}`, events: ["order.posted", "order.delivered"], description: "GCard-PRÓ rastreio automático" }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) return { ok: false as const, error: `SuperFrete recusou [${res.status}]: ${(await res.text()).slice(0, 160)}` };
+    return { ok: true as const };
+  });
