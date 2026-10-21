@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { untyped } from "@/lib/db-untyped";
 import { OrderEmailStatus, type EmailEventRow } from "@/components/OrderEmailStatus";
+import { PhoneScanPanel } from "@/components/PhoneScanPanel";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
@@ -222,14 +223,30 @@ function beep() {
  * getUserMedia cru -- é o motivo de trocar da nossa implementação manual com BarcodeDetector,
  * que não fechava foco em QR pequeno de perto.
  */
-function CameraScanner({
+/** Bipador: câmera do PC ou, melhor, o celular conectado por QR (câmera boa, lanterna, foco contínuo). */
+function CameraScanner(props: { onScan: (code: string) => void; onClose: () => void; already: Set<string> }) {
+  const [mode, setMode] = useState<"camera" | "celular">("camera");
+  if (mode === "celular") {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/90 p-4">
+        <PhoneScanPanel onScan={props.onScan} already={props.already} onBack={() => setMode("camera")} />
+        <button type="button" onClick={props.onClose} className="rounded-lg bg-white/10 px-4 py-2 text-sm text-white">Fechar</button>
+      </div>
+    );
+  }
+  return <WebcamScanner {...props} onUsePhone={() => setMode("celular")} />;
+}
+
+function WebcamScanner({
   onScan,
   onClose,
   already,
+  onUsePhone,
 }: {
   onScan: (code: string) => void;
   onClose: () => void;
   already: Set<string>;
+  onUsePhone: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scannerRef = useRef<import("qr-scanner").default | null>(null);
@@ -387,9 +404,14 @@ function CameraScanner({
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4">
       <div className="flex w-full max-w-sm items-center justify-between text-white">
         <p className="text-sm font-semibold">Aponte pro QR da placa</p>
-        <button type="button" onClick={onClose} className="rounded-lg bg-white/10 px-3 py-1.5 text-sm">
-          Fechar
-        </button>
+        <div className="flex gap-2">
+          <button type="button" onClick={onUsePhone} className="rounded-lg bg-amber-400 px-3 py-1.5 text-sm font-bold text-black">
+            📱 Usar o celular
+          </button>
+          <button type="button" onClick={onClose} className="rounded-lg bg-white/10 px-3 py-1.5 text-sm">
+            Fechar
+          </button>
+        </div>
       </div>
       <div className="relative mt-3 w-full max-w-sm overflow-hidden rounded-2xl border-2 border-white/20 bg-black">
         <video ref={videoRef} muted playsInline className="w-full" />
