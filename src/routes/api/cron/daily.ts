@@ -44,6 +44,14 @@ export const Route = createFileRoute("/api/cron/daily")({
           } catch {
             console.error("Cron: falha na carga diária para o hub");
           }
+          // Rastreio: puxa do Melhor Envio quem foi postado/entregue. Não pode derrubar o cron.
+          let shipping: unknown = null;
+          try {
+            const { syncShippingStatuses } = await import("@/lib/shipping/sync.server");
+            shipping = await syncShippingStatuses();
+          } catch {
+            console.error("Cron: falha na sincronização de rastreio");
+          }
           // Relatório mensal e alerta de destino fora do ar do GCard Plus. Só com a flag ligada; não pode derrubar o cron.
           let plus: unknown = null;
           try {
@@ -52,7 +60,7 @@ export const Route = createFileRoute("/api/cron/daily")({
           } catch {
             console.error("Cron: falha nos avisos do Plus");
           }
-          return Response.json({ ok: true, reconcile, reminders, autoCancelled, expired, whatsappContacts, hubSync, plus });
+          return Response.json({ ok: true, reconcile, reminders, autoCancelled, expired, whatsappContacts, hubSync, plus, shipping });
         } catch (error) {
           console.error("Cron diário falhou", error);
           return Response.json({ ok: false }, { status: 500 });

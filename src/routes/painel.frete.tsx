@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FREIGHT_UFS, getFreightForState, getSuperFreteForState } from "@/lib/shipping/melhorenvio.functions";
+import { FREIGHT_UFS, getFreightForState, getSuperFreteForState, registerSuperFreteWebhook } from "@/lib/shipping/melhorenvio.functions";
 
 export const Route = createFileRoute("/painel/frete")({ component: FretePorEstado });
 
@@ -18,6 +18,16 @@ const best = (c: Cell) => ("error" in c ? null : [c.jadlog, c.correios].filter((
 function FretePorEstado() {
   const run = useServerFn(getFreightForState);
   const runSf = useServerFn(getSuperFreteForState);
+  const runRegister = useServerFn(registerSuperFreteWebhook);
+  async function registerWebhook() {
+    try {
+      const r = await runRegister();
+      if (r.ok) toast.success("SuperFrete vai avisar o GCard quando um pedido for postado ou entregue.");
+      else toast.error(r.error);
+    } catch {
+      toast.error("Não consegui registrar agora.");
+    }
+  }
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [limit, setLimit] = useState(25);
@@ -93,6 +103,9 @@ function FretePorEstado() {
         </div>
         <Button onClick={() => void load()} disabled={loading} className="h-10 font-bold">
           {loading ? `Cotando… ${rows?.length ?? 0}/27` : rows ? "Cotar de novo" : "Cotar todos os estados"}
+        </Button>
+        <Button variant="outline" onClick={() => void registerWebhook()} className="h-10" title="Pede à SuperFrete que avise o GCard quando um pedido for postado ou entregue">
+          Ligar rastreio automático da SuperFrete
         </Button>
       </div>
 

@@ -16,7 +16,7 @@ import {
 import { createCheckoutPreference } from "@/lib/payments/createPreference.server";
 import { usePanel } from "@/lib/panelContext";
 import { CARRIERS } from "@/lib/shipping";
-import { buyOrderShippingLabel, getOrderFreightQuotes } from "@/lib/shipping/melhorenvio.functions";
+import { buyOrderShippingLabel, getOrderFreightQuotes, syncShippingNow } from "@/lib/shipping/melhorenvio.functions";
 import type { FreightQuote } from "@/lib/shipping/melhorenvio.server";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,6 +108,8 @@ type OrderRow = {
   fulfillment_status: string;
   tracking_code: string | null;
   tracking_carrier: string | null;
+  shipping_status: string | null;
+  me_order_id: string | null;
   ship_street: string | null;
   ship_number: string | null;
   ship_complement: string | null;
@@ -468,7 +470,7 @@ function Orders() {
     const { data, error } = await supabase
       .from("orders")
       .select(
-        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_zip, internal_notes, first_touch, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr))",
+        "id, order_number, created_at, kind, customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, payment_status, payment_provider, fulfillment_status, tracking_code, tracking_carrier, shipping_status, me_order_id, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, ship_zip, internal_notes, first_touch, businesses(name, review_url), order_items(product_name, quantity, products(image_url, is_blank, has_qr))",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -539,6 +541,21 @@ function Orders() {
   const [cameraOpenFor, setCameraOpenFor] = useState<string | null>(null);
   const runGetFreightQuotes = useServerFn(getOrderFreightQuotes);
   const runBuyLabel = useServerFn(buyOrderShippingLabel);
+  const runSyncShipping = useServerFn(syncShippingNow);
+  const [syncingShip, setSyncingShip] = useState(false);
+  async function syncShipping() {
+    setSyncingShip(true);
+    try {
+      const r = await runSyncShipping();
+      if (r.erro) toast.error(`Melhor Envio: ${r.erro.slice(0, 120)}`);
+      else toast.success(`Rastreio: ${r.checked} conferido(s), ${r.enviados} enviado(s), ${r.entregues} entregue(s), ${r.rastreios} código(s) novo(s).`);
+      void load();
+    } catch {
+      toast.error("Não consegui sincronizar o rastreio agora.");
+    } finally {
+      setSyncingShip(false);
+    }
+  }
   const [quotingFor, setQuotingFor] = useState<string | null>(null);
   const [buyingFor, setBuyingFor] = useState<string | null>(null);
   const [quotes, setQuotes] = useState<Record<string, FreightQuote[] | "erro">>({});
@@ -547,7 +564,8 @@ function Orders() {
     if (!window.confirm("Comprar essa etiqueta agora? Isso gasta saldo real da carteira Melhor Envio.")) return;
     setBuyingFor(row.id);
     try {
-      const res = await runBuyLabel({ data: { orderId: row.id, quoteId } });
+      const company = (quotes[row.id] as FreightQuote[] | undefined)?.find?.((q) => q.id === quoteId)?.company;
+      const res = await runBuyLabel({ data: { orderId: row.id, quoteId, ...(company ? { company } : {}) } });
       if (res.ok) {
         toast.success(`Etiqueta comprada. Rastreio: ${res.trackingCode}`);
         void load();
@@ -891,6 +909,9 @@ function Orders() {
             onClick={() => void load().then(() => checkPayments(false))}
           >
             {checkingPayments ? "Conferindo…" : (<><span className="sm:hidden">Atualizar</span><span className="hidden sm:inline">Atualizar e conferir pagamentos</span></>)}
+          </Button>
+          <Button size="sm" variant="outline" className="h-10 shrink-0" disabled={syncingShip} onClick={() => void syncShipping()} title="Consulta o Melhor Envio e atualiza enviado, entregue e código de rastreio">
+            {syncingShip ? "Sincronizando…" : (<><span className="sm:hidden">🚚 Rastreio</span><span className="hidden sm:inline">🚚 Sincronizar rastreio</span></>)}
           </Button>
         </div>
       </div>
@@ -1329,7 +1350,14 @@ function Orders() {
                   )}
                 </div>
                 <div className="min-w-[14rem] flex-1">
-                  <Label className="text-xs">Rastreio</Label>
+                  <Label className="text-xs">
+                    Rastreio
+                    {r.shipping_status && (
+                      <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase text-foreground">
+                        etiqueta: {({ pending: "pendente", released: "liberada", generated: "gerada", posted: "postada", delivered: "entregue", canceled: "cancelada", undelivered: "não entregue" } as Record<string, string>)[r.shipping_status] ?? r.shipping_status}
+                      </span>
+                    )}
+                  </Label>
                   <div className="mt-1 flex gap-2">
                     <select
                       defaultValue={r.tracking_carrier ?? ""}

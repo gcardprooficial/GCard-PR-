@@ -350,7 +350,7 @@ async function meFetch(path: string, token: string, body: unknown) {
  */
 export async function buyShippingLabel(
   input: LabelPurchaseInput,
-): Promise<{ ok: true; trackingCode: string; carrier: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; trackingCode: string; carrier: string; meOrderId: string } | { ok: false; error: string }> {
   const token = await getValidAccessToken();
   if (!token) return { ok: false, error: "Melhor Envio não está conectado." };
 
@@ -404,8 +404,51 @@ export async function buyShippingLabel(
     const trackingCode = generated?.[0]?.tracking;
     if (!trackingCode) return { ok: false, error: "Etiqueta gerada mas sem código de rastreio ainda -- confira no painel do Melhor Envio." };
 
-    return { ok: true, trackingCode, carrier: "melhor-envio" };
+    return { ok: true, trackingCode, carrier: "melhor-envio", meOrderId: cartItem.id };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Erro desconhecido na compra." };
   }
+}
+
+export type ShipmentTracking = {
+  id: string;
+  status: string | null;
+  tracking: string | null;
+  postedAt: string | null;
+  deliveredAt: string | null;
+};
+
+/**
+ * Estado das etiquetas no Melhor Envio (POST /api/v2/me/shipment/tracking). Só lê.
+ * A resposta vem como objeto indexado pelo id da etiqueta; aceita também lista, por segurança.
+ */
+export async function trackShipments(ids: string[]): Promise<{ ok: true; items: ShipmentTracking[] } | { ok: false; error: string }> {
+  if (ids.length === 0) return { ok: true, items: [] };
+  const token = await getValidAccessToken();
+  if (!token) return { ok: false, error: "Melhor Envio não está conectado." };
+  const res = await fetch(`${baseUrl()}/api/v2/me/shipment/tracking`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "Content-Type": "application/json", "User-Agent": USER_AGENT },
+    body: JSON.stringify({ orders: ids }),
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (!res.ok) return { ok: false, error: `Melhor Envio rastreio falhou [${res.status}]: ${(await res.text()).slice(0, 200)}` };
+  const json = (await res.json().catch(() => null)) as Record<string, Record<string, unknown>> | Record<string, unknown>[] | null;
+  if (!json || typeof json !== "object") return { ok: true, items: [] };
+  const entries: [string, Record<string, unknown>][] = Array.isArray(json)
+    ? json.map((x) => [String(x["id"] ?? ""), x])
+    : Object.entries(json).map(([k, v]) => [k, v as Record<string, unknown>]);
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  return {
+    ok: true,
+    items: entries
+      .filter(([, v]) => v && typeof v === "object")
+      .map(([k, v]) => ({
+        id: str(v["id"]) ?? k,
+        status: str(v["status"]),
+        tracking: str(v["tracking"]) ?? str(v["melhorenvio_tracking"]),
+        postedAt: str(v["posted_at"]),
+        deliveredAt: str(v["delivered_at"]),
+      })),
+  };
 }
