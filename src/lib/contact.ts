@@ -1,5 +1,5 @@
 export const WHATSAPP_CONTACTS = [
-  { name: "Paulo", display: "(11) 95294-6565", number: "5511952946565" },
+  { name: "Paulo | Suporte", display: "(11) 95294-6565", number: "5511952946565" },
 ] as const;
 
 export function whatsappLink(number: string, text?: string) {
