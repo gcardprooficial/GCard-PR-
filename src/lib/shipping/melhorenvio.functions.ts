@@ -49,15 +49,16 @@ export const getOrderFreightQuotes = createServerFn({ method: "POST" })
     const db = supabaseAdmin as any;
     const { data: order } = await db
       .from("orders")
-      .select("ship_zip, quantity, order_items(quantity, products(has_qr, is_blank))")
+      .select("ship_zip, quantity, order_items(quantity, products(has_qr, is_blank, ship_profile))")
       .eq("id", data.orderId)
       .maybeSingle();
     if (!order?.ship_zip) return { ok: false as const, error: "Pedido sem CEP de entrega." };
 
     // Cartão de bolso (PVC) é a única coisa sem QR e sem ser acrílico puro; todo o resto
     // (placa 10x10, acrílico sem arte) usa o perfil de embalagem do acrílico.
-    const items = (order.order_items ?? []) as { products?: { has_qr?: boolean; is_blank?: boolean } }[];
-    const isPvc = items.length > 0 && items.every((i) => i.products?.has_qr === false && !i.products?.is_blank);
+    const items = (order.order_items ?? []) as { products?: { has_qr?: boolean; is_blank?: boolean; ship_profile?: string | null } }[];
+    // Embalagem pequena (cartão/tag) só se TODOS os itens forem pequenos; placa de acrílico (ship_profile) usa a caixa maior.
+    const isPvc = items.length > 0 && items.every((i) => i.products?.has_qr === false && !i.products?.is_blank && i.products?.ship_profile !== "acrilico");
     const profile: "pvc" | "acrilico" = isPvc ? "pvc" : "acrilico";
 
     const { calculateFreight } = await import("./melhorenvio.server");
@@ -77,14 +78,15 @@ export const buyOrderShippingLabel = createServerFn({ method: "POST" })
     const { data: order } = await db
       .from("orders")
       .select(
-        "customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, ship_zip, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, order_items(quantity, products(has_qr, is_blank))",
+        "customer_name, customer_email, customer_phone, customer_document, quantity, total_cents, ship_zip, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state, order_items(quantity, products(has_qr, is_blank, ship_profile))",
       )
       .eq("id", data.orderId)
       .maybeSingle();
     if (!order?.ship_zip) return { ok: false as const, error: "Pedido sem endereço de entrega." };
 
-    const items = (order.order_items ?? []) as { products?: { has_qr?: boolean; is_blank?: boolean } }[];
-    const isPvc = items.length > 0 && items.every((i) => i.products?.has_qr === false && !i.products?.is_blank);
+    const items = (order.order_items ?? []) as { products?: { has_qr?: boolean; is_blank?: boolean; ship_profile?: string | null } }[];
+    // Embalagem pequena (cartão/tag) só se TODOS os itens forem pequenos; placa de acrílico (ship_profile) usa a caixa maior.
+    const isPvc = items.length > 0 && items.every((i) => i.products?.has_qr === false && !i.products?.is_blank && i.products?.ship_profile !== "acrilico");
     const profile: "pvc" | "acrilico" = isPvc ? "pvc" : "acrilico";
 
     const { buyShippingLabel } = await import("./melhorenvio.server");

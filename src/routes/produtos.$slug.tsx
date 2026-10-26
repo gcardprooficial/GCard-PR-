@@ -98,7 +98,7 @@ function Produto() {
                 ))}
               </ul>
               {!p.is_blank && !p.is_supply && <p className="mt-3 text-xs text-muted-foreground">Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente.</p>}
-              {p.is_supply && <p className="mt-3 text-xs text-muted-foreground">Vendido só para revendedores, em kits de {p.quantity_step} em {p.quantity_step} unidades (mínimo {p.min_quantity}). A etiqueta chega vazia: você grava o link com o app NFC Tools.</p>}
+              {p.is_supply && <p className="mt-3 text-xs text-muted-foreground">Vendido só para revendedores, a partir de {p.min_quantity} unidades{p.quantity_step > 1 ? ` (de ${p.quantity_step} em ${p.quantity_step})` : ""}. O chip NFC chega vazio: você grava o link com o app NFC Tools.</p>}
             </div>
           )}
           {p.is_blank && (

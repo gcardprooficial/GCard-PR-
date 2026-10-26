@@ -39,6 +39,9 @@ import acrilico10x10Preto from "@/assets/acrilico-10x10-preto.jpg";
 import acrilico10x10Azul from "@/assets/acrilico-10x10-azul.jpg";
 import acrilicoLCristal from "@/assets/acrilico-l-cristal.jpg";
 import tagNfcAdesiva from "@/assets/tag-nfc-adesiva.webp";
+import placaInstagram from "@/assets/placa-instagram-10x10.webp";
+import placaPix from "@/assets/placa-pix-10x10.webp";
+import placaWhatsapp from "@/assets/placa-whatsapp-10x10.webp";
 import acrilicoLBranco from "@/assets/acrilico-l-branco.jpg";
 import acrilicoLPreto from "@/assets/acrilico-l-preto.jpg";
 import acrilicoLAzul from "@/assets/acrilico-l-azul.jpg";
@@ -166,6 +169,9 @@ const IMAGES: Record<string, string> = {
   "acrilico-10x10-sem-arte": acrilico10x10Cristal,
   "acrilico-15x10-l-sem-arte": acrilicoLCristal,
   "tag-nfc-adesiva": tagNfcAdesiva,
+  "placa-instagram-10x10": placaInstagram,
+  "placa-pix-10x10": placaPix,
+  "placa-whatsapp-10x10": placaWhatsapp,
 };
 
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
@@ -1677,7 +1683,10 @@ function Comprar() {
 
               <div className="mt-7 grid gap-4 sm:grid-cols-2 md:gap-5">
                 {(isSupply
-                  ? [50, 100, 150, 200].map((q) => ({ id: `tag-${q}`, quantity: q, label: `${q} unidades`, badge: q === 100 ? "Mais pedido" : null, note: null }))
+                  ? (quantityStep > 1
+                      ? [0, 1, 2, 3].map((k) => (product?.min_quantity ?? quantityStep) + k * quantityStep)
+                      : [10, 20, 50, 100]
+                    ).map((q, idx) => ({ id: `kit-${q}`, quantity: q, label: `${q} unidades`, badge: idx === 1 ? "Mais pedido" : null, note: null }))
                   : plan.packages
                 ).map((pkg, i) => {
                   const price = resolveUnitPrice(plan, product, pkg.quantity, isResale);
