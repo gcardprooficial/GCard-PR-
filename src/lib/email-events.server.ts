@@ -381,8 +381,8 @@ export async function dispatchOrderEmailEvent(
           }
         } else if (isSupply) {
           body +=
-            `<p>Estamos separando as suas <strong>tags NFC adesivas</strong>. Avisamos quando forem enviadas, com o código de rastreio.</p>` +
-            `<p>Elas chegam vazias (regraváveis, 13,56 MHz): grave o link com o app <strong>NFC Tools</strong> (grátis) e cole onde quiser.</p>`;
+            `<p>Estamos separando o seu pedido de produtos <strong>NFC para revenda</strong>. Avisamos quando for enviado, com o código de rastreio.</p>` +
+            `<p>O chip NFC chega vazio (regravável): grave o link com o app <strong>NFC Tools</strong> (grátis).</p>`;
         } else if (cardOnly && isRevenda) {
           body +=
             `<p>Estamos separando os seus cartões de PVC com NFC. Avisamos quando entrar em produção e quando forem enviados, com o código de rastreio.</p>` +
@@ -421,7 +421,7 @@ export async function dispatchOrderEmailEvent(
         body += `<p>Seu pedido foi <strong>enviado</strong>! O frete é por nossa conta.</p>${summary}${tracking}`;
         body += `<p style="font-size:13px;color:#555;">Não gostou ou veio com defeito? Você tem 7 dias para desistir e a devolução pelos Correios é sem custo. <a href="${siteUrl()}/trocas-e-devolucoes" style="color:#1A1A1A;font-weight:600;">Veja como devolver</a>.</p>`;
         if (isSupply) {
-          body += `<p>As tags chegam vazias. Para gravar: abra o app NFC Tools (grátis), vá em Escrever &gt; Adicionar registro &gt; URL, cole o link e encoste no celular. Dá para regravar quando quiser.</p>`;
+          body += `<p>O chip NFC chega vazio. Para gravar: abra o app NFC Tools (grátis), vá em Escrever &gt; Adicionar registro &gt; URL, cole o link e encoste o celular no produto. Dá para regravar quando quiser.</p>`;
         } else if (cardOnly) {
           body += cardUsageTips();
         } else if (isRevenda && !isBlank) {
@@ -441,7 +441,7 @@ export async function dispatchOrderEmailEvent(
         if (isBlank) {
           body += `<p>Qualquer problema com o material, é só chamar no WhatsApp.</p>`;
         } else if (isSupply) {
-          body += `<p>Qualquer dúvida para gravar as tags, é só chamar no WhatsApp.</p>`;
+          body += `<p>Qualquer dúvida para gravar o chip NFC, é só chamar no WhatsApp.</p>`;
         } else if (cardOnly) {
           body += cardUsageTips();
         } else if (isRevenda) {

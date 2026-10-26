@@ -1074,7 +1074,7 @@ function Orders() {
                 {r.order_items.some((it) => it.products?.is_blank)
                   ? "ACRÍLICO SEM ARTE — separar cor e quantidade. Se o cliente escolheu QR (item \"Código QR para ativar\"), os códigos saem sozinhos no pagamento e ele baixa em /ativar; o chip NFC vai vazio"
                   : r.order_items.some((it) => it.products?.is_supply)
-                    ? "TAG NFC ADESIVA (revenda) — separar o kit na quantidade pedida; sem lote e sem código. Só enviar"
+                    ? "PRODUTO NFC DE REVENDA (tag ou placa com arte) — separar na quantidade pedida; sem lote e sem código. Só enviar"
                   : r.order_items.some((it) => it.products?.has_qr === false)
                     ? "CARTÃO PVC (só NFC) — sem lote e sem código; desconta sozinho do Estoque de cartões (aba Placas)"
                     : r.kind === "individual"

@@ -7,6 +7,9 @@ import produtoPlaquinhaL from "@/assets/placa 10x15 avaliacao google.png";
 import acrilico10x10Cristal from "@/assets/acrilico-10x10-cristal.jpg";
 import acrilicoLCristal from "@/assets/acrilico-l-cristal.jpg";
 import tagNfcAdesiva from "@/assets/tag-nfc-adesiva.webp";
+import placaInstagram from "@/assets/placa-instagram-10x10.webp";
+import placaPix from "@/assets/placa-pix-10x10.webp";
+import placaWhatsapp from "@/assets/placa-whatsapp-10x10.webp";
 
 export const catalogQuery = queryOptions({
   queryKey: ["catalog"],
@@ -24,6 +27,9 @@ export const PRODUCT_IMAGES: Record<string, string> = {
   "acrilico-10x10-sem-arte": acrilico10x10Cristal,
   "acrilico-15x10-l-sem-arte": acrilicoLCristal,
   "tag-nfc-adesiva": tagNfcAdesiva,
+  "placa-instagram-10x10": placaInstagram,
+  "placa-pix-10x10": placaPix,
+  "placa-whatsapp-10x10": placaWhatsapp,
 };
 
 /** Fotos de balcão (public/mockups), usadas no carrossel e na galeria dos produtos. */
@@ -135,6 +141,7 @@ export function resaleLines(
     { slug: "plaquinha-10x10", label: "Placa 10×10", note: "Acrílico, QR Code + NFC" },
     { slug: "acrilico-10x10-sem-arte", label: "Acrílico sem arte 10×10", note: "Só o material, sem QR/NFC" },
     { slug: "tag-nfc-adesiva", label: "Tag NFC adesiva", note: "Kits de 50 em 50, regravável" },
+    { slug: "placa-instagram-10x10", label: "Placa 10×10 Instagram / Pix / WhatsApp", note: "Arte pronta + chip NFC, a partir de 10" },
   ]
     .map((line) => {
       const product = products.find((p) => p.slug === line.slug);
