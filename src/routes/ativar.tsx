@@ -47,6 +47,8 @@ type Batch = {
   quantity: number;
   codes_sent_at: string | null;
   created_at: string;
+  /** Veio de uma compra: o cliente não remove o grupo sozinho (as placas já foram impressas e enviadas). */
+  owner_order_id: string | null;
   products: { name: string; has_qr: boolean; has_nfc: boolean } | null;
 };
 type Plate = {
@@ -216,7 +218,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
       await supabase.rpc("claim_my_batches");
       const b = await supabase
         .from("batches")
-        .select("id, code, label, quantity, codes_sent_at, created_at, products(name, has_qr, has_nfc)")
+        .select("id, code, label, quantity, codes_sent_at, created_at, owner_order_id, products(name, has_qr, has_nfc)")
         .eq("owner_user_id", userId)
         .order("created_at", { ascending: false });
       if (b.error) {
@@ -725,9 +727,11 @@ function BatchSection({
               <button type="button" onClick={() => onRename(batch)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground">
                 <Pencil className="size-3.5" /> Dar um nome a este grupo
               </button>
-              <button type="button" onClick={() => onRemoveBatch(batch, plates.length)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-destructive hover:underline">
-                <Trash2 className="size-3.5" /> Remover este grupo
-              </button>
+              {!batch.owner_order_id && (
+                <button type="button" onClick={() => onRemoveBatch(batch, plates.length)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-destructive hover:underline">
+                  <Trash2 className="size-3.5" /> Remover este grupo
+                </button>
+              )}
             </div>
           )}
           {pagePlates.map((p) => (

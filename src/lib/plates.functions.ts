@@ -92,8 +92,10 @@ export const releaseBatch = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ batchId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const db = await admin();
-    const { data: batch } = await db.from("batches").select("id, code, owner_user_id").eq("id", data.batchId).maybeSingle();
+    const { data: batch } = await db.from("batches").select("id, code, owner_user_id, owner_order_id").eq("id", data.batchId).maybeSingle();
     if (!batch || batch.owner_user_id !== context.userId) throw new Error("Esse grupo não é seu.");
+    // Lote de compra (placas já impressas e enviadas): quem remove é a equipe, nunca o cliente.
+    if (batch.owner_order_id) throw new Error("Esse grupo veio de uma compra e não pode ser removido por aqui. Fale com o suporte.");
     const { data: plates } = await db.from("plates").select("id, short_code, plus_created").eq("batch_id", batch.id);
     let devolvidas = 0;
     let apagados = 0;
