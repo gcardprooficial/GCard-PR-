@@ -2,6 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Menu, X, UserRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { money } from "@/lib/pricing";
+import { catalogQuery, minKitPriceCents } from "@/lib/site-catalog";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { PIX_DISCOUNT_DEADLINE, PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
@@ -19,10 +22,12 @@ function useCountdown(deadline: string) {
   return msLeft;
 }
 
-/** Faixa temporária -- 5% no Pix + frete grátis, com cronômetro real até o prazo da promo. */
+/** Faixa de promoção fixa no topo: menor preço de kit real do catálogo; Pix e cronômetro só enquanto a promo do Pix valer. */
 export function PromoBar() {
+  const { data } = useQuery(catalogQuery);
   const msLeft = useCountdown(PIX_DISCOUNT_DEADLINE);
-  if (!pixDiscountActive()) return null;
+  const from = minKitPriceCents(data);
+  const pix = pixDiscountActive();
   const totalSeconds = Math.max(0, Math.floor(msLeft / 1000));
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
@@ -32,18 +37,53 @@ export function PromoBar() {
 
   return (
     <div className="bg-primary text-primary-foreground">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-center text-xs font-bold sm:text-sm">
-        <span>
-          💸 <strong>{PIX_DISCOUNT_PCT}% OFF no Pix</strong>
-        </span>
+      <Link
+        to="/"
+        hash="precos"
+        className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-4 py-2 text-center text-xs font-black uppercase tracking-wide sm:text-sm"
+      >
+        <span>🔥 Promoção para revendedores</span>
+        {from > 0 && <span>kits a partir de {money(from)} a unidade</span>}
         <span className="hidden opacity-40 sm:inline">·</span>
-        <span>🚚 Frete grátis para todo o Brasil</span>
+        <span className="hidden sm:inline">quanto mais leva, menos paga</span>
         <span className="hidden opacity-40 sm:inline">·</span>
-        <span className="font-mono tabular-nums">
-          Termina em {days > 0 ? `${days}d ` : ""}
-          {pad(hours)}:{pad(minutes)}:{pad(seconds)}
-        </span>
-      </div>
+        <span className="hidden sm:inline">🚚 frete grátis para todo o Brasil</span>
+        {pix && (
+          <>
+            <span className="hidden opacity-40 sm:inline">·</span>
+            <span>
+              {PIX_DISCOUNT_PCT}% OFF no Pix · termina em {days > 0 ? `${days}d ` : ""}
+              {pad(hours)}:{pad(minutes)}:{pad(seconds)}
+            </span>
+          </>
+        )}
+      </Link>
+    </div>
+  );
+}
+
+/** Prazo de entrega por região, contado a partir do envio (produção/despacho só em dia útil). */
+export function DeliveryTimes({ className = "" }: { className?: string }) {
+  return (
+    <div className={`rounded-2xl border border-border bg-card p-5 ${className}`}>
+      <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Prazo de entrega depois do envio</p>
+      <ul className="mt-3 space-y-2 text-sm">
+        <li className="flex items-start gap-2.5">
+          <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-g-green" />
+          <span>
+            <strong>Sul e Sudeste:</strong> 2 a 3 dias
+          </span>
+        </li>
+        <li className="flex items-start gap-2.5">
+          <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+          <span>
+            <strong>Norte e Nordeste:</strong> 7 a 8 dias
+          </span>
+        </li>
+      </ul>
+      <p className="mt-3 text-xs leading-snug text-muted-foreground">
+        O prazo conta a partir do despacho. Produzimos e despachamos de {BUSINESS_HOURS}.
+      </p>
     </div>
   );
 }
@@ -63,10 +103,9 @@ const NAV = [
   { label: "Início", to: "/", hash: undefined },
   { label: "Produtos", to: "/produtos", hash: undefined },
   { label: "GCard Plus", to: "/plus", hash: undefined },
-  { label: "Seja um revendedor", to: "/", hash: "revendedor" },
+  { label: "Preços dos kits", to: "/", hash: "precos" },
   { label: "Como funciona", to: "/", hash: "como-funciona" },
   { label: "Gerar link grátis", to: "/gerador", hash: undefined },
-  { label: "Para o seu negócio", to: "/", hash: "seu-negocio" },
   { label: "Dúvidas", to: "/", hash: "duvidas" },
   { label: "Contato", to: "/", hash: "contato" },
 ] as const;
@@ -89,6 +128,7 @@ export function SiteHeader() {
   const logged = useLoggedEmail();
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-foreground text-white">
+      <PromoBar />
       <NoticeBar />
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4 sm:gap-4 sm:px-5">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="GCard-PRÓ — início">
@@ -226,7 +266,7 @@ export function SiteFooter() {
               <img src={logoMarca} alt="GCard-PRÓ" className="h-6 w-auto" draggable={false} />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/65">
-              Fornecedor de cartões NFC e placas QR Code/NFC que levam seus clientes direto à avaliação do Google.
+              Fornecedor de kits de cartões NFC e placas QR Code/NFC para revendedores, que levam o cliente direto à avaliação do Google.
             </p>
             <p className="mt-4 text-xs font-semibold text-white/70">Atendimento e produção: {BUSINESS_HOURS}. Fechado aos sábados, domingos e feriados.</p>
             <p className="mt-2 text-xs text-white/45">© {new Date().getFullYear()} GCard-PRÓ</p>
@@ -247,13 +287,8 @@ export function SiteFooter() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/comprar" search={{ caminho: "lojista" }} className={footerLink}>
-                    Para a minha loja
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/comprar" search={{ caminho: "revenda" }} className={footerLink}>
-                    Revender lotes
+                  <Link to="/comprar" search={{}} className={footerLink}>
+                    Comprar kits para revenda
                   </Link>
                 </li>
                 <li>

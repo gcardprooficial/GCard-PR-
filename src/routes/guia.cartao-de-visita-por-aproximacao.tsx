@@ -314,7 +314,7 @@ function Article() {
           . Se a solução fizer sentido para o seu negócio, conheça as opções em{" "}
           <Link
             to="/comprar"
-            search={{ caminho: "lojista" }}
+            search={{}}
             className="font-semibold text-primary hover:underline"
           >
             comprar
@@ -394,10 +394,10 @@ function Article() {
           </p>
           <Link
             to="/comprar"
-            search={{ caminho: "lojista" }}
+            search={{}}
             className="mt-5 inline-block rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
           >
-            Começar pedido
+            Ver kits para revenda
           </Link>
         </div>
       </article>

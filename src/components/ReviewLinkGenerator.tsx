@@ -227,11 +227,11 @@ export function ReviewLinkGenerator() {
           <div className="mt-6 rounded-2xl bg-primary/15 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-semibold">
-                Quer esse link num cartão NFC ou placa pro seu balcão? A gente entrega pronto.
+                Revende cartão NFC e placa de avaliação? Compre kits a partir de 10 unidades, com frete grátis.
               </p>
               <Button asChild size="sm" className="rounded-xl">
-                <Link to="/comprar" search={{ caminho: "lojista" }}>
-                  Quero o meu →
+                <Link to="/comprar" search={{}}>
+                  Ver kits →
                 </Link>
               </Button>
             </div>
