@@ -101,9 +101,9 @@ function Tutorial() {
         </div>
 
         <section className="mt-10 rounded-3xl border border-border bg-card p-6">
-          <h2 className="text-xl font-bold">Comprou para o seu próprio negócio?</h2>
+          <h2 className="text-xl font-bold">Qual é o seu produto?</h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Na loja própria a placa ou o cartão já chega gravado com o link de avaliação do seu negócio: é só usar. Os passos abaixo valem para quem comprou para revenda (QR/NFC em branco) ou quer trocar o link depois.
+            As placas com QR Code e NFC chegam em branco: os passos abaixo valem para elas. Cartão, tags e placas de Instagram, Pix e WhatsApp chegam com o chip vazio: você grava o link com o app gratuito NFC Tools.
           </p>
         </section>
 
