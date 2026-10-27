@@ -128,8 +128,6 @@ function Calculadora() {
           <Label className="text-xs font-bold">Preço de venda (un.)</Label>
           <div className="mt-2 flex flex-wrap gap-2">
             {[
-              { label: "Lojista (1-4 un) R$ 59,90", val: "59,90" },
-              { label: "Lojista (5 un) R$ 49,90", val: "49,90" },
               { label: "Revenda (10-24 un) R$ 37,90", val: "37,90" },
               { label: "Revenda (25-99 un) R$ 27,90", val: "27,90" },
               { label: "Revenda (100+ un) R$ 19,90", val: "19,90" },

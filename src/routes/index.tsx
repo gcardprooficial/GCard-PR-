@@ -4,10 +4,10 @@ import { money } from "@/lib/pricing";
 import { COMPANY } from "@/lib/company";
 import { Testimonials } from "@/components/Testimonials";
 import { DeliveryTimes, SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
-import { Marquee, PhoneMockup } from "@/components/site/Marquee";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { MOCKUPS, PRODUCT_IMAGES, catalogQuery, minKitPriceCents, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
+import { MERCADO_LIVRE_LINKS, PRODUCT_IMAGES, catalogQuery, minKitPriceCents, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
+import { SITE_PROMO_PCT, SITE_PROMO_UNTIL_LABEL, sitePromoActive } from "@/lib/promo";
 import heroCartao from "@/assets/gcard-pro-hero-barbearia.jpeg";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 
@@ -71,7 +71,7 @@ export const Route = createFileRoute("/")({
               name: "Quanto tempo demora a entrega?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "Depois do envio, 2 a 3 dias para Sul e Sudeste e 7 a 8 dias para Norte e Nordeste. Produzimos e despachamos de segunda a sexta.",
+                text: "Depois do envio, 2 a 3 dias para Sul e Sudeste, cerca de 5 dias para o Centro-Oeste e 7 a 8 dias para Norte e Nordeste. Produzimos e despachamos de segunda a sexta.",
               },
             },
             {
@@ -221,146 +221,61 @@ function Home() {
         </ul>
       </section>
 
-      {/* ===== PREÇOS DOS KITS ===== */}
-      <section id="precos" className="scroll-mt-28 bg-surface/60 py-14 md:py-20">
-        <div className="mx-auto max-w-7xl px-5">
-          <div className="max-w-3xl">
-            <span className="inline-flex rounded-full bg-primary px-3 py-1 text-xs font-black uppercase tracking-wider text-primary-foreground">
-              🔥 Promoção ativa
+      {/* ===== PRODUTOS (uma vez só: escolhe, clica, cai na página do produto) ===== */}
+      <section id="precos" className="scroll-mt-28 bg-surface/60 py-12 md:py-16">
+        <div className="mx-auto max-w-5xl px-5">
+          <div className="text-center">
+            <span className="inline-flex rounded-full bg-primary px-3 py-1 text-[11px] font-black uppercase tracking-wider text-primary-foreground">
+              🔥 {sitePromoActive() ? `${SITE_PROMO_PCT}% OFF em todo o site até ${SITE_PROMO_UNTIL_LABEL}` : "Promoção ativa"}
             </span>
-            <h2 className="mt-4 text-3xl leading-tight sm:text-4xl md:text-5xl">
-              Kits a partir de {money(fromCents)} a unidade. <span className="highlight-yellow">Quanto mais leva, menos paga.</span>
-            </h2>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Vendemos só em kit, a partir de {minQty} unidades, com frete grátis para todo o Brasil. O preço por unidade cai a cada faixa de quantidade.
+            <h2 className="mt-3 text-2xl leading-tight sm:text-3xl md:text-4xl">Escolha o seu kit</h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
+              Só kits, a partir de {minQty} unidades, com frete grátis. Quanto mais leva, menos paga por unidade.
             </p>
           </div>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {revendaLines.map((line) => (
-              <div key={line.slug} className="flex flex-col overflow-hidden rounded-3xl border border-border bg-card card-soft">
-                <div className="aspect-[4/3] overflow-hidden bg-surface">
-                  <img
-                    src={PRODUCT_IMAGES[line.slug] ?? produtoCartao}
-                    alt={line.label}
-                    loading="lazy"
-                    draggable={false}
-                    className={`h-full w-full ${line.slug.startsWith("acrilico") || line.slug === "tag-nfc-adesiva" ? "object-contain p-5" : "object-cover"}`}
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <h3 className="text-lg font-bold leading-snug">{line.label}</h3>
-                  <p className="mt-1 text-xs font-semibold text-muted-foreground">{line.note}</p>
-                  {line.comingSoon ? (
-                    <p className="mt-4 text-sm text-muted-foreground">Em breve</p>
-                  ) : (
-                    <ul className="mt-4 space-y-1.5 text-sm">
-                      {line.tiers.map((tier) => (
-                        <li key={tier.min_quantity} className="flex items-baseline justify-between gap-3 border-b border-dashed border-border pb-1.5 last:border-0">
-                          <span className="text-muted-foreground">{tier.label ?? `${tier.min_quantity}+ un.`}</span>
-                          <span className="font-display text-xl">{money(tier.unit_price_cents)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {!line.comingSoon && (
-                    <Button asChild className="btn-press btn-primary-shadow mt-5 h-12 w-full rounded-xl font-bold">
-                      <Link to="/comprar" search={{ produto: line.slug }}>Comprar este kit →</Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 grid gap-5 md:grid-cols-2">
-            <DeliveryTimes />
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Como funciona a compra</p>
-              <ul className="mt-3 space-y-2 text-sm">
-                {[
-                  `Mínimo de ${minQty} unidades por kit`,
-                  "Frete grátis para todo o Brasil",
-                  "Acrílico sem arte nas cores cristal, branco, preto e azul",
-                  "Você ativa cada código no seu painel de revendedor",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-foreground/80">
-                    <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/30">{CHECK}</span>
-                    <span className="font-medium">{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== PRODUTOS: CARROSSEL DE BALCÃO ===== */}
-      <section id="produtos" className="bg-surface/60 py-14 md:py-20">
-        <div className="mx-auto max-w-7xl px-5">
-          <Eyebrow>Nossos produtos</Eyebrow>
-          <h2 className="mt-3 max-w-2xl text-3xl leading-tight sm:text-4xl md:text-5xl">
-            Pronto pra revender, ou acrílico puro pra sua arte.
-          </h2>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
-            Duas linhas: a <strong className="text-foreground">com arte</strong>, que chega com a arte impressa e o QR/NFC prontos pra receber o link de cada cliente seu. E o{" "}
-            <strong className="text-foreground">acrílico sem impressão</strong>, pra quem já tem a própria arte e quer só o material cortado.
-          </p>
-        </div>
-
-        <Marquee className="mt-10">
-          {MOCKUPS.map((src, i) => (
-            <img
-              key={src}
-              src={src}
-              alt={`Placa GCard-PRÓ no balcão, foto ${i + 1}`}
-              loading="lazy"
-              draggable={false}
-              className="h-36 w-auto rounded-xl object-cover shadow-md sm:h-44"
-            />
-          ))}
-        </Marquee>
-
-        <div className="mx-auto mt-10 grid max-w-7xl gap-5 px-5 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => {
-            const soon = product.status !== "ativo";
-            return (
-              <Link
-                key={product.id}
-                to="/produtos/$slug"
-                params={{ slug: product.slug }}
-                className="group overflow-hidden rounded-3xl border border-border bg-card card-soft card-soft-hover"
-              >
-                <div className="relative aspect-square overflow-hidden bg-surface">
-                  <img
-                    src={PRODUCT_IMAGES[product.slug] ?? produtoCartao}
-                    alt={product.name}
-                    loading="lazy"
-                    draggable={false}
-                    className={`h-full w-full transition-transform duration-700 group-hover:scale-105 ${product.is_blank ? "object-contain p-6" : "object-cover"}`}
-                  />
-                  {soon && (
-                    <span className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-[11px] font-black text-primary-foreground">Em breve</span>
-                  )}
-                </div>
-                <div className="p-5">
-                  <h3 className="text-lg font-bold">{product.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{product.format}</p>
-                  <div className="mt-3 flex gap-2">
-                    {product.has_nfc && <span className="rounded-lg bg-primary/20 px-2.5 py-1 text-[11px] font-black">NFC</span>}
-                    {product.has_qr && <span className="rounded-lg bg-foreground/10 px-2.5 py-1 text-[11px] font-black">QR Code</span>}
-                    {product.is_blank && <span className="rounded-lg bg-foreground/10 px-2.5 py-1 text-[11px] font-black">Sem arte</span>}
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5">
+            {revendaLines.map((line) => {
+              const best = line.tiers[line.tiers.length - 1];
+              const first = line.tiers[0];
+              return (
+                <Link
+                  key={line.slug}
+                  to="/produtos/$slug"
+                  params={{ slug: line.slug }}
+                  className="group overflow-hidden rounded-2xl border border-border bg-card card-soft card-soft-hover"
+                >
+                  <div className="aspect-[4/3] overflow-hidden bg-surface">
+                    <img
+                      src={PRODUCT_IMAGES[line.slug] ?? produtoCartao}
+                      alt={line.label}
+                      loading="lazy"
+                      draggable={false}
+                      className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-105"
+                    />
                   </div>
-                  <span className="mt-4 inline-flex text-sm font-bold text-foreground group-hover:underline">Ver produto →</span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-        <div className="mt-8 text-center">
-          <Button asChild variant="outline" className="h-12 rounded-xl border-2 px-6 font-bold">
-            <Link to="/produtos">Ver todos os produtos</Link>
-          </Button>
+                  <div className="p-3 sm:p-4">
+                    <h3 className="text-sm font-bold leading-snug sm:text-base">{line.label}</h3>
+                    <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground sm:text-xs">{line.note}</p>
+                    {line.comingSoon || !best ? (
+                      <p className="mt-2 text-xs font-semibold text-muted-foreground">Em breve</p>
+                    ) : (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        a partir de{" "}
+                        <strong className="font-display text-base text-foreground sm:text-lg">{money(best.unit_price_cents)}</strong>
+                        {best.list_price_cents && best.list_price_cents !== best.unit_price_cents && (
+                          <s className="ml-1.5 text-[11px]">{money(best.list_price_cents)}</s>
+                        )}
+                        <span className="block text-[11px]">kit de {first?.min_quantity ?? minQty}+ un.</span>
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <DeliveryTimes className="mx-auto mt-8 max-w-md" />
         </div>
       </section>
 
@@ -378,7 +293,7 @@ function Home() {
         <ol className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Escolha o kit", `Cartão de bolso, placa 10×10 ou acrílico sem arte, a partir de ${minQty} unidades.`],
-            ["Receba em casa", "Frete grátis para todo o Brasil. Sul e Sudeste em 2 a 3 dias, Norte e Nordeste em 7 a 8 dias depois do envio."],
+            ["Receba em casa", "Frete grátis para todo o Brasil. Depois do envio: Sul e Sudeste em 2 a 3 dias, Centro-Oeste em cerca de 5, Norte e Nordeste em 7 a 8."],
             ["Configure para cada cliente", "Cada placa guarda um código. Você aponta para o link de avaliação do negócio do seu cliente."],
             ["Troque o link quando quiser", "Em gcardpro.com.br/ativar, com o e-mail da compra, você edita o link de cada placa sem reimprimir."],
           ].map(([t, d], i) => (
@@ -389,31 +304,6 @@ function Home() {
             </li>
           ))}
         </ol>
-      </section>
-
-      {/* ===== SISTEMA / PAINEL ===== */}
-      <section id="painel" className="bg-foreground text-white">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-14 md:grid-cols-[1.1fr_0.9fr] md:py-20">
-          <div>
-            <Eyebrow dark>Seu painel</Eyebrow>
-            <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">Ative e troque no seu painel.</h2>
-            <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/70 sm:text-base">
-              Cada placa e cada cartão tem o seu código (ex.: GCARD-00001), pra você saber qual é qual. Em gcardpro.com.br/ativar, com o e-mail da compra, você escolhe o link de cada placa e altera a qualquer momento.
-            </p>
-            <ul className="mt-6 space-y-3 text-sm font-semibold text-white/85">
-              {["Um código por placa", "Serve pra qualquer negócio", "Acompanhe os toques e leituras"].map((f) => (
-                <li key={f} className="flex items-center gap-3">
-                  <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">{CHECK}</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <Button asChild size="lg" className="btn-press btn-primary-shadow mt-8 h-14 rounded-xl px-7 text-base font-bold">
-              <Link to="/ativar">Acessar painel →</Link>
-            </Button>
-          </div>
-          <PhoneMockup />
-        </div>
       </section>
 
       {/* ===== GCARD PLUS (assinatura opcional) ===== */}
@@ -453,62 +343,36 @@ function Home() {
         </div>
       </section>
 
-      {/* ===== O QUE É CADA PRODUTO ===== */}
-      <section id="o-que-e" className="mx-auto max-w-7xl px-5 py-14 md:py-20">
-        <div className="mx-auto max-w-3xl text-center">
-          <Eyebrow>Quem somos</Eyebrow>
-          <h2 className="mt-3 text-3xl leading-tight sm:text-4xl md:text-5xl">
-            Somos <span className="highlight-yellow">fornecedores</span> de cartões e placas de avaliação do Google.
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Você compra direto de quem fabrica, em kit, pra revender pros seus clientes. Sem mensalidade, sem intermediário.
-          </p>
-        </div>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {[
-            {
-              tag: "Cartão de bolso",
-              title: "PVC · NFC por aproximação",
-              specs: ["8,5 × 5,4 cm, em PVC", "Funciona só por aproximação NFC (sem QR Code)"],
-              art: "Já vai com a arte “Avaliação do Google” pronta.",
-              blank: "O chip NFC é de fábrica em branco: recebe o link de avaliação que você quiser.",
-            },
-            {
-              tag: "Placa 10×10",
-              title: "Acrílico puro · QR Code + NFC",
-              specs: ["10 × 10 cm, em acrílico puro", "QR Code e NFC na mesma placa"],
-              art: "Já vai com a arte “Avaliação do Google” pronta (adesivo retroverso, aplicado por trás do acrílico).",
-              blank: "O QR Code e o NFC são de fábrica em branco: recebem o link que você quiser.",
-            },
-            {
-              tag: "Acrílico sem arte",
-              title: "Só o material, pra você personalizar",
-              specs: ["Sem impressão, sem QR Code, sem NFC", "Cores: cristal (transparente), branco, preto e azul"],
-              art: "Para quem já tem a própria arte ou quer aplicar adesivo.",
-              blank: "Vendido em kit a partir de 10 unidades, com frete grátis.",
-            },
-          ].map((item) => (
-            <div key={item.tag} className="rounded-3xl border border-border bg-card p-7 card-soft">
-              <span className="inline-flex rounded-full bg-primary/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider">{item.tag}</span>
-              <h3 className="mt-4 text-xl leading-snug">{item.title}</h3>
-              <ul className="mt-4 space-y-2 text-sm text-foreground/80">
-                {item.specs.map((s) => (
-                  <li key={s} className="flex gap-2">
-                    <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
-                    <span className="font-medium">{s}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{item.art}</p>
-              <p className="mt-2 text-sm font-semibold leading-relaxed text-foreground/90">{item.blank}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-8 rounded-3xl border border-dashed border-foreground/20 bg-card p-6">
-          <h3 className="text-lg font-bold">Precisa de outra medida?</h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Cortamos acrílico em outros tamanhos e formatos sob encomenda. Fala com a gente pelo WhatsApp (botão verde no canto inferior direito) que a gente monta seu orçamento.
-          </p>
+      {/* ===== MERCADO LIVRE ===== */}
+      <section id="mercado-livre" className="mx-auto max-w-7xl px-5 py-14 md:py-16">
+        <div className="rounded-3xl border border-border bg-card p-7 card-soft md:p-10">
+          <div className="max-w-2xl">
+            <Eyebrow>Também no Mercado Livre</Eyebrow>
+            <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">Prefere comprar pelo Mercado Livre?</h2>
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+              A GCard-PRÓ também vende lá. Escolha o anúncio da placa e compre com a proteção do Mercado Livre. Os preços e as condições de lá são os do anúncio.
+            </p>
+          </div>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {MERCADO_LIVRE_LINKS.map((ml) => (
+              <a
+                key={ml.slug}
+                href={ml.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-analytics-event="click_marketplace"
+                data-analytics-label={`mercado livre ${ml.slug}`}
+                className="group flex items-center gap-3 rounded-2xl border-2 border-border bg-background p-3 transition-colors hover:border-primary"
+              >
+                <img src={PRODUCT_IMAGES[ml.slug] ?? produtoCartao} alt="" loading="lazy" draggable={false} className="size-16 shrink-0 rounded-xl bg-surface object-cover" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold leading-tight">{ml.label}</span>
+                  <span className="block text-xs text-muted-foreground">{ml.note}</span>
+                  <span className="mt-1 block text-xs font-black text-primary-foreground/90 group-hover:underline">Ver no Mercado Livre →</span>
+                </span>
+              </a>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -581,7 +445,7 @@ const FAQ: [string, React.ReactNode][] = [
   ["Tem mensalidade?", <>A placa e o cartão <strong className="text-foreground">não têm mensalidade</strong>: você paga uma vez e usa para sempre, inclusive trocar o link. Existe o <Link to="/plus" className="font-bold text-foreground underline decoration-primary decoration-2 underline-offset-4">GCard Plus</Link>, uma assinatura <strong className="text-foreground">opcional</strong> com QR dinâmico ilimitado, estatísticas e relatórios. Se você não assinar ou cancelar, nada para de funcionar.</>],
   ["Funciona em qualquer celular?", "O cartão de bolso funciona por NFC em iPhone XS+ e na maioria dos Androids compatíveis."],
   ["Preciso configurar algo?", "As placas com QR Code e NFC chegam em branco e você ativa cada uma, com o link do seu cliente, em gcardpro.com.br/ativar. Os produtos só NFC (cartão, tags e placas de Instagram, Pix e WhatsApp) chegam com o chip vazio e você grava o link com o app NFC Tools."],
-  ["Quanto tempo demora a entrega?", <>Depois do envio: <strong className="text-foreground">Sul e Sudeste, 2 a 3 dias</strong>; <strong className="text-foreground">Norte e Nordeste, 7 a 8 dias</strong>. Produzimos e despachamos de segunda a sexta.</>],
+  ["Quanto tempo demora a entrega?", <>Depois do envio: <strong className="text-foreground">Sul e Sudeste, 2 a 3 dias</strong>; <strong className="text-foreground">Centro-Oeste, cerca de 5 dias</strong>; <strong className="text-foreground">Norte e Nordeste, 7 a 8 dias</strong>. Produzimos e despachamos de segunda a sexta.</>],
   ["Vocês vendem uma unidade só?", "Não. A GCard-PRÓ vende apenas kits para revendedores, a partir de 10 unidades."],
   ["Quanto custa o frete?", <>Frete <strong className="text-foreground">grátis</strong> para todo o território nacional. Enviamos pelos Correios (PAC ou Sedex, conforme o prazo disponível).</>],
   [

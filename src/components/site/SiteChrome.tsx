@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { money } from "@/lib/pricing";
 import { catalogQuery, minKitPriceCents } from "@/lib/site-catalog";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { PIX_DISCOUNT_DEADLINE, PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
+import { SITE_PROMO_DEADLINE, SITE_PROMO_PCT, SITE_PROMO_UNTIL_LABEL, sitePromoActive } from "@/lib/promo";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
 import logoMarca from "@/assets/logo/header-marca.png";
@@ -22,12 +22,12 @@ function useCountdown(deadline: string) {
   return msLeft;
 }
 
-/** Faixa de promoção fixa no topo: menor preço de kit real do catálogo; Pix e cronômetro só enquanto a promo do Pix valer. */
+/** Faixa fixa no topo: promoção do site inteiro até 29/11 (com cronômetro) e o menor preço de kit do catálogo. */
 export function PromoBar() {
   const { data } = useQuery(catalogQuery);
-  const msLeft = useCountdown(PIX_DISCOUNT_DEADLINE);
+  const msLeft = useCountdown(SITE_PROMO_DEADLINE);
   const from = minKitPriceCents(data);
-  const pix = pixDiscountActive();
+  const active = sitePromoActive();
   const totalSeconds = Math.max(0, Math.floor(msLeft / 1000));
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
@@ -42,21 +42,21 @@ export function PromoBar() {
         hash="precos"
         className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-4 py-2 text-center text-xs font-black uppercase tracking-wide sm:text-sm"
       >
-        <span>🔥 Promoção para revendedores</span>
-        {from > 0 && <span>kits a partir de {money(from)} a unidade</span>}
-        <span className="hidden opacity-40 sm:inline">·</span>
-        <span className="hidden sm:inline">quanto mais leva, menos paga</span>
-        <span className="hidden opacity-40 sm:inline">·</span>
-        <span className="hidden sm:inline">🚚 frete grátis para todo o Brasil</span>
-        {pix && (
+        {active ? (
           <>
+            <span>🔥 {SITE_PROMO_PCT}% OFF em todo o site até {SITE_PROMO_UNTIL_LABEL}</span>
             <span className="hidden opacity-40 sm:inline">·</span>
-            <span>
-              {PIX_DISCOUNT_PCT}% OFF no Pix · termina em {days > 0 ? `${days}d ` : ""}
+            <span className="hidden font-mono tabular-nums sm:inline">
+              termina em {days > 0 ? `${days}d ` : ""}
               {pad(hours)}:{pad(minutes)}:{pad(seconds)}
             </span>
           </>
+        ) : (
+          <span>🔥 Promoção para revendedores</span>
         )}
+        {from > 0 && <span>kits a partir de {money(from)} a unidade</span>}
+        <span className="hidden opacity-40 sm:inline">·</span>
+        <span className="hidden sm:inline">🚚 frete grátis para todo o Brasil</span>
       </Link>
     </div>
   );
@@ -72,6 +72,12 @@ export function DeliveryTimes({ className = "" }: { className?: string }) {
           <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-g-green" />
           <span>
             <strong>Sul e Sudeste:</strong> 2 a 3 dias
+          </span>
+        </li>
+        <li className="flex items-start gap-2.5">
+          <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-amber-400" />
+          <span>
+            <strong>Centro-Oeste:</strong> cerca de 5 dias
           </span>
         </li>
         <li className="flex items-start gap-2.5">

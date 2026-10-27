@@ -32,10 +32,24 @@ export const PRODUCT_IMAGES: Record<string, string> = {
   "placa-whatsapp-10x10": placaWhatsapp,
 };
 
+/** Anúncios da GCard-PRÓ no Mercado Livre (também vendemos por lá). */
+export const MERCADO_LIVRE_LINKS = [
+  { slug: "plaquinha-10x10", label: "Placa Avaliação Google 10×10", note: "QR Code + NFC", url: "https://meli.la/2sA8JL7" },
+  { slug: "placa-instagram-10x10", label: "Placa Instagram 10×10", note: "NFC, arte pronta", url: "https://meli.la/12hNW1T" },
+  { slug: "placa-pix-10x10", label: "Placa Pix 10×10", note: "NFC, arte pronta", url: "https://meli.la/2hCK1Z6" },
+  { slug: "placa-whatsapp-10x10", label: "Placa WhatsApp 10×10", note: "NFC, arte pronta", url: "https://meli.la/1338jPP" },
+] as const;
+
 /** Fotos de balcão (public/mockups), usadas no carrossel e na galeria dos produtos. */
 export const MOCKUPS = [
   "10x10_02", "cartao_bolso_02", "10x15_02", "10x10_03", "cartao_bolso_03", "10x15_03", "10x10_corrigido", "cartao_bolso_corrigido", "10x15_corrigido",
 ].map((n) => `/faixa/${n}.webp`);
+
+/** Fotos de balcão do MESMO formato do produto (nunca a foto de outro produto). Sem foto própria, a galeria some. */
+export function mockupsFor(slug: string): string[] {
+  const prefix = slug === "cartao-bolso" ? "cartao_bolso" : slug === "plaquinha-10x10" ? "10x10" : slug === "plaquinha-10x15-l" ? "10x15" : null;
+  return prefix ? MOCKUPS.filter((src) => src.includes(`/${prefix}_`)) : [];
+}
 
 export const FALLBACK_PRODUCTS = [
   {
@@ -95,20 +109,8 @@ export const FALLBACK_PRODUCTS = [
 
 type Catalog = Awaited<ReturnType<typeof getCatalog>>;
 
-/** Planos "Lojista" e "Revenda" com o fallback de quando o catálogo ainda não carregou. */
+/** Plano de revenda (o único à venda) com o fallback de quando o catálogo ainda não carregou. */
 export function plansFrom(data: Catalog) {
-  const lojistaCatalog = data.plans.find((p) => p.slug === "lojista");
-  const lojista = lojistaCatalog
-    ? { ...lojistaCatalog, name: "Cartão Individual" }
-    : {
-        name: "Cartão Individual",
-        audience: "Para usar no seu próprio balcão",
-        unit_price_cents: 5990,
-        tiers: [
-          { min_quantity: 1, unit_price_cents: 5990, label: "1 a 4 unidades" },
-          { min_quantity: 5, unit_price_cents: 4990, label: "5 unidades" },
-        ],
-      };
   const revendaCatalog = data.plans.find((p) => p.slug === "renda-extra");
   const revenda = revendaCatalog
     ? { ...revendaCatalog, name: "Kit para Revenda" }
@@ -122,7 +124,7 @@ export function plansFrom(data: Catalog) {
           { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
         ],
       };
-  return { lojista, revenda };
+  return { revenda };
 }
 
 /** Menor preço por unidade entre todos os kits ativos (o "a partir de" da promoção). */
@@ -148,10 +150,14 @@ export function resaleLines(
 ) {
   return [
     { slug: "cartao-bolso", label: "Cartão de bolso", note: "PVC, só NFC" },
-    { slug: "plaquinha-10x10", label: "Placa 10×10", note: "Acrílico, QR Code + NFC" },
+    { slug: "plaquinha-10x10", label: "Placa Avaliação Google 10×10", note: "Acrílico, QR Code + NFC" },
+    { slug: "plaquinha-10x15-l", label: "Placa em L 10×15", note: "Acrílico de mesa, QR Code + NFC" },
+    { slug: "placa-instagram-10x10", label: "Placa Instagram 10×10", note: "Arte pronta + chip NFC" },
+    { slug: "placa-pix-10x10", label: "Placa Pix 10×10", note: "Arte pronta + chip NFC" },
+    { slug: "placa-whatsapp-10x10", label: "Placa WhatsApp 10×10", note: "Arte pronta + chip NFC" },
     { slug: "acrilico-10x10-sem-arte", label: "Acrílico sem arte 10×10", note: "Só o material, sem QR/NFC" },
+    { slug: "acrilico-15x10-l-sem-arte", label: "Acrílico em L sem arte", note: "Só o material, sem QR/NFC" },
     { slug: "tag-nfc-adesiva", label: "Tag NFC adesiva", note: "Kits de 50 em 50, regravável" },
-    { slug: "placa-instagram-10x10", label: "Placa 10×10 Instagram / Pix / WhatsApp", note: "Arte pronta + chip NFC, a partir de 10" },
   ]
     .map((line) => {
       const product = products.find((p) => p.slug === line.slug);

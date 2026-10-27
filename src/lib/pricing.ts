@@ -1,7 +1,11 @@
+import { promoPrice } from "@/lib/promo";
+
 export type PriceTier = {
   min_quantity: number;
   unit_price_cents: number;
   label: string | null;
+  /** Preço de tabela, antes da promoção do site (só vem preenchido enquanto a promo vale). */
+  list_price_cents?: number;
 };
 
 /** Preço unitário da faixa aplicável à quantidade escolhida. */
@@ -34,6 +38,17 @@ export function resolveUnitPrice(
   isResale: boolean,
   colorDeltaCents = 0,
 ): number {
+  return promoPrice(listUnitPrice(plan, product, quantity, isResale, colorDeltaCents));
+}
+
+/** Preço de tabela (sem a promoção do site). */
+export function listUnitPrice(
+  plan: { tiers: PriceTier[]; unit_price_cents: number },
+  product: PricedProduct | null,
+  quantity: number,
+  isResale: boolean,
+  colorDeltaCents = 0,
+): number {
   if (product?.is_blank && product.resale_tiers?.length) {
     return (
       unitPriceForQuantity(product.resale_tiers, quantity, product.resale_tiers[0]!.unit_price_cents) +
@@ -52,6 +67,18 @@ export function resolveUnitPrice(
 
 /** Tabela de faixas de preço já resolvida pro produto (pra listar "a partir de X un: R$Y"). */
 export function resolveTiersForProduct(
+  plan: { tiers: PriceTier[]; unit_price_cents: number },
+  product: PricedProduct | null,
+  isResale: boolean,
+): readonly PriceTier[] {
+  const list = listTiersForProduct(plan, product, isResale);
+  return list.map((t) => {
+    const promo = promoPrice(t.unit_price_cents);
+    return promo === t.unit_price_cents ? t : { ...t, unit_price_cents: promo, list_price_cents: t.unit_price_cents };
+  });
+}
+
+function listTiersForProduct(
   plan: { tiers: PriceTier[]; unit_price_cents: number },
   product: PricedProduct | null,
   isResale: boolean,
