@@ -6,7 +6,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { money } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { DeliveryTimes, SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
-import { MOCKUPS, PRODUCT_IMAGES, catalogQuery, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
+import { MERCADO_LIVRE_LINKS, PRODUCT_IMAGES, mockupsFor, catalogQuery, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
+import { SITE_PROMO_PCT, SITE_PROMO_UNTIL_LABEL, sitePromoActive } from "@/lib/promo";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 
 export const Route = createFileRoute("/produtos/$slug")({
@@ -46,11 +47,13 @@ function Produto() {
           <div className="overflow-hidden rounded-3xl border border-border bg-surface">
             <img src={PRODUCT_IMAGES[p.slug] ?? produtoCartao} alt={p.name} className={`aspect-square w-full ${p.is_blank || p.is_supply ? "object-contain p-8" : "object-cover"}`} />
           </div>
-          <div className="mt-3 grid grid-cols-4 gap-2">
-            {MOCKUPS.slice(0, 4).map((m, i) => (
-              <img key={m} src={m} alt={`${p.name} no balcão ${i + 1}`} loading="lazy" className="aspect-square rounded-xl object-cover" />
-            ))}
-          </div>
+          {mockupsFor(p.slug).length > 0 && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {mockupsFor(p.slug).map((m, i) => (
+                <img key={m} src={m} alt={`${p.name} no balcão ${i + 1}`} loading="lazy" className="aspect-square rounded-xl object-cover" />
+              ))}
+            </div>
+          )}
         </div>
         <div>
           <h1 className="text-3xl leading-tight sm:text-4xl">{p.name}</h1>
@@ -62,11 +65,19 @@ function Produto() {
           {tiers.length > 0 && (
             <div className="mt-6 rounded-2xl border border-border bg-muted/70 p-4">
               <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Kit para revenda · preço por unidade · frete grátis</p>
+              {sitePromoActive() && (
+                <p className="mt-1 text-sm font-black text-primary-foreground">🔥 {SITE_PROMO_PCT}% OFF até {SITE_PROMO_UNTIL_LABEL}</p>
+              )}
               <ul className="mt-2 space-y-1 text-sm">
                 {tiers.map((t) => (
                   <li key={t.min_quantity} className="flex justify-between gap-3">
                     <span className="text-muted-foreground">{t.label ?? `${t.min_quantity}+ un.`}</span>
-                    <span className="font-display text-lg">{money(t.unit_price_cents)}</span>
+                    <span className="font-display text-lg">
+                      {t.list_price_cents && t.list_price_cents !== t.unit_price_cents && (
+                        <s className="mr-2 font-sans text-xs font-semibold text-muted-foreground">{money(t.list_price_cents)}</s>
+                      )}
+                      {money(t.unit_price_cents)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -92,6 +103,13 @@ function Produto() {
                 </p>
               </div>
             </>
+          )}
+          {MERCADO_LIVRE_LINKS.find((m) => m.slug === p.slug) && (
+            <Button asChild size="lg" variant="outline" className="btn-press mt-3 h-12 w-full rounded-xl border-2 font-bold">
+              <a href={MERCADO_LIVRE_LINKS.find((m) => m.slug === p.slug)!.url} target="_blank" rel="noopener noreferrer">
+                Também no Mercado Livre →
+              </a>
+            </Button>
           )}
           <DeliveryTimes className="mt-6" />
           {soon ? (

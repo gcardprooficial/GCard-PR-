@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { unitPriceForQuantity } from "@/lib/pricing";
+import { promoPrice } from "@/lib/promo";
 import { rateLimitShared, clientKey } from "@/lib/rateLimit";
 
 const GOOGLE_HOSTS = [
@@ -200,6 +201,8 @@ async function resolveOrderLine(
     const delta = plan.is_resale ? product.resale_delta_cents : product.price_delta_cents;
     unitPrice = tierPrice + delta + colorDelta;
   }
+  // Promoção do site inteiro (ver promo.ts): o servidor aplica a mesma conta da vitrine.
+  unitPrice = promoPrice(unitPrice);
 
   return {
     plan,

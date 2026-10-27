@@ -336,41 +336,26 @@ function Comprar() {
   // O kit para personalizar é acrílico liso: mesmo fluxo da revenda (conta + QR/lote), mínimo de 10.
   // Todo pedido é de revenda (kit a partir de 10 un.); o fluxo de loja própria foi desligado.
   const isResale = true;
-  const plan = data.plans.find((p) =>
-    isResale ? p.slug === "renda-extra" : p.slug === "lojista",
-  ) ?? {
-    id: isResale ? "fallback-renda-extra" : "fallback-lojista",
-    slug: isResale ? "renda-extra" : "lojista",
-    name: isResale ? "Kit para Revenda" : "Cartão Individual",
-    audience: isResale ? "Comprar em quantidade e revender" : "Para usar no seu próprio balcão",
+  const plan = data.plans.find((p) => p.slug === "renda-extra") ?? {
+    id: "fallback-renda-extra",
+    slug: "renda-extra",
+    name: "Kit para Revenda",
+    audience: "Comprar em quantidade e revender",
     description: null,
-    // Lojista (não-revenda) não dilui frete em faixa de quantidade -- por isso
-    // o preço unitário já embute os R$20 de frete (ver nota em resolveUnitPrice
-    // / checkout.functions.ts: shipping_cents fica 0, o frete vem somado aqui).
-    unit_price_cents: isResale ? 3790 : 7990,
-    min_quantity: isResale ? 10 : 1,
-    max_quantity: isResale ? null : 5,
-    is_resale: isResale,
-    tiers: isResale
-      ? [
-          { min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" },
-          { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" },
-          { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
-        ]
-      : [
-          { min_quantity: 1, unit_price_cents: 7990, label: "1 a 4 unidades" },
-          { min_quantity: 5, unit_price_cents: 6990, label: "5 unidades" },
-        ],
+    unit_price_cents: 3790,
+    min_quantity: 10,
+    max_quantity: null,
+    is_resale: true,
+    tiers: [
+      { min_quantity: 10, unit_price_cents: 3790, label: "10 a 24 unidades" },
+      { min_quantity: 25, unit_price_cents: 2790, label: "25 a 99 unidades" },
+      { min_quantity: 100, unit_price_cents: 1990, label: "100 unidades ou mais" },
+    ],
     packages: [],
   };
-  const publicPlanName = isResale ? "Kit para Revenda" : "Cartão Individual";
-  // Mostra todo produto não oculto (ativo ou em_breve); a etapa "estilo" já
-  // desabilita quem não é ativo. Antes travava em só cartão-bolso.
-  const catalogProducts = data.products
-    .filter((item) => item.status !== "oculto")
-    // Acrílico puro (sem QR/NFC) só entra no fluxo de revenda/atacado — lojista
-    // final só compra cartão de bolso e plaquinha 10x10 já prontos.
-    .filter((item) => !(!isResale && (item.is_blank || (item as { is_supply?: boolean }).is_supply)));
+  const publicPlanName = "Kit para Revenda";
+  // Mostra todo produto não oculto (ativo ou em_breve); a etapa "estilo" já desabilita quem não é ativo.
+  const catalogProducts = data.products.filter((item) => item.status !== "oculto");
   // O checkout não pode ficar sem opções quando o catálogo ainda não foi publicado.
   const products = catalogProducts.length > 0 ? catalogProducts : FALLBACK_PRODUCTS;
 
@@ -945,7 +930,7 @@ function Comprar() {
             <div className="mb-2 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-                  {isResale ? "Revenda / lote" : "Loja própria"}
+                  Revenda / lote
                 </p>
                 <p className="truncate text-sm font-bold text-foreground">
                   {stepLabels[step] ?? step}
@@ -2120,9 +2105,6 @@ function Comprar() {
 
               <dl className="mt-7 overflow-hidden rounded-2xl border border-border divide-y divide-border bg-card">
                 <Row label="Produto" value={publicPlanName} />
-                {!isResale && (
-                  <Row label="Negócio" value={business?.name ?? term ?? "Link colado"} />
-                )}
                 {effectiveLines.map((line, i) => (
                   <Row
                     key={i}

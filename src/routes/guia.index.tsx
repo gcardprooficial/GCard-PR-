@@ -4,18 +4,18 @@ import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 export const Route = createFileRoute("/guia/")({
   head: () => ({
     meta: [
-      { title: "Guia de cartão NFC e cartão de visita digital | GCard-PRÓ" },
+      { title: "Guia para revendedores de placas e cartões NFC | GCard-PRÓ" },
       {
         name: "description",
         content:
-          "Respostas práticas sobre cartão NFC, cartão de visita digital, QR Code e networking para empresas.",
+          "Guias práticos para quem revende placas e cartões NFC de avaliação do Google: como funciona o NFC, o que oferecer a cada cliente e como configurar.",
       },
       { name: "robots", content: "index,follow,max-image-preview:large" },
-      { property: "og:title", content: "Guia de cartão NFC e cartão de visita digital" },
+      { property: "og:title", content: "Guia para revendedores de placas e cartões NFC" },
       {
         property: "og:description",
         content:
-          "Entenda as diferenças, os usos e os critérios para escolher uma solução para sua empresa.",
+          "Como funciona o NFC, o que oferecer a cada cliente e como configurar cada placa.",
       },
       { property: "og:type", content: "website" },
     ],
@@ -45,14 +45,14 @@ function Guide() {
       <div className="mx-auto max-w-5xl px-5 py-10 sm:py-16">
         <section className="mt-4 max-w-3xl">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
-            Conteúdo para empresas
+            Conteúdo para revendedores
           </p>
           <h1 className="mt-4 text-4xl leading-tight sm:text-5xl">
-            Guia de cartão NFC, cartão digital e networking
+            Guia para revendedores de placas e cartões NFC
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-            Conteúdo direto para ajudar sua empresa a entender como cartões físicos, perfis
-            digitais, QR Code e métricas podem trabalhar juntos.
+            Tudo o que você precisa para vender, configurar e dar suporte às placas e cartões de
+            avaliação do Google.
           </p>
         </section>
         <Link
@@ -75,38 +75,38 @@ function Guide() {
         <div className="mt-5 grid gap-5 md:grid-cols-3">
           <ArticleLink
             href="/guia/cartao-nfc-vs-cartao-digital"
-            title="Cartão NFC ou cartão de visita digital?"
-            text="Veja as diferenças, vantagens e quando combinar as duas soluções."
+            title="NFC, QR Code ou os dois?"
+            text="Qual produto oferecer a cada tipo de cliente."
           />
           <ArticleLink
             href="/guia/melhor-cartao-digital-para-empresa"
-            title="Como escolher para sua empresa"
-            text="Critérios práticos: objetivo, perfil, equipe, métricas e custo."
+            title="Como revender placas de avaliação"
+            text="Para quem vender, como configurar e quais cuidados ter."
           />
           <ArticleLink
             href="/guia/cartao-de-visita-por-aproximacao"
-            title="Como funciona a aproximação"
-            text="Entenda NFC, QR Code, compatibilidade e a experiência do cliente."
+            title="Como funciona o NFC"
+            text="Alcance, compatibilidade e como explicar ao seu cliente."
           />
         </div>
         <section className="mt-14 rounded-3xl border border-border bg-card p-7 sm:p-10">
-          <h2 className="text-2xl font-bold">O que uma boa solução deve explicar</h2>
+          <h2 className="text-2xl font-bold">O que explicar ao seu cliente</h2>
           <div className="mt-5 grid gap-5 text-sm leading-relaxed text-muted-foreground sm:grid-cols-2">
             <p>
-              <strong className="text-foreground">Uso:</strong> o cliente precisa saber o que
-              acontece ao aproximar o celular ou ler o QR Code.
+              <strong className="text-foreground">Uso:</strong> o cliente final aproxima o celular ou
+              escaneia o QR Code e cai na tela de avaliar o negócio.
             </p>
             <p>
-              <strong className="text-foreground">Resultado:</strong> a empresa deve conseguir medir
-              acessos, leads ou avaliações conforme seu objetivo.
+              <strong className="text-foreground">Resultado:</strong> a placa facilita a avaliação, mas
+              não garante mais avaliações nem mais vendas.
             </p>
             <p>
-              <strong className="text-foreground">Operação:</strong> equipes precisam de um processo
-              simples para atualizar perfis e distribuir cartões.
+              <strong className="text-foreground">Operação:</strong> você ativa cada placa no painel e
+              troca o link quando o cliente precisar.
             </p>
             <p>
-              <strong className="text-foreground">Privacidade:</strong> coleta, consentimento e
-              finalidade dos dados precisam ser claros.
+              <strong className="text-foreground">Limites:</strong> o NFC precisa de celular
+              compatível e ligado, por isso o QR Code fica junto.
             </p>
           </div>
         </section>
