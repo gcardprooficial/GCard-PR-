@@ -5,7 +5,7 @@ import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 /** Marca o pedido como Pagar.me e devolve a página do Pix (o QR é gerado/recuperado lá). */
 export const createPagarmeCheckout = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid() }).parse(input))
+  .inputValidator((input: unknown) => z.object({ orderId: z.string().uuid(), pixDiscount: z.boolean().optional() }).parse(input))
   .handler(async ({ data }) => {
     if (!rateLimit(`pg-link:${clientKey(getRequest())}`, 15, 60_000)) return { ok: false as const, error: "too_many_attempts" };
     const { pagarmeConfigured, PAGARME } = await import("./pagarme.server");
@@ -14,6 +14,11 @@ export const createPagarmeCheckout = createServerFn({ method: "POST" })
     const { data: order } = await supabaseAdmin.from("orders").select("id, payment_status").eq("id", data.orderId).maybeSingle();
     if (!order) return { ok: false as const, error: "order_not_found" };
     if (order.payment_status === "pago") return { ok: false as const, error: "already_paid" };
+    // 5% no Pix (promo.ts): aplicado no total do pedido, uma vez só (idempotente) e só enquanto a promoção vale.
+    if (data.pixDiscount) {
+      const { applyPixDiscount } = await import("./pix-discount.server");
+      await applyPixDiscount(order.id);
+    }
     await supabaseAdmin
       .from("orders")
       .update({ payment_provider: PAGARME, external_reference: order.id } as never)
@@ -37,6 +42,9 @@ export const createPagarmeCardCheckout = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!order) return { ok: false as const, error: "order_not_found" };
     if (order.payment_status === "pago") return { ok: false as const, error: "already_paid" };
+    // Pedido que recebeu o desconto de Pix só pode ser pago por Pix (o desconto é só no Pix).
+    const { hasPixDiscount } = await import("./pix-discount.server");
+    if (await hasPixDiscount(order.id)) return { ok: false as const, error: "pix_only" };
     try {
       const { loadOrderDetails } = await import("./order-details.server");
       const { url } = await createPagarmeLink({

@@ -2,7 +2,7 @@
 import { replyToField } from "@/lib/reply-to";
 import { TUTORIAL_NFC_URL, TUTORIAL_QR_URL } from "@/lib/tutorial-videos";
 import { money, resolveUnitPrice, type PriceTier } from "@/lib/pricing";
-import { pixDiscountActive, PIX_DISCOUNT_PCT, promoPrice, sitePromoActive, SITE_PROMO_PCT, SITE_PROMO_UNTIL_LABEL } from "@/lib/promo";
+import { pixDiscountActive, PIX_DISCOUNT_PCT, PIX_DISCOUNT_UNTIL_LABEL } from "@/lib/promo";
 import { outboundEnabled, sendAudio, sendImage, sendText } from "./transport.server";
 
 export type Conv = { id: string; wa_id: string; name: string | null; status: string };
@@ -67,7 +67,7 @@ async function catalogTexts(): Promise<Catalog> {
   for (const prod of products.data ?? []) {
     const rTiers: PriceTier[] = (productTiers.data ?? [])
       .filter((t: any) => t.product_id === prod.id)
-      .map(({ product_id: _x, ...t }: any) => ({ ...t, unit_price_cents: promoPrice(t.unit_price_cents) }));
+      .map(({ product_id: _x, ...t }: any) => t);
     const pricedProduct = { ...prod, resale_tiers: rTiers };
     const lines: string[] = [];
 
@@ -125,7 +125,7 @@ async function catalogTexts(): Promise<Catalog> {
     );
   }
 
-  const promo = pixDiscountActive() ? `\n\n💸 ${PIX_DISCOUNT_PCT}% de desconto pagando no Pix (promoção por tempo limitado)` : "";
+  const promo = pixDiscountActive() ? `\n\n💸 ${PIX_DISCOUNT_PCT}% de desconto pagando no Pix nas placas com arte (até ${PIX_DISCOUNT_UNTIL_LABEL}); acrílico sem arte e tag NFC ficam fora` : "";
   return {
     precos: compact.join("\n") + promo,
     precosFull: precoBlocks.join("\n\n") + promo,

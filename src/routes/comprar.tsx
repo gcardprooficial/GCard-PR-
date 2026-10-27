@@ -23,7 +23,7 @@ import { gatewayOptions, type Gateway } from "@/lib/gateways";
 import { checkCoupon } from "@/lib/affiliates.functions";
 import { captureReferralFromUrl, clearReferral, getStoredReferral, storeReferral } from "@/lib/referral";
 import { unitPriceForQuantity, money, resolveUnitPrice as resolveUnitPriceShared } from "@/lib/pricing";
-import { PIX_DISCOUNT_PCT, pixDiscountActive } from "@/lib/promo";
+import { PIX_DISCOUNT_PCT, PIX_DISCOUNT_UNTIL_LABEL, pixDiscountActive, pixDiscountCents, pixEligible } from "@/lib/promo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -284,7 +284,6 @@ function Comprar() {
   useEffect(() => {
     if (testPagarme) setGateway("pagarme");
   }, [testPagarme]);
-  const [wantsPixDiscount, setWantsPixDiscount] = useState(true);
   const pixPromoLive = pixDiscountActive();
   const runCheckCoupon = useServerFn(checkCoupon);
   const [coupon, setCoupon] = useState<{ code: string; discountPct: number; partnerFirstName: string } | null>(null);
@@ -558,6 +557,12 @@ function Comprar() {
   const couponDiscount = coupon ? Math.round((grossTotal * coupon.discountPct) / 100) : 0;
   const effectiveTotal = grossTotal - couponDiscount;
   const effectiveQuantity = effectiveLines.reduce((s, l) => s + l.quantity, 0);
+  // Desconto do Pix só nos produtos com arte: parte do pedido que é elegível (0..1).
+  const pixEligibleGross = effectiveLines
+    .filter((l) => pixEligible(products.find((p) => p.slug === l.productSlug)))
+    .reduce((s, l) => s + l.unitPriceCents * l.quantity, 0);
+  const pixShare = grossTotal > 0 ? Math.min(1, pixEligibleGross / grossTotal) : 0;
+  const pixOffCents = pixPromoLive && gateway === "pagarme" ? pixDiscountCents(effectiveTotal, pixShare) : 0;
   // Acrílico é kit fechado: mínimo vem do produto, não do plano.
   const minQuantity = Math.max(plan?.min_quantity ?? 1, product?.min_quantity ?? 1);
 
@@ -699,17 +704,21 @@ function Comprar() {
       try {
         const pref =
           gateway === "pagarme"
-            ? await createPagarme({ data: { orderId: res.orderId } })
+            ? await createPagarme({ data: { orderId: res.orderId, pixDiscount: pixPromoLive } })
             : gateway === "pagarmecard"
               ? await createPagarmeCard({ data: { orderId: res.orderId } })
               : gateway === "infinitepay"
               ? await createInfinitePay({ data: { orderId: res.orderId } })
               : await createPref({
-                  data: { orderId: res.orderId, pixDiscount: pixPromoLive && wantsPixDiscount },
+                  data: { orderId: res.orderId, pixDiscount: pixPromoLive && gateway === "mercadopago" },
                 });
         if (pref?.url) {
           // Redirect the buyer to the hosted checkout
           window.location.href = pref.url;
+          return;
+        }
+        if ((pref as { error?: string } | undefined)?.error === "pix_only") {
+          toast.error("Esse pedido tem o desconto do Pix. Pague pelo Pix ou chame a gente no WhatsApp para refazer o pedido no cartão.");
           return;
         }
         if ((pref as { error?: string } | undefined)?.error === "too_many_attempts") {
@@ -2174,11 +2183,7 @@ function Comprar() {
                     <p className="mt-2 text-sm font-semibold">{effectiveQuantity} un. · frete incluso</p>
                   </div>
                   <p className="font-display text-4xl font-black leading-none text-primary-foreground sm:text-6xl">
-                    {money(
-                      wantsPixDiscount && pixPromoLive
-                        ? Math.round(effectiveTotal * (1 - PIX_DISCOUNT_PCT / 100))
-                        : effectiveTotal,
-                    )}
+                    {money(effectiveTotal - pixOffCents)}
                   </p>
                 </div>
               </div>
@@ -2249,22 +2254,21 @@ function Comprar() {
                 </div>
               </fieldset>
 
-              {pixPromoLive && gateway === "mercadopago" && (
-                <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-g-green/40 bg-g-green/10 p-4">
-                  <input
-                    type="checkbox"
-                    checked={wantsPixDiscount}
-                    onChange={(e) => setWantsPixDiscount(e.target.checked)}
-                    className="mt-0.5 size-5 shrink-0 accent-g-green"
-                  />
-                  <span className="text-sm font-semibold leading-snug">
-                    💸 Pagar com <strong>Pix</strong> e ganhar <strong>{PIX_DISCOUNT_PCT}% de desconto</strong>{" "}
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      Promoção só até 30/09 — o checkout abre restrito ao Pix pra manter o preço
-                      reduzido. Desmarque pra pagar com cartão/boleto no preço cheio.
-                    </span>
+              {pixPromoLive && (
+                <p
+                  className={`mt-4 rounded-2xl border-2 p-4 text-sm font-semibold leading-snug ${
+                    gateway === "pagarme" ? "border-g-green/40 bg-g-green/10" : "border-border bg-card"
+                  }`}
+                >
+                  💸 <strong>{PIX_DISCOUNT_PCT}% de desconto pagando no Pix</strong> nas placas com arte, até {PIX_DISCOUNT_UNTIL_LABEL}.{" "}
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {pixShare === 0
+                      ? "Acrílico sem arte e tag NFC não entram no desconto."
+                      : gateway === "pagarme"
+                        ? "Desconto já aplicado no total acima. Acrílico sem arte e tag NFC não entram."
+                        : "Escolha Pix para ter o desconto. No cartão e na InfinitePay o preço é o cheio."}
                   </span>
-                </label>
+                </p>
               )}
             </div>
           )}

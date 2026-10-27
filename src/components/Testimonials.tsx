@@ -1,3 +1,9 @@
+// Prints reais de clientes (WhatsApp/Instagram), com nomes e telefones tapados. Basta soltar o arquivo em
+// src/assets/depoimentos/ (webp/png/jpg): a galeria lê a pasta sozinha, em ordem de nome.
+const PRINTS = Object.entries(import.meta.glob("../assets/depoimentos/*.{webp,png,jpg,jpeg}", { eager: true, import: "default" }))
+  .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+  .map(([, src]) => src as string);
+
 const QUOTES = [
   {
     text: "Muito obrigado pelo produto 100% confiável! E ainda dão todo o suporte necessário.",
@@ -46,6 +52,28 @@ export function Testimonials() {
           </blockquote>
         ))}
       </div>
+
+      {PRINTS.length > 0 && (
+        <div className="mt-8 columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
+          {PRINTS.map((src, i) => (
+            <a
+              key={src}
+              href={src}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mb-3 block overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:mb-4"
+            >
+              <img
+                src={src}
+                alt={`Depoimento real de cliente ${i + 1}`}
+                loading="lazy"
+                draggable={false}
+                className="h-auto w-full"
+              />
+            </a>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
