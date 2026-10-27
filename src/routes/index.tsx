@@ -7,7 +7,7 @@ import { DeliveryTimes, SiteFooter, SiteHeader } from "@/components/site/SiteChr
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MERCADO_LIVRE_LINKS, PRODUCT_IMAGES, catalogQuery, minKitPriceCents, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
-import { SITE_PROMO_PCT, SITE_PROMO_UNTIL_LABEL, sitePromoActive } from "@/lib/promo";
+import { PIX_DISCOUNT_PCT, PIX_DISCOUNT_UNTIL_LABEL, pixDiscountActive } from "@/lib/promo";
 import heroCartao from "@/assets/gcard-pro-hero-barbearia.jpeg";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 
@@ -226,7 +226,7 @@ function Home() {
         <div className="mx-auto max-w-5xl px-5">
           <div className="text-center">
             <span className="inline-flex rounded-full bg-primary px-3 py-1 text-[11px] font-black uppercase tracking-wider text-primary-foreground">
-              🔥 {sitePromoActive() ? `${SITE_PROMO_PCT}% OFF em todo o site até ${SITE_PROMO_UNTIL_LABEL}` : "Promoção ativa"}
+              🔥 {pixDiscountActive() ? `${PIX_DISCOUNT_PCT}% OFF no Pix nas placas com arte até ${PIX_DISCOUNT_UNTIL_LABEL}` : "Kits para revendedores"}
             </span>
             <h2 className="mt-3 text-2xl leading-tight sm:text-3xl md:text-4xl">Escolha o seu kit</h2>
             <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
@@ -263,9 +263,6 @@ function Home() {
                       <p className="mt-2 text-xs text-muted-foreground">
                         a partir de{" "}
                         <strong className="font-display text-base text-foreground sm:text-lg">{money(best.unit_price_cents)}</strong>
-                        {best.list_price_cents && best.list_price_cents !== best.unit_price_cents && (
-                          <s className="ml-1.5 text-[11px]">{money(best.list_price_cents)}</s>
-                        )}
                         <span className="block text-[11px]">kit de {first?.min_quantity ?? minQty}+ un.</span>
                       </p>
                     )}

@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { money } from "@/lib/pricing";
 import { catalogQuery, minKitPriceCents } from "@/lib/site-catalog";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { SITE_PROMO_DEADLINE, SITE_PROMO_PCT, SITE_PROMO_UNTIL_LABEL, sitePromoActive } from "@/lib/promo";
+import { PIX_DISCOUNT_DEADLINE, PIX_DISCOUNT_PCT, PIX_DISCOUNT_UNTIL_LABEL, pixDiscountActive } from "@/lib/promo";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
 import logoMarca from "@/assets/logo/header-marca.png";
@@ -22,12 +22,12 @@ function useCountdown(deadline: string) {
   return msLeft;
 }
 
-/** Faixa fixa no topo: promoção do site inteiro até 29/11 (com cronômetro) e o menor preço de kit do catálogo. */
+/** Faixa fixa no topo: 5% de desconto no Pix até 29/11 (com cronômetro) e o menor preço de kit do catálogo. */
 export function PromoBar() {
   const { data } = useQuery(catalogQuery);
-  const msLeft = useCountdown(SITE_PROMO_DEADLINE);
+  const msLeft = useCountdown(PIX_DISCOUNT_DEADLINE);
   const from = minKitPriceCents(data);
-  const active = sitePromoActive();
+  const active = pixDiscountActive();
   const totalSeconds = Math.max(0, Math.floor(msLeft / 1000));
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
@@ -44,7 +44,7 @@ export function PromoBar() {
       >
         {active ? (
           <>
-            <span>🔥 {SITE_PROMO_PCT}% OFF em todo o site até {SITE_PROMO_UNTIL_LABEL}</span>
+            <span>🔥 {PIX_DISCOUNT_PCT}% OFF no Pix nas placas com arte até {PIX_DISCOUNT_UNTIL_LABEL}</span>
             <span className="hidden opacity-40 sm:inline">·</span>
             <span className="hidden font-mono tabular-nums sm:inline">
               termina em {days > 0 ? `${days}d ` : ""}

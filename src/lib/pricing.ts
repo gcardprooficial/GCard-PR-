@@ -1,11 +1,7 @@
-import { postPromoPrice, promoPrice, sitePromoActive } from "@/lib/promo";
-
 export type PriceTier = {
   min_quantity: number;
   unit_price_cents: number;
   label: string | null;
-  /** Preço cheio que passa a valer depois da promoção (o "de" riscado; só vem preenchido enquanto ela dura). */
-  list_price_cents?: number;
 };
 
 /** Preço unitário da faixa aplicável à quantidade escolhida. */
@@ -38,17 +34,6 @@ export function resolveUnitPrice(
   isResale: boolean,
   colorDeltaCents = 0,
 ): number {
-  return promoPrice(listUnitPrice(plan, product, quantity, isResale, colorDeltaCents));
-}
-
-/** Preço de tabela (sem a promoção do site). */
-export function listUnitPrice(
-  plan: { tiers: PriceTier[]; unit_price_cents: number },
-  product: PricedProduct | null,
-  quantity: number,
-  isResale: boolean,
-  colorDeltaCents = 0,
-): number {
   if (product?.is_blank && product.resale_tiers?.length) {
     return (
       unitPriceForQuantity(product.resale_tiers, quantity, product.resale_tiers[0]!.unit_price_cents) +
@@ -67,20 +52,6 @@ export function listUnitPrice(
 
 /** Tabela de faixas de preço já resolvida pro produto (pra listar "a partir de X un: R$Y"). */
 export function resolveTiersForProduct(
-  plan: { tiers: PriceTier[]; unit_price_cents: number },
-  product: PricedProduct | null,
-  isResale: boolean,
-): readonly PriceTier[] {
-  const list = listTiersForProduct(plan, product, isResale);
-  // Durante a promoção o preço é o do banco e o "de" é o preço cheio futuro; depois dela, o preço já é o cheio.
-  return list.map((t) =>
-    sitePromoActive()
-      ? { ...t, list_price_cents: postPromoPrice(t.unit_price_cents) }
-      : { ...t, unit_price_cents: promoPrice(t.unit_price_cents) },
-  );
-}
-
-function listTiersForProduct(
   plan: { tiers: PriceTier[]; unit_price_cents: number },
   product: PricedProduct | null,
   isResale: boolean,

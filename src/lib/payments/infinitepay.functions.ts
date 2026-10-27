@@ -18,6 +18,9 @@ export const createInfinitePayCheckout = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!order) return { ok: false as const, error: "order_not_found" };
     if (order.payment_status === "pago") return { ok: false as const, error: "already_paid" };
+    // Pedido que recebeu o desconto de Pix só pode ser pago por Pix (o desconto é só no Pix).
+    const { hasPixDiscount } = await import("./pix-discount.server");
+    if (await hasPixDiscount(order.id)) return { ok: false as const, error: "pix_only" };
     try {
       const { loadOrderDetails } = await import("./order-details.server");
       const url = await createInfinitePayLink({
