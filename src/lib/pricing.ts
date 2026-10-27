@@ -1,10 +1,10 @@
-import { promoPrice } from "@/lib/promo";
+import { postPromoPrice, promoPrice, sitePromoActive } from "@/lib/promo";
 
 export type PriceTier = {
   min_quantity: number;
   unit_price_cents: number;
   label: string | null;
-  /** Preço de tabela, antes da promoção do site (só vem preenchido enquanto a promo vale). */
+  /** Preço cheio que passa a valer depois da promoção (o "de" riscado; só vem preenchido enquanto ela dura). */
   list_price_cents?: number;
 };
 
@@ -72,10 +72,12 @@ export function resolveTiersForProduct(
   isResale: boolean,
 ): readonly PriceTier[] {
   const list = listTiersForProduct(plan, product, isResale);
-  return list.map((t) => {
-    const promo = promoPrice(t.unit_price_cents);
-    return promo === t.unit_price_cents ? t : { ...t, unit_price_cents: promo, list_price_cents: t.unit_price_cents };
-  });
+  // Durante a promoção o preço é o do banco e o "de" é o preço cheio futuro; depois dela, o preço já é o cheio.
+  return list.map((t) =>
+    sitePromoActive()
+      ? { ...t, list_price_cents: postPromoPrice(t.unit_price_cents) }
+      : { ...t, unit_price_cents: promoPrice(t.unit_price_cents) },
+  );
 }
 
 function listTiersForProduct(
