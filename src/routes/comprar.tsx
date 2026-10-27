@@ -72,9 +72,12 @@ function resolveUnitPrice(
 }
 
 const searchSchema = z.object({
+  // Legado: links antigos com ?caminho=lojista|revenda continuam abrindo (o site só vende kit de revenda).
   caminho: z.enum(["lojista", "revenda"]).optional().catch(undefined),
   // Atalho do curso: acrílico liso já com QR = Sim, chip NFC = Sim e 10 unidades (tudo editável).
   kit: z.enum(["personalizar", "personalizar-l"]).optional().catch(undefined),
+  // Vindo da página de um produto: já abre com ele escolhido (pula a etapa "estilo").
+  produto: z.string().max(80).optional().catch(undefined),
 });
 
 const KIT_SLUGS = { personalizar: "acrilico-10x10-sem-arte", "personalizar-l": "acrilico-15x10-l-sem-arte" } as const;
@@ -85,28 +88,27 @@ export const Route = createFileRoute("/comprar")({
   loader: ({ context }) => context.queryClient.ensureQueryData(catalogQuery),
   head: async () => {
     const catalog = await getCatalog().catch(() => null);
-    const lojista = catalog?.plans.find((p) => p.slug === "lojista");
-    // Só o que o lojista pode comprar agora: ativo e não é acrílico sem arte (só revenda).
-    const offered = (catalog?.products ?? []).filter((p) => p.status === "ativo" && !p.is_blank && !p.is_supply);
+    const revendaPlan = catalog?.plans.find((p) => p.slug === "renda-extra");
+    const offered = (catalog?.products ?? []).filter((p) => p.status === "ativo");
     return {
       meta: [
-        { title: "Montar meu GCard-PRÓ | Cartão de avaliação do Google" },
+        { title: "Comprar kits para revenda | GCard-PRÓ" },
         {
           name: "description",
           content:
-            "Escolha o modelo, encontre o seu negócio no Google pelo nome e receba o cartão já configurado. Frete grátis.",
+            "Kits de placas e cartões NFC para revenda, a partir de 10 unidades. Preço cai com a quantidade e o frete é grátis para todo o Brasil.",
         },
-        { property: "og:title", content: "Montar meu GCard-PRÓ" },
+        { property: "og:title", content: "Kits para revenda | GCard-PRÓ" },
         {
           property: "og:description",
-          content: "Passo a passo rápido para receber seu cartão de avaliação já configurado.",
+          content: "Kits a partir de 10 unidades com frete grátis. Quanto mais unidades, menor o preço por placa.",
         },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },
       ],
       links: [{ rel: "canonical", href: "https://www.gcardpro.com.br/comprar" }],
       scripts:
-        lojista && offered.length > 0
+        revendaPlan && offered.length > 0
           ? offered.map((product) => ({
               type: "application/ld+json",
               children: JSON.stringify({
@@ -120,7 +122,7 @@ export const Route = createFileRoute("/comprar")({
                 offers: {
                   "@type": "Offer",
                   priceCurrency: "BRL",
-                  price: (resolveUnitPrice(lojista, product, 1, false) / 100).toFixed(2),
+                  price: (resolveUnitPrice(revendaPlan, product, product.min_quantity ?? 10, true) / 100).toFixed(2),
                   availability: "https://schema.org/InStock",
                   itemCondition: "https://schema.org/NewCondition",
                   url: "https://www.gcardpro.com.br/comprar",
@@ -135,7 +137,7 @@ export const Route = createFileRoute("/comprar")({
                     deliveryTime: {
                       "@type": "ShippingDeliveryTime",
                       handlingTime: { "@type": "QuantitativeValue", minValue: 2, maxValue: 4, unitCode: "DAY" },
-                      transitTime: { "@type": "QuantitativeValue", minValue: 2, maxValue: 10, unitCode: "DAY" },
+                      transitTime: { "@type": "QuantitativeValue", minValue: 2, maxValue: 8, unitCode: "DAY" },
                     },
                   },
                   hasMerchantReturnPolicy: {
@@ -266,7 +268,7 @@ function VideoGate() {
 }
 
 function Comprar() {
-  const { caminho, kit } = Route.useSearch();
+  const { kit, produto } = Route.useSearch();
   const navigate = useNavigate();
   const { data } = useSuspenseQuery(catalogQuery);
   const runSearch = useServerFn(searchBusinesses);
@@ -332,7 +334,8 @@ function Comprar() {
   }
 
   // O kit para personalizar é acrílico liso: mesmo fluxo da revenda (conta + QR/lote), mínimo de 10.
-  const isResale = caminho === "revenda" || Boolean(kit);
+  // Todo pedido é de revenda (kit a partir de 10 un.); o fluxo de loja própria foi desligado.
+  const isResale = true;
   const plan = data.plans.find((p) =>
     isResale ? p.slug === "renda-extra" : p.slug === "lojista",
   ) ?? {
@@ -477,8 +480,8 @@ function Comprar() {
     setResults([]);
     setManualLink("");
     setBusiness(null);
-    setQuantity(caminho === "revenda" || kit ? KIT_QUANTITY : 1);
-  }, [caminho, kit]);
+    setQuantity(KIT_QUANTITY);
+  }, [kit]);
 
   // E-mail do pedido = e-mail da conta em revenda, senão /ativar não acha o lote depois.
   // Precisa ficar junto dos outros hooks, antes de qualquer early return -- senão a
@@ -597,6 +600,17 @@ function Comprar() {
     setStepIndex(1);
     void trackVisit({ data: { type: "produto_visto", slug: item.slug, origin: "personalizar" } }).catch(() => {});
   }, [kit, products, trackVisit]);
+
+  // Roda só quando ?produto muda (sem ref de "já apliquei": o StrictMode do dev reexecuta os efeitos e o reset acima apagaria a escolha).
+  useEffect(() => {
+    if (!produto || kit) return;
+    const item = products.find((p) => p.slug === produto && p.status === "ativo");
+    if (!item) return;
+    setProduct(item);
+    setQuantity(Math.max(KIT_QUANTITY, item.min_quantity ?? 0));
+    setStepIndex(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [produto, kit]);
 
   const go = (delta: number) => {
     if (isTransitioning) return;
@@ -748,176 +762,6 @@ function Comprar() {
     return (
       <div className="flex min-h-screen items-center justify-center px-5">
         <p className="text-muted-foreground">Catálogo indisponível agora.</p>
-      </div>
-    );
-  }
-
-  if (!caminho && !kit) {
-    const lojista = data.plans.find((p) => p.slug === "lojista");
-    const revenda = data.plans.find((p) => p.slug === "renda-extra");
-    const revendaFrom = revenda
-      ? Math.min(...revenda.tiers.map((t) => t.unit_price_cents), revenda.unit_price_cents)
-      : 0;
-    return (
-      <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 -left-24 size-[500px] rounded-full bg-primary/15 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-40 -right-20 size-[420px] rounded-full bg-foreground/5 blur-3xl"
-        />
-
-        <SiteHeader />
-
-        <div className="relative mx-auto max-w-4xl px-5 pb-20 pt-12 sm:pt-16">
-          <div className="animate-rise max-w-2xl">
-            <span className="badge-pill bg-primary/15 text-primary-foreground">
-              <span className="size-1.5 rounded-full bg-primary" />
-              Monte o seu pedido
-            </span>
-            <h1 className="mt-5 text-3xl leading-[1.05] sm:text-4xl md:text-5xl">
-              Como você vai usar o <span className="highlight-yellow">GCard-PRÓ</span>?
-            </h1>
-            <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Dois fluxos separados — um para você colocar na sua loja, outro para revender e lucrar
-              com donos de negócio.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-5 md:grid-cols-2 md:gap-7">
-            <button
-              type="button"
-              onClick={() => navigate({ to: "/comprar", search: { caminho: "lojista" } })}
-              className="group animate-rise delay-2 relative overflow-hidden rounded-[1.75rem] border-2 border-border bg-card p-7 sm:p-8 text-left card-soft card-soft-hover shine-border"
-            >
-              <div className="absolute inset-x-0 top-0 h-1 rounded-t-[1.75rem] bg-primary/0 transition-all duration-500 group-hover:bg-primary" />
-              <div className="flex items-start justify-between gap-3">
-                <div className="badge-pill bg-primary/15 text-primary-foreground">
-                  <span className="size-1.5 rounded-full bg-primary" />
-                  Loja própria
-                </div>
-                <span className="rounded-2xl bg-primary/15 p-2.5 text-primary-foreground transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-md">
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M3 7h18v12H3z" />
-                    <path d="M3 11h18" />
-                  </svg>
-                </span>
-              </div>
-
-              <h2 className="mt-5 text-2xl font-bold leading-tight sm:text-3xl">
-                Quero receber <span className="text-primary">100% configurado</span>
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Você informa o seu negócio no Google e nós entregamos as placas já gravadas com o
-                link da sua avaliação. Pronto pra colar no balcão.
-              </p>
-
-              <div className="mt-6 flex items-end gap-2">
-                <span className="font-display text-4xl font-black leading-none sm:text-5xl">
-                  {money(lojista?.unit_price_cents ?? 5990)}
-                </span>
-                <span className="pb-1 text-sm font-semibold text-muted-foreground sm:text-base">
-                  / unidade
-                </span>
-              </div>
-
-              <div className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-sm transition-all duration-300 group-hover:bg-foreground group-hover:text-white group-hover:shadow-md">
-                Começar agora
-                <svg
-                  className="size-4 transition-transform duration-300 group-hover:translate-x-1"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </svg>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate({ to: "/comprar", search: { caminho: "revenda" } })}
-              className="group animate-rise delay-3 relative overflow-hidden rounded-[1.75rem] border-2 border-foreground/5 bg-card p-7 sm:p-8 text-left card-soft card-soft-hover shine-border"
-            >
-              <div className="absolute inset-x-0 top-0 h-1 rounded-t-[1.75rem] bg-foreground/0 transition-all duration-500 group-hover:bg-foreground" />
-              <div className="flex items-start justify-between gap-3">
-                <div className="badge-pill bg-foreground/90 text-white">
-                  <span className="size-1.5 rounded-full bg-primary" />
-                  Revenda / lote
-                </div>
-                <span className="rounded-2xl bg-foreground/5 p-2.5 text-foreground transition-all duration-300 group-hover:scale-110 group-hover:bg-foreground group-hover:text-white group-hover:shadow-md">
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="17" cy="17" r="3" />
-                    <circle cx="6" cy="6" r="3" />
-                    <path d="M8.59 8.59 14.41 14.41" />
-                    <path d="m15 11 6-6" />
-                    <path d="m3 21 6-6" />
-                  </svg>
-                </span>
-              </div>
-
-              <h2 className="mt-5 text-2xl font-bold leading-tight sm:text-3xl">
-                Comprar em <span className="font-black">quantidade</span>
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Lote em branco pra revender. Quanto mais unidades, menor o custo por placa — margem
-                acima de 100% no preço sugerido.
-              </p>
-
-              <div className="mt-6 flex items-end gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  a partir de
-                </span>
-                <span className="font-display text-4xl font-black leading-none sm:text-5xl">
-                  {money(revendaFrom || 1990)}
-                </span>
-                <span className="pb-1 text-sm font-semibold text-muted-foreground sm:text-base">
-                  / unidade
-                </span>
-              </div>
-
-              <div className="mt-7 inline-flex items-center gap-2 rounded-2xl border-2 border-foreground/10 bg-background px-5 py-3 text-sm font-bold text-foreground transition-all duration-300 group-hover:border-foreground group-hover:bg-foreground group-hover:text-white group-hover:shadow-md">
-                Escolher lote
-                <svg
-                  className="size-4 transition-transform duration-300 group-hover:translate-x-1"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </svg>
-              </div>
-            </button>
-          </div>
-        </div>
       </div>
     );
   }
@@ -2653,7 +2497,7 @@ function ContaStep({ session, sessionReady }: { session: Session | null; session
             email,
             password,
             // Volta pra esta mesma tela depois de confirmar (senão o link cai na página inicial).
-            options: { emailRedirectTo: `${window.location.origin}/comprar?caminho=revenda` },
+            options: { emailRedirectTo: `${window.location.origin}/comprar` },
           });
     setBusy(false);
     if (error) {

@@ -125,6 +125,16 @@ export function plansFrom(data: Catalog) {
   return { lojista, revenda };
 }
 
+/** Menor preço por unidade entre todos os kits ativos (o "a partir de" da promoção). */
+export function minKitPriceCents(data: Catalog): number {
+  const { revenda } = plansFrom(data);
+  const prices = resaleLines(revenda, productsFrom(data))
+    // "a partir de" só olha placa/cartão com arte: acrílico liso e tag são insumo e distorcem o preço da vitrine.
+    .filter((l) => !l.comingSoon && l.slug !== "tag-nfc-adesiva" && !l.slug.startsWith("acrilico"))
+    .flatMap((l) => l.tiers.map((t) => t.unit_price_cents));
+  return prices.length ? Math.min(...prices) : 0;
+}
+
 /** Todo produto não oculto (ativo ou "em breve"); cai no fallback se o catálogo veio vazio. */
 export function productsFrom(data: Catalog) {
   const visible = data.products.filter((p) => p.status !== "oculto");

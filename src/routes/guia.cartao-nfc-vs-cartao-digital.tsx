@@ -352,10 +352,10 @@ function Article() {
           </p>
           <Link
             to="/comprar"
-            search={{ caminho: "lojista" }}
+            search={{}}
             className="mt-5 inline-block rounded-xl bg-foreground px-5 py-3 text-sm font-bold text-background"
           >
-            Montar meu cartão
+            Ver kits para revenda
           </Link>
         </div>
       </article>

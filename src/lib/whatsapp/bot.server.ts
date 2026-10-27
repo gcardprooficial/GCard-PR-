@@ -57,7 +57,6 @@ async function catalogTexts(): Promise<Catalog> {
       .filter((t: any) => t.plan_id === p.id)
       .map(({ plan_id: _x, ...t }: any) => t) as PriceTier[],
   }));
-  const lojista = planList.find((p: any) => !p.is_resale);
   const resalePlans = planList.filter((p: any) => p.is_resale);
 
   const precoBlocks: string[] = [];
@@ -84,10 +83,6 @@ async function catalogTexts(): Promise<Catalog> {
         lines.push(`• Chip NFC avulso opcional: +${money(prod.nfc_addon_price_cents)} por chip`);
       }
     } else {
-      if (lojista) {
-        const unit = resolveUnitPrice(lojista, pricedProduct, 1, false);
-        lines.push(`• Uso no seu negócio: ${money(unit)} por unidade (preço único, qualquer quantidade)`);
-      }
       if (rTiers.length) {
         lines.push(
           `• Revenda: ${rTiers.map((t) => `${t.min_quantity} un: ${money(t.unit_price_cents)}`).join(" · ")}`,
@@ -109,8 +104,16 @@ async function catalogTexts(): Promise<Catalog> {
     if (prod.is_blank) {
       const first = rTiers[0];
       if (first) priceShort = `kit ${first.min_quantity} un: a partir de ${money(first.unit_price_cents)}/un`;
-    } else if (lojista) {
-      priceShort = `${money(resolveUnitPrice(lojista, pricedProduct, 1, false))}/un`;
+    } else {
+      const first = rTiers[0] ?? null;
+      const resale = resalePlans[0];
+      const from = first
+        ? first.unit_price_cents
+        : resale
+          ? resolveUnitPrice(resale, pricedProduct, resale.min_quantity, true)
+          : null;
+      const minQty = first?.min_quantity ?? resale?.min_quantity ?? 10;
+      if (from !== null) priceShort = `kit ${minQty} un: a partir de ${money(from)}/un`;
     }
     compact.push(`• ${short}: ${priceShort}`);
     fotos.push({ slug: prod.slug, url: `${siteUrl()}/wa/${prod.slug}.jpg`, caption: `*${short}*\n${priceShort}` });

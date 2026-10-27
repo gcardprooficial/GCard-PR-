@@ -163,8 +163,8 @@ async function resolveOrderLine(
     min_quantity?: number;
     color_variants?: { slug: string; name: string; delta_cents: number }[] | null;
   };
-  // Insumo (tag NFC): só revendedor compra, e só em múltiplos do kit. Nunca confia no navegador.
-  if (prod.is_supply && !plan.is_resale) throw new Error(`${product.name} é vendido só para revendedores.`);
+  // A GCard-PRÓ só vende kit para revendedor (a partir de 10 un.). Nunca confia no navegador.
+  if (!plan.is_resale) throw new Error("A GCard-PRÓ vende apenas kits para revendedores, a partir de 10 unidades.");
   if (prod.quantity_step && prod.quantity_step > 1 && input.quantity % prod.quantity_step !== 0) {
     throw new Error(`${product.name} é vendido de ${prod.quantity_step} em ${prod.quantity_step} unidades.`);
   }

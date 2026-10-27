@@ -8,7 +8,7 @@ export const Route = createFileRoute("/produtos/")({
   head: () => ({
     meta: [
       { title: "Produtos | GCard-PRÓ" },
-      { name: "description", content: "Cartão NFC, placas com QR Code e NFC e acrílico sem arte para avaliações no Google. Frete grátis e sem mensalidade." },
+      { name: "description", content: "Kits de cartão NFC, placas com QR Code e NFC e acrílico sem arte para revenda, a partir de 10 unidades. Frete grátis e sem mensalidade." },
     ],
     links: [{ rel: "canonical", href: "https://www.gcardpro.com.br/produtos" }],
   }),
@@ -25,7 +25,7 @@ function Produtos() {
         <div className="mx-auto max-w-7xl px-5 py-12 md:py-16">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Produtos</p>
           <h1 className="mt-3 text-4xl leading-tight sm:text-5xl">Todos os produtos GCard-PRÓ</h1>
-          <p className="mt-3 max-w-xl text-white/70">Com arte pronta ou acrílico puro. Frete grátis para todo o Brasil e sem mensalidade.</p>
+          <p className="mt-3 max-w-xl text-white/70">Só kits para revendedores, a partir de 10 unidades. Com arte pronta ou acrílico puro, frete grátis para todo o Brasil e sem mensalidade.</p>
         </div>
       </section>
       <section className="mx-auto grid max-w-7xl gap-5 px-5 py-12 sm:grid-cols-2 lg:grid-cols-3">
