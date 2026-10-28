@@ -6,7 +6,7 @@ import { Testimonials } from "@/components/Testimonials";
 import { DeliveryTimes, SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { MERCADO_LIVRE_LINKS, PRODUCT_IMAGES, catalogQuery, minKitPriceCents, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
+import { MERCADO_LIVRE_LINKS, PRODUCT_IMAGES, SHOW_MERCADO_LIVRE, catalogQuery, minKitPriceCents, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
 import { PIX_DISCOUNT_PCT, PIX_DISCOUNT_UNTIL_LABEL, pixDiscountActive } from "@/lib/promo";
 import heroCartao from "@/assets/gcard-pro-hero-barbearia.jpeg";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
@@ -341,6 +341,7 @@ function Home() {
       </section>
 
       {/* ===== MERCADO LIVRE ===== */}
+      {SHOW_MERCADO_LIVRE && (
       <section id="mercado-livre" className="mx-auto max-w-7xl px-5 py-14 md:py-16">
         <div className="rounded-3xl border border-border bg-card p-7 card-soft md:p-10">
           <div className="max-w-2xl">
@@ -372,6 +373,7 @@ function Home() {
           </div>
         </div>
       </section>
+      )}
 
       <section id="gerar-link" className="mx-auto max-w-4xl scroll-mt-20 px-5 py-14 text-center md:py-16">
         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Ferramenta grátis</p>

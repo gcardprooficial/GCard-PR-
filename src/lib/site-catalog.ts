@@ -32,7 +32,10 @@ export const PRODUCT_IMAGES: Record<string, string> = {
   "placa-whatsapp-10x10": placaWhatsapp,
 };
 
-/** Anúncios da GCard-PRÓ no Mercado Livre (também vendemos por lá). */
+/** Mercado Livre: desligado por enquanto. Para religar, troque para true (home e página do produto voltam sozinhas). */
+export const SHOW_MERCADO_LIVRE = false;
+
+/** Anúncios da GCard-PRÓ no Mercado Livre. */
 export const MERCADO_LIVRE_LINKS = [
   { slug: "plaquinha-10x10", label: "Placa Avaliação Google 10×10", note: "QR Code + NFC", url: "https://meli.la/2sA8JL7" },
   { slug: "placa-instagram-10x10", label: "Placa Instagram 10×10", note: "NFC, arte pronta", url: "https://meli.la/12hNW1T" },
