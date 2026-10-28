@@ -6,7 +6,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { money } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { DeliveryTimes, SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
-import { MERCADO_LIVRE_LINKS, PRODUCT_IMAGES, mockupsFor, catalogQuery, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
+import { MERCADO_LIVRE_LINKS, PRODUCT_IMAGES, SHOW_MERCADO_LIVRE, mockupsFor, catalogQuery, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
 import { PIX_DISCOUNT_PCT, PIX_DISCOUNT_UNTIL_LABEL, pixDiscountActive } from "@/lib/promo";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 
@@ -101,7 +101,7 @@ function Produto() {
               </div>
             </>
           )}
-          {MERCADO_LIVRE_LINKS.find((m) => m.slug === p.slug) && (
+          {SHOW_MERCADO_LIVRE && MERCADO_LIVRE_LINKS.find((m) => m.slug === p.slug) && (
             <Button asChild size="lg" variant="outline" className="btn-press mt-3 h-12 w-full rounded-xl border-2 font-bold">
               <a href={MERCADO_LIVRE_LINKS.find((m) => m.slug === p.slug)!.url} target="_blank" rel="noopener noreferrer">
                 Também no Mercado Livre →
