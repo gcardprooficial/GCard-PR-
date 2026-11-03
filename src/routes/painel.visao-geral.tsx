@@ -96,19 +96,25 @@ function Overview() {
     const open = list.filter(
       (order) => !["entregue", "cancelado"].includes(order.fulfillment_status),
     );
+    // Expedição = pago e ainda não saiu (recebido, em produção ou pronto). Igual às abas do painel de pedidos.
     const pendingShipping = paid.filter(
-      (order) => !order.tracking_code && order.fulfillment_status !== "cancelado",
+      (order) => !order.tracking_code && ["recebido", "em_producao", "pronto"].includes(order.fulfillment_status),
+    );
+    // Já marcado como enviado/entregue mas sem código de rastreio: pode ser entrega em mãos ou rastreio que faltou lançar.
+    const shippedNoTracking = paid.filter(
+      (order) => !order.tracking_code && ["enviado", "entregue"].includes(order.fulfillment_status),
     );
     const revenue = paid.reduce((sum, order) => sum + order.total_cents, 0);
     const todayKey = new Date().toLocaleDateString("pt-BR");
     const today = list.filter(
       (order) => new Date(order.created_at).toLocaleDateString("pt-BR") === todayKey,
     ).length;
-    return { paid, open, pendingShipping, revenue, today };
+    return { paid, open, pendingShipping, shippedNoTracking, revenue, today };
   }, [orders]);
 
   const funnel = useMemo(() => {
-    const list = orders ?? [];
+    // Só pedido pago entra no funil (estornado e cancelado ficam de fora, como nas abas de pedidos).
+    const list = (orders ?? []).filter((x) => x.payment_status === "pago");
     return [
       ["Recebidos", list.filter((x) => x.fulfillment_status === "recebido").length, "bg-slate-400"],
       [
@@ -165,7 +171,11 @@ function Overview() {
         <Metric
           label="Aguardando expedição"
           value={String(metrics.pendingShipping.length)}
-          hint="Pagos sem rastreio"
+          hint={
+            metrics.shippedNoTracking.length > 0
+              ? `Pagos que ainda não saíram · ${metrics.shippedNoTracking.length} já enviado(s)/entregue(s) sem rastreio`
+              : "Pagos que ainda não saíram"
+          }
           tone="amber"
         />
         <Metric
@@ -234,7 +244,7 @@ function Overview() {
             <Priority
               title="Expedição"
               value={`${metrics.pendingShipping.length} pedidos`}
-              description="pagos sem código de rastreio"
+              description="pagos que ainda não saíram"
               href="/painel"
             />
             <Priority
