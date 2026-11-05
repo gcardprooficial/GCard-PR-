@@ -2,65 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Menu, X, UserRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { money } from "@/lib/pricing";
-import { catalogQuery, minKitPriceCents } from "@/lib/site-catalog";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { PIX_DISCOUNT_DEADLINE, PIX_DISCOUNT_PCT, PIX_DISCOUNT_UNTIL_LABEL, pixDiscountActive } from "@/lib/promo";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
 import logoMarca from "@/assets/logo/header-marca.png";
 import logoIcone from "@/assets/logo/header-icone.png";
 import { BUSINESS_HOURS } from "@/lib/business-hours";
-
-function useCountdown(deadline: string) {
-  const [msLeft, setMsLeft] = useState(() => new Date(deadline).getTime() - Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setMsLeft(new Date(deadline).getTime() - Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [deadline]);
-  return msLeft;
-}
-
-/** Faixa fixa no topo: 5% de desconto no Pix até 29/11 (com cronômetro) e o menor preço de kit do catálogo. */
-export function PromoBar() {
-  const { data } = useQuery(catalogQuery);
-  const msLeft = useCountdown(PIX_DISCOUNT_DEADLINE);
-  const from = minKitPriceCents(data);
-  const active = pixDiscountActive();
-  const totalSeconds = Math.max(0, Math.floor(msLeft / 1000));
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-
-  return (
-    <div className="bg-primary text-primary-foreground">
-      <Link
-        to="/"
-        hash="precos"
-        className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-4 py-2 text-center text-xs font-black uppercase tracking-wide sm:text-sm"
-      >
-        {active ? (
-          <>
-            <span>🔥 {PIX_DISCOUNT_PCT}% OFF no Pix nas placas com arte até {PIX_DISCOUNT_UNTIL_LABEL}</span>
-            <span className="hidden opacity-40 sm:inline">·</span>
-            <span className="hidden font-mono tabular-nums sm:inline">
-              termina em {days > 0 ? `${days}d ` : ""}
-              {pad(hours)}:{pad(minutes)}:{pad(seconds)}
-            </span>
-          </>
-        ) : (
-          <span>🔥 Promoção para revendedores</span>
-        )}
-        {from > 0 && <span>kits a partir de {money(from)} a unidade</span>}
-        <span className="hidden opacity-40 sm:inline">·</span>
-        <span className="hidden sm:inline">🚚 frete grátis para todo o Brasil</span>
-      </Link>
-    </div>
-  );
-}
 
 /** Prazo de entrega por região, contado a partir do envio (produção/despacho só em dia útil). */
 export function DeliveryTimes({ className = "" }: { className?: string }) {
@@ -134,7 +81,6 @@ export function SiteHeader() {
   const logged = useLoggedEmail();
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-foreground text-white">
-      <PromoBar />
       <NoticeBar />
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4 sm:gap-4 sm:px-5">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="GCard-PRÓ — início">
