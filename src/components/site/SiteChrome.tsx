@@ -36,7 +36,8 @@ export function PromoBar() {
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <div className="bg-primary text-primary-foreground">
+    // Só no desktop: no celular a faixa ficava por cima do aviso de prazos e ninguém conseguia ler.
+    <div className="hidden bg-primary text-primary-foreground md:block">
       <Link
         to="/"
         hash="precos"
