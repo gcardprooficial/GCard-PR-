@@ -23,7 +23,7 @@ export function Testimonials() {
     <section className="lp-sec" aria-label="Depoimentos">
       <div className="lp-head2 rv"><div className="lp-label">Quem já usa</div><h2 className="lp-h2">O que os clientes estão dizendo.</h2></div>
 
-      <div className="gl-grid rv" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+      <div className="gl-grid rv" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", marginTop: 12 }}>
         {QUOTES.map((q) => (
           <blockquote key={q.author} className="card col" style={{ gap: 10, margin: 0 }}>
             <div aria-hidden style={{ color: "var(--brand)", letterSpacing: 2 }}>★★★★★</div>
@@ -34,10 +34,10 @@ export function Testimonials() {
       </div>
 
       {PRINTS.length > 0 && (
-        <div className="rv" style={{ columns: "2 160px", columnGap: 12, marginTop: 16 }}>
+        <div className="rv" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, marginTop: 14 }}>
           {PRINTS.map((src, i) => (
-            <a key={src} href={src} target="_blank" rel="noopener noreferrer" className="card" style={{ display: "block", padding: 0, overflow: "hidden", marginBottom: 12, breakInside: "avoid" }}>
-              <img src={src} alt={`Depoimento real de cliente ${i + 1}`} loading="lazy" draggable={false} style={{ display: "block", width: "100%", height: "auto" }} />
+            <a key={src} href={src} target="_blank" rel="noopener noreferrer" className="card" style={{ display: "block", padding: 0, overflow: "hidden", borderRadius: 14 }} title="Abrir em tamanho grande">
+              <img src={src} alt={`Depoimento real de cliente ${i + 1}`} loading="lazy" draggable={false} style={{ display: "block", width: "100%", aspectRatio: "3 / 4", objectFit: "cover", objectPosition: "top" }} />
             </a>
           ))}
         </div>

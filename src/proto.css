@@ -547,3 +547,9 @@
 .v2 .gsheet { display: flex; flex-direction: column; height: 100%; background: var(--bg); color: var(--ink); }
 .v2 .lp-foot a { text-decoration: none; }
 .v2 .lp-foot a:hover { color: var(--ink); text-decoration: underline; }
+/* Espaçamento mais justo no site (menos "buracos" entre as seções) */
+.v2 .lp-sec { padding: 28px 24px; }
+.v2 .lp-head2 { margin-bottom: 14px; }
+.v2 .lp-marquee { margin: 4px 0; }
+.v2 .lp-hero { padding-top: 28px; padding-bottom: 24px; }
+.v2 .gl-grid { margin-top: 12px; }
