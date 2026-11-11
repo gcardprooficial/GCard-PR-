@@ -11,6 +11,9 @@ import { PIX_DISCOUNT_PCT, PIX_DISCOUNT_UNTIL_LABEL, pixDiscountActive } from "@
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 
 export const Route = createFileRoute("/produtos/$slug")({
+  // Abrir o link direto (sem passar pela home) começava com o catálogo vazio, só o fallback de 3 produtos, e
+  // dava 404 em qualquer outro (10x15, Pix, WhatsApp, Instagram, tag). Carrega o catálogo de verdade antes de renderizar.
+  loader: ({ context }) => context.queryClient.fetchQuery(catalogQuery).catch(() => null),
   head: ({ params }) => ({
     meta: [{ title: `${params.slug} | GCard-PRÓ` }],
     links: [{ rel: "canonical", href: `https://www.gcardpro.com.br/produtos/${params.slug}` }],
@@ -33,7 +36,11 @@ function Produto() {
   useEffect(() => {
     void track({ data: { type: "produto_visto", slug } }).catch(() => {});
   }, [slug, track]);
-  if (!p) throw notFound();
+  // 404 só depois do catálogo carregado: com ele vazio ainda é o fallback, que não tem todos os produtos.
+  if (!p) {
+    if (data.products.length === 0) return null;
+    throw notFound();
+  }
   const soon = p.status !== "ativo";
   const tiers = resaleLines(revenda, products).find((l) => l.slug === slug)?.tiers ?? [];
   return (
