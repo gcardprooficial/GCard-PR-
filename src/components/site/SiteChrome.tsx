@@ -1,70 +1,65 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, X, UserRound } from "lucide-react";
+import { Menu, UserRound, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
-import logoMarca from "@/assets/logo/header-marca.png";
 import logoIcone from "@/assets/logo/header-icone.png";
 import { BUSINESS_HOURS } from "@/lib/business-hours";
+
+// Cabeçalho, rodapé e avisos do site no desenho do protótipo v2 (classes de proto.css, tudo dentro de .v2).
+// O wrapper usa display: contents para o cabeçalho continuar "grudando" no topo ao rolar.
+
+/** Logo: ícone G (amarelo) + nome em tinta com "PRÓ" em dourado, como a marca atual. */
+export function GLogo({ size = 24 }: { size?: number }) {
+  return (
+    <span className="row" style={{ gap: 8 }} role="img" aria-label="GCard-PRÓ">
+      <img src={logoIcone} alt="" draggable={false} style={{ height: size + 8, width: "auto" }} />
+      <span className="gword" style={{ fontSize: size }}>
+        GCard-<span className="goldtext">PRÓ</span>
+      </span>
+    </span>
+  );
+}
 
 /** Prazo de entrega por região, contado a partir do envio (produção/despacho só em dia útil). */
 export function DeliveryTimes({ className = "" }: { className?: string }) {
   return (
-    <div className={`rounded-2xl border border-border bg-card p-5 ${className}`}>
-      <p className="text-xs font-black uppercase tracking-wider text-muted-foreground">Prazo de entrega depois do envio</p>
-      <ul className="mt-3 space-y-2 text-sm">
-        <li className="flex items-start gap-2.5">
-          <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-g-green" />
-          <span>
-            <strong>Sul e Sudeste:</strong> 2 a 3 dias
-          </span>
-        </li>
-        <li className="flex items-start gap-2.5">
-          <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-amber-400" />
-          <span>
-            <strong>Centro-Oeste:</strong> cerca de 5 dias
-          </span>
-        </li>
-        <li className="flex items-start gap-2.5">
-          <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
-          <span>
-            <strong>Norte e Nordeste:</strong> 7 a 8 dias
-          </span>
-        </li>
-      </ul>
-      <p className="mt-3 text-xs leading-snug text-muted-foreground">
-        O prazo conta a partir do despacho. Produzimos e despachamos de {BUSINESS_HOURS}.
-      </p>
+    <div className="v2" style={{ display: "contents" }}>
+      <div className={`card col ${className}`} style={{ gap: 8 }}>
+        <span className="xs muted" style={{ textTransform: "uppercase", letterSpacing: ".04em", fontWeight: 600 }}>Prazo de entrega depois do envio</span>
+        {[
+          ["Sul e Sudeste", "2 a 3 dias"],
+          ["Centro-Oeste", "cerca de 5 dias"],
+          ["Norte e Nordeste", "7 a 8 dias"],
+        ].map(([a, b]) => (
+          <div key={a} className="row sm"><span className="grow"><b>{a}</b></span><span className="muted">{b}</span></div>
+        ))}
+        <span className="xs muted">O prazo conta a partir do despacho. Produzimos e despachamos de {BUSINESS_HOURS}.</span>
+      </div>
     </div>
   );
 }
 
-/** Aviso fixo de prazo, piscando, no topo do site. */
+/** Aviso fixo de prazo no topo do site. */
 export function NoticeBar() {
   return (
-    <div role="alert" className="bg-amber-400 text-amber-950">
-      <p className="blink-notice mx-auto max-w-7xl px-3 py-1.5 text-center text-[11px] font-extrabold leading-snug sm:text-sm">
-        ⚠️ Atenção aos prazos: Compras realizadas aos sábados, domingos ou feriados serão produzidas no dia útil seguinte.
-      </p>
+    <div role="alert" className="gnotice">
+      <p className="blink-notice">⚠️ Atenção aos prazos: Compras realizadas aos sábados, domingos ou feriados serão produzidas no dia útil seguinte.</p>
     </div>
   );
 }
 
 const NAV = [
-  { label: "Início", to: "/", hash: undefined },
   { label: "Produtos", to: "/produtos", hash: undefined },
-  { label: "GCard Plus", to: "/plus", hash: undefined },
   { label: "Preços dos kits", to: "/", hash: "precos" },
   { label: "Como funciona", to: "/", hash: "como-funciona" },
+  { label: "GCard Plus", to: "/plus", hash: undefined },
   { label: "Gerar link grátis", to: "/gerador", hash: undefined },
   { label: "Dúvidas", to: "/", hash: "duvidas" },
   { label: "Contato", to: "/", hash: "contato" },
 ] as const;
-
-const navLinkClass =
-  "whitespace-nowrap text-[13px] font-semibold text-white/70 transition-colors hover:text-white";
 
 /** E-mail da pessoa logada (ou null). Só no navegador. */
 function useLoggedEmail() {
@@ -80,245 +75,108 @@ function useLoggedEmail() {
 export function SiteHeader() {
   const logged = useLoggedEmail();
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-foreground text-white">
+    <div className="v2" style={{ display: "contents" }}>
       <NoticeBar />
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-2 px-4 sm:gap-4 sm:px-5">
-        <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="GCard-PRÓ — início">
-          <img src={logoIcone} alt="" className="h-9 w-auto sm:h-10" draggable={false} />
-          <img src={logoMarca} alt="GCard-PRÓ" className="hidden h-6 w-auto md:block" draggable={false} />
-        </Link>
-
-        <nav className="hidden items-center gap-5 xl:flex" aria-label="Principal">
-          {NAV.map((item) => (
-            <Link key={item.label} to={item.to} {...(item.hash ? { hash: item.hash } : {})} className={navLinkClass}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
-          {logged ? (
-            <Link
-              to="/ativar"
-              title={`Logado como ${logged}`}
-              className="inline-flex h-11 max-w-[11rem] items-center gap-1.5 rounded-xl bg-primary px-3 text-[13px] font-bold text-primary-foreground sm:text-sm"
-            >
-              <UserRound className="size-4 shrink-0" />
-              <span className="truncate">{logged.split("@")[0]}</span>
-            </Link>
-          ) : null}
-          <Link
-            to="/ativar"
-            className={`${logged ? "hidden" : "inline-flex"} h-11 items-center whitespace-nowrap rounded-xl bg-primary px-3.5 text-[13px] sm:text-sm font-bold text-primary-foreground transition-transform active:scale-[0.97] sm:px-5`}
-          >
-            Acessar painel
+      <header className="lp-head">
+        <div className="lp-col row between" style={{ padding: "0 20px" }}>
+          <Link to="/" className="brand" style={{ padding: 0, textDecoration: "none", color: "inherit" }} aria-label="GCard-PRÓ, início">
+            <GLogo />
           </Link>
-          <Link
-            to="/comprar"
-            search={{}}
-            className="hidden h-11 items-center rounded-xl border border-white/25 px-5 text-sm font-bold text-white transition-colors hover:bg-white/10 md:inline-flex"
-          >
-            Comprar agora
-          </Link>
-
-          <Sheet>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                aria-label="Abrir menu"
-                className="flex size-10 items-center justify-center rounded-xl text-white hover:bg-white/10 xl:hidden"
-              >
-                <Menu className="size-7" />
-              </button>
-            </SheetTrigger>
-            <SheetContent
-              side="right"
-              className="flex w-[88vw] max-w-sm flex-col border-0 bg-foreground p-0 text-white [&>button]:hidden"
-            >
-              <SheetTitle className="sr-only">Menu</SheetTitle>
-              <div className="flex h-[72px] items-center justify-between border-b border-white/10 px-5">
-                <img src={logoMarca} alt="GCard-PRÓ" className="h-6 w-auto" draggable={false} />
-                <SheetClose asChild>
-                  <button type="button" aria-label="Fechar menu" className="flex size-11 items-center justify-center rounded-xl hover:bg-white/10">
-                    <X className="size-6" />
-                  </button>
-                </SheetClose>
-              </div>
-              <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Menu">
-                {NAV.map((item) => (
-                  <SheetClose asChild key={item.label}>
-                    <Link
-                      to={item.to}
-                      {...(item.hash ? { hash: item.hash } : {})}
-                      className="block rounded-xl px-4 py-3.5 text-lg font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-                    >
-                      {item.label}
-                    </Link>
-                  </SheetClose>
-                ))}
-              </nav>
-              <div className="space-y-3 border-t border-white/10 p-5">
-                <SheetClose asChild>
-                  <Link
-                    to="/comprar"
-                    search={{}}
-                    className="flex h-14 items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-foreground"
-                  >
-                    Comprar agora
-                  </Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link
-                    to="/ativar"
-                    className="flex h-14 items-center justify-center rounded-xl border border-white/25 text-base font-bold text-white"
-                  >
-                    Acessar painel
-                  </Link>
-                </SheetClose>
-                {logged ? (
-                  <button
-                    type="button"
-                    onClick={() => void supabase.auth.signOut()}
-                    className="block w-full text-center text-sm font-semibold text-white/70 underline"
-                  >
-                    Sair ({logged.split("@")[0]})
-                  </button>
-                ) : null}
-                {WHATSAPP_CONTACTS.map((c) => (
-                  <a
-                    key={c.number}
-                    href={whatsappLink(c.number)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-center text-sm font-semibold text-white/60"
-                  >
-                    WhatsApp {c.display}
-                  </a>
-                ))}
-              </div>
-            </SheetContent>
-          </Sheet>
+          <nav className="lp-nav" aria-label="Principal">
+            {NAV.map((item) => (
+              <Link key={item.label} to={item.to} {...(item.hash ? { hash: item.hash } : {})}>{item.label}</Link>
+            ))}
+          </nav>
+          <div className="row" style={{ gap: 6 }}>
+            {logged ? (
+              <Link to="/ativar" title={`Logado como ${logged}`} className="btn" style={{ padding: "7px 12px", maxWidth: 170 }}>
+                <UserRound size={15} /><span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{logged.split("@")[0]}</span>
+              </Link>
+            ) : (
+              <Link to="/ativar" className="btn ghost lp-hide-sm" style={{ padding: "7px 12px" }}>Acessar painel</Link>
+            )}
+            <Link to="/comprar" search={{}} className="btn primary" style={{ padding: "7px 14px" }}>Comprar</Link>
+            <Sheet>
+              <SheetTrigger asChild>
+                <button type="button" aria-label="Abrir menu" className="btn ghost lp-menu" style={{ padding: 8 }}><Menu size={20} /></button>
+              </SheetTrigger>
+              <SheetContent side="right" className="flex w-[88vw] max-w-sm flex-col border-0 p-0 [&>button]:hidden">
+                <div className="v2" style={{ display: "contents" }}>
+                  <div className="gsheet">
+                    <SheetTitle className="sr-only">Menu</SheetTitle>
+                    <div className="row between" style={{ padding: "14px 18px", borderBottom: "1px solid var(--line)" }}>
+                      <GLogo size={20} />
+                      <SheetClose asChild><button type="button" aria-label="Fechar menu" className="btn ghost" style={{ padding: 8 }}><X size={20} /></button></SheetClose>
+                    </div>
+                    <nav className="col" style={{ padding: 12, gap: 2, flex: 1, overflowY: "auto" }} aria-label="Menu">
+                      {NAV.map((item) => (
+                        <SheetClose asChild key={item.label}>
+                          <Link to={item.to} {...(item.hash ? { hash: item.hash } : {})} className="nav" style={{ textDecoration: "none" }}>{item.label}</Link>
+                        </SheetClose>
+                      ))}
+                    </nav>
+                    <div className="col" style={{ padding: 16, gap: 10, borderTop: "1px solid var(--line)" }}>
+                      <SheetClose asChild><Link to="/comprar" search={{}} className="btn primary block">Comprar agora</Link></SheetClose>
+                      <SheetClose asChild><Link to="/ativar" className="btn block">Acessar painel</Link></SheetClose>
+                      {logged ? <button type="button" onClick={() => void supabase.auth.signOut()} className="btn ghost sm">Sair ({logged.split("@")[0]})</button> : null}
+                      {WHATSAPP_CONTACTS.map((c) => (
+                        <a key={c.number} href={whatsappLink(c.number)} target="_blank" rel="noopener noreferrer" className="xs muted center">WhatsApp {c.display}</a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </div>
   );
 }
 
-const footerLink =
-  "text-sm text-white/65 transition-colors hover:text-white hover:underline underline-offset-4";
+const SELOS = ["Compra segura: Stone ou InfinitePay", "Pix, cartão e boleto", "Site protegido por HTTPS", "Seus dados protegidos (LGPD)", "7 dias para desistir (CDC)", "Frete grátis para todo o Brasil"];
 
 export function SiteFooter() {
   return (
-    <footer className="bg-foreground text-white">
-      <div className="mx-auto max-w-7xl px-5 py-14">
-        <div className="grid gap-10 md:grid-cols-[1.3fr_2fr]">
-          <div>
-            <Link to="/" className="inline-flex items-center gap-2.5" aria-label="GCard-PRÓ — início">
-              <img src={logoIcone} alt="" className="h-10 w-auto" draggable={false} />
-              <img src={logoMarca} alt="GCard-PRÓ" className="h-6 w-auto" draggable={false} />
-            </Link>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/65">
-              Fornecedor de kits de cartões NFC e placas QR Code/NFC para revendedores, que levam o cliente direto à avaliação do Google.
-            </p>
-            <p className="mt-4 text-xs font-semibold text-white/70">Atendimento e produção: {BUSINESS_HOURS}. Fechado aos sábados, domingos e feriados.</p>
-            <p className="mt-2 text-xs text-white/45">© {new Date().getFullYear()} GCard-PRÓ</p>
-            <p className="mt-1 max-w-xs text-xs leading-relaxed text-white/45">
-              {COMPANY.legalName} · CNPJ {COMPANY.cnpj}
-              <br />
-              {COMPANY_ADDRESS}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
-            <div>
-              <h4 className="text-xs font-black uppercase tracking-[0.18em] text-primary">Produto</h4>
-              <ul className="mt-4 space-y-3">
-                <li>
-                  <Link to="/produtos" className={footerLink}>
-                    Todos os produtos
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/comprar" search={{}} className={footerLink}>
-                    Comprar kits para revenda
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/gerador" className={footerLink}>
-                    Gerar link de avaliação grátis
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/guia" className={footerLink}>
-                    Guia NFC e cartão digital
-                  </Link>
-                </li>
-              </ul>
+    <div className="v2" style={{ display: "contents" }}>
+      <footer className="lp-foot">
+        <div className="lp-col col" style={{ gap: 18, padding: "24px 20px" }}>
+          <div className="row between wrap" style={{ gap: 16, alignItems: "flex-start" }}>
+            <div className="col" style={{ gap: 8, maxWidth: 340 }}>
+              <Link to="/" aria-label="GCard-PRÓ, início" style={{ textDecoration: "none", color: "inherit" }}><GLogo size={20} /></Link>
+              <p className="sm muted">Fornecedor de kits de cartões NFC e placas QR Code/NFC para revendedores, que levam o cliente direto à avaliação do Google.</p>
+              <p className="xs muted">Atendimento e produção: {BUSINESS_HOURS}. Fechado aos sábados, domingos e feriados.</p>
             </div>
-            <div>
-              <h4 className="text-xs font-black uppercase tracking-[0.18em] text-primary">Suporte</h4>
-              <ul className="mt-4 space-y-3">
-                <li>
-                  <a href="https://instagram.com/gcardpro.oficial" target="_blank" rel="noopener noreferrer" className={footerLink}>
-                    Instagram
-                  </a>
-                </li>
+            <div className="row wrap" style={{ gap: 28, alignItems: "flex-start" }}>
+              <div className="col" style={{ gap: 6 }}>
+                <b className="sm">Produto</b>
+                <Link to="/produtos" className="xs muted">Todos os produtos</Link>
+                <Link to="/comprar" search={{}} className="xs muted">Comprar kits para revenda</Link>
+                <Link to="/gerador" className="xs muted">Gerar link de avaliação grátis</Link>
+                <Link to="/guia" className="xs muted">Guia NFC e cartão digital</Link>
+              </div>
+              <div className="col" style={{ gap: 6 }}>
+                <b className="sm">Suporte</b>
+                <a href="https://instagram.com/gcardpro.oficial" target="_blank" rel="noopener noreferrer" className="xs muted">Instagram</a>
                 {WHATSAPP_CONTACTS.map((c) => (
-                  <li key={c.number}>
-                    <a href={whatsappLink(c.number)} target="_blank" rel="noopener noreferrer" className={footerLink}>
-                      WhatsApp {c.name} · {c.display}
-                    </a>
-                  </li>
+                  <a key={c.number} href={whatsappLink(c.number)} target="_blank" rel="noopener noreferrer" className="xs muted">WhatsApp {c.name} · {c.display}</a>
                 ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-xs font-black uppercase tracking-[0.18em] text-primary">Legal</h4>
-              <ul className="mt-4 space-y-3">
-                <li>
-                  <Link to="/termos" className={footerLink}>
-                    Termos de uso
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/trocas-e-devolucoes" className={footerLink}>
-                    Trocas e devoluções
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/privacidade" className={footerLink}>
-                    Política de privacidade
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/ativar" className={footerLink}>
-                    Ativar meus códigos
-                  </Link>
-                </li>
-              </ul>
+              </div>
+              <div className="col" style={{ gap: 6 }}>
+                <b className="sm">Legal</b>
+                <Link to="/termos" className="xs muted">Termos de uso</Link>
+                <Link to="/trocas-e-devolucoes" className="xs muted">Trocas e devoluções</Link>
+                <Link to="/privacidade" className="xs muted">Política de privacidade</Link>
+                <Link to="/ativar" className="xs muted">Ativar meus códigos</Link>
+              </div>
             </div>
           </div>
+          <div className="row wrap xs muted" style={{ gap: "6px 18px", borderTop: "1px solid var(--line)", paddingTop: 14 }}>
+            {SELOS.map((t) => <span key={t}>✓ {t}</span>)}
+          </div>
+          <p className="xs muted">© {new Date().getFullYear()} GCard-PRÓ · {COMPANY.legalName} · CNPJ {COMPANY.cnpj} · {COMPANY_ADDRESS}</p>
         </div>
-
-        <ul className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/10 pt-6 text-xs font-semibold text-white/60">
-          {[
-            "Compra segura: Stone ou InfinitePay",
-            "Pix, cartão e boleto",
-            "Site protegido por HTTPS",
-            "Seus dados protegidos (LGPD)",
-            "7 dias para desistir (CDC)",
-            "Frete grátis para todo o Brasil",
-          ].map((t) => (
-            <li key={t} className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary" aria-hidden>
-                <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z" />
-                <polyline points="9 12 11 14 15 10" />
-              </svg>
-              {t}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </footer>
+      </footer>
+    </div>
   );
 }

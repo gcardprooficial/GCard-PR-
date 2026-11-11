@@ -20,56 +20,24 @@ const QUOTES = [
 /** Depoimentos reais, recebidos por WhatsApp/Instagram. Nada inventado. */
 export function Testimonials() {
   return (
-    <section className="mx-auto max-w-6xl px-5 py-14 md:py-16">
-      <div className="text-center">
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
-          Quem já usa
-        </p>
-        <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">
-          O que os clientes <span className="highlight-yellow">estão dizendo</span>.
-        </h2>
-      </div>
+    <section className="lp-sec" aria-label="Depoimentos">
+      <div className="lp-head2 rv"><div className="lp-label">Quem já usa</div><h2 className="lp-h2">O que os clientes estão dizendo.</h2></div>
 
-      <div className="mt-10 grid gap-5 sm:grid-cols-2">
+      <div className="gl-grid rv" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
         {QUOTES.map((q) => (
-          <blockquote
-            key={q.author}
-            className="rounded-3xl border border-border bg-card p-6 card-soft sm:p-7"
-          >
-            <div className="flex gap-0.5 text-primary" aria-hidden>
-              {[0, 1, 2, 3, 4].map((i) => (
-                <svg key={i} viewBox="0 0 24 24" className="size-4 fill-current">
-                  <path d="M12 2l3 6.5 7 .9-5 4.8 1.2 7-6.2-3.4L5.8 21 7 14.2 2 9.4l7-.9L12 2z" />
-                </svg>
-              ))}
-            </div>
-            <p className="mt-4 text-base leading-relaxed text-foreground/90 sm:text-lg">
-              “{q.text}”
-            </p>
-            <footer className="mt-4 text-sm text-muted-foreground">
-              <span className="font-bold text-foreground">{q.author}</span> · {q.context}
-            </footer>
+          <blockquote key={q.author} className="card col" style={{ gap: 10, margin: 0 }}>
+            <div aria-hidden style={{ color: "var(--brand)", letterSpacing: 2 }}>★★★★★</div>
+            <p style={{ margin: 0 }}>“{q.text}”</p>
+            <footer className="sm muted"><b style={{ color: "var(--ink)" }}>{q.author}</b> · {q.context}</footer>
           </blockquote>
         ))}
       </div>
 
       {PRINTS.length > 0 && (
-        <div className="mt-8 columns-2 gap-3 sm:columns-3 sm:gap-4 lg:columns-4">
+        <div className="rv" style={{ columns: "2 160px", columnGap: 12, marginTop: 16 }}>
           {PRINTS.map((src, i) => (
-            <a
-              key={src}
-              href={src}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mb-3 block overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:mb-4"
-            >
-              <img
-                src={src}
-                alt={`Depoimento real de cliente ${i + 1}`}
-                loading="lazy"
-                draggable={false}
-                className="h-auto w-full"
-              />
+            <a key={src} href={src} target="_blank" rel="noopener noreferrer" className="card" style={{ display: "block", padding: 0, overflow: "hidden", marginBottom: 12, breakInside: "avoid" }}>
+              <img src={src} alt={`Depoimento real de cliente ${i + 1}`} loading="lazy" draggable={false} style={{ display: "block", width: "100%", height: "auto" }} />
             </a>
           ))}
         </div>

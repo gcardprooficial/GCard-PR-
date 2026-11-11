@@ -15,44 +15,50 @@ export const Route = createFileRoute("/produtos/")({
   component: Produtos,
 });
 
+export type ProdutosViewProps = { items: { id: string; slug: string; name: string; format: string; image: string; soon: boolean }[] };
+
+/** Parte visual da lista de produtos (sem banco), no desenho do protótipo. */
+export function ProdutosView({ items }: ProdutosViewProps) {
+  return (
+    <div className="v2">
+      <div className="lp">
+        <div className="lp-bg" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /></div>
+        <SiteHeader />
+        <main className="lp-col">
+          <section className="lp-sec">
+            <div className="lp-head2"><div className="lp-label">Produtos</div><h1 className="lp-h2">Todos os produtos GCard-PRÓ</h1><p className="lp-sub">Só kits para revendedores, a partir de 10 unidades. Com arte pronta ou acrílico puro, frete grátis para todo o Brasil e sem mensalidade.</p></div>
+            <div className="gl-grid">
+              {items.map((p) => (
+                <Link key={p.id} to="/produtos/$slug" params={{ slug: p.slug }} className="gl-card" style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="gl-cardimg">
+                    <img src={p.image} alt={p.name} loading="lazy" draggable={false} />
+                    {p.soon && <div className="gp-badges"><span className="gp-badge">Em breve</span></div>}
+                  </div>
+                  <div className="col" style={{ gap: 3, padding: "12px 14px 16px", textAlign: "left" }}><b>{p.name}</b><span className="xs muted">{p.format}</span></div>
+                </Link>
+              ))}
+            </div>
+          </section>
+          <section className="lp-sec">
+            <div className="gp-custom">
+              <b>Vai colocar a sua própria arte?</b>
+              <span className="sm muted">Veja o passo a passo para personalizar a sua placa, com gabaritos e checklist de teste.</span>
+              <div><Link to="/personalizar" className="btn primary">Como personalizar</Link></div>
+            </div>
+          </section>
+        </main>
+        <SiteFooter />
+      </div>
+    </div>
+  );
+}
+
 function Produtos() {
   const { data } = useSuspenseQuery(catalogQuery);
   const products = productsFrom(data);
   return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader />
-      <section className="bg-foreground text-white">
-        <div className="mx-auto max-w-7xl px-5 py-12 md:py-16">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Produtos</p>
-          <h1 className="mt-3 text-4xl leading-tight sm:text-5xl">Todos os produtos GCard-PRÓ</h1>
-          <p className="mt-3 max-w-xl text-white/70">Só kits para revendedores, a partir de 10 unidades. Com arte pronta ou acrílico puro, frete grátis para todo o Brasil e sem mensalidade.</p>
-        </div>
-      </section>
-      <section className="mx-auto grid max-w-7xl gap-5 px-5 py-12 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((p) => {
-          const soon = p.status !== "ativo";
-          return (
-            <Link key={p.id} to="/produtos/$slug" params={{ slug: p.slug }} className="group overflow-hidden rounded-3xl border border-border bg-card card-soft card-soft-hover">
-              <div className="relative aspect-square overflow-hidden bg-surface">
-                <img src={PRODUCT_IMAGES[p.slug] ?? produtoCartao} alt={p.name} loading="lazy" draggable={false} className={`h-full w-full transition-transform duration-700 group-hover:scale-105 ${p.is_blank || p.is_supply ? "object-contain p-6" : "object-cover"}`} />
-                {soon && <span className="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-[11px] font-black text-primary-foreground">Em breve</span>}
-              </div>
-              <div className="p-5">
-                <h2 className="text-lg font-bold">{p.name}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">{p.format}</p>
-              </div>
-            </Link>
-          );
-        })}
-      </section>
-      <section className="mx-auto max-w-7xl px-5 pb-12">
-        <div className="rounded-3xl border border-dashed border-foreground/20 bg-card p-6 text-center">
-          <h2 className="text-lg font-bold">Vai colocar a sua própria arte?</h2>
-          <p className="mx-auto mt-1 max-w-xl text-sm text-muted-foreground">Veja o passo a passo para personalizar a sua placa, com gabaritos e checklist de teste.</p>
-          <Link to="/personalizar" className="mt-4 inline-flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground">Como personalizar →</Link>
-        </div>
-      </section>
-      <SiteFooter />
-    </div>
+    <ProdutosView
+      items={products.map((p) => ({ id: p.id, slug: p.slug, name: p.name, format: p.format ?? "", image: PRODUCT_IMAGES[p.slug] ?? produtoCartao, soon: p.status !== "ativo" }))}
+    />
   );
 }
