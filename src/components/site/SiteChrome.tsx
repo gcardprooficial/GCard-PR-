@@ -83,7 +83,7 @@ export function SiteHeader() {
             <GLogo />
           </Link>
           <nav className="lp-nav" aria-label="Principal">
-            {NAV.map((item) => (
+            {NAV.slice(0, 6).map((item) => (
               <Link key={item.label} to={item.to} {...(item.hash ? { hash: item.hash } : {})}>{item.label}</Link>
             ))}
           </nav>
