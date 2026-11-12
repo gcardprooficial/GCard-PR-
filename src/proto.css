@@ -565,3 +565,6 @@
 .v2 .gp-sec .gp-steps, .v2 .gp-sec .gp-trust, .v2 .gp-sec .lp-faq, .v2 .gp-sec .gl-grid { text-align: left; }
 .v2 .gp-sec > .gp-custom { margin-left: auto; margin-right: auto; max-width: 760px; }
 .v2 .gp-sec > .card { max-width: 520px; margin-left: auto; margin-right: auto; text-align: left; }
+/* "Como funciona" tem 4 passos no GCard: 4 colunas e conteúdo alinhado no topo */
+.v2 .lp-stepitem { align-content: start; }
+@media (min-width: 900px) { .v2 .lp-steps { grid-template-columns: repeat(4, 1fr); } }
