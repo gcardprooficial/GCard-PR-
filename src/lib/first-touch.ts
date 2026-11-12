@@ -6,6 +6,14 @@ export type FirstTouch = {
   utm_medium?: string;
   utm_campaign?: string;
   utm_content?: string;
+  utm_term?: string;
+  utm_id?: string;
+  /** Parâmetros da Utmify (src e sck) e identificadores de clique dos anúncios. Diferenciam maiúsculas e minúsculas. */
+  src?: string;
+  sck?: string;
+  fbclid?: string;
+  gclid?: string;
+  ttclid?: string;
   ref?: string;
   landing?: string;
   referrer_host?: string;
@@ -14,7 +22,9 @@ export type FirstTouch = {
 
 const COOKIE = "gcard_ft";
 const MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
-const KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "ref"] as const;
+const KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "utm_id", "ref"] as const;
+/** Valores que não podem ser passados para minúsculas (identificadores de clique e códigos da Utmify). */
+const RAW_KEYS = ["src", "sck", "fbclid", "gclid", "ttclid"] as const;
 const clean = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 /** Valores padrão de origem usados nos links: youtube, instagram, discord, curso, apuracao, toqy, whatsapp, email. */
@@ -23,7 +33,11 @@ export function sanitizeFirstTouch(raw: unknown): FirstTouch | null {
   const r = raw as Record<string, unknown>;
   const out: FirstTouch = {};
   for (const k of KEYS) {
-    const v = clean(r[k], k === "utm_campaign" || k === "utm_content" ? 80 : 60).toLowerCase();
+    const v = clean(r[k], k === "utm_campaign" || k === "utm_content" || k === "utm_term" ? 80 : 60).toLowerCase();
+    if (v) out[k] = v;
+  }
+  for (const k of RAW_KEYS) {
+    const v = clean(r[k], 200);
     if (v) out[k] = v;
   }
   const landing = clean(r["landing"], 120);
@@ -61,6 +75,10 @@ export function captureFirstTouch(): void {
     const v = params.get(k) ?? (k === "ref" ? params.get("cupom") : null);
     if (v) raw[k] = v;
   }
+  for (const k of RAW_KEYS) {
+    const v = params.get(k);
+    if (v) raw[k] = v;
+  }
   // Quem chega pelo atalho do kit (/comprar?kit=...) e não traz utm_source vem do curso/personalizar.
   if (!raw["utm_source"] && params.get("kit")) raw["utm_source"] = "personalizar";
   raw["landing"] = window.location.pathname;
@@ -75,4 +93,35 @@ export function captureFirstTouch(): void {
   if (!ft) return;
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
   document.cookie = `${COOKIE}=${encodeURIComponent(JSON.stringify(ft))}; Max-Age=${MAX_AGE_SECONDS}; Path=/; SameSite=Lax${secure}`;
+}
+
+/** Parâmetros de rastreio no formato que a Utmify usa (para enviar junto do pedido quando a integração for ligada). */
+export function trackingParameters(ft: FirstTouch | null | undefined) {
+  const f = ft ?? {};
+  return {
+    src: f.src ?? null,
+    sck: f.sck ?? null,
+    utm_source: f.utm_source ?? null,
+    utm_campaign: f.utm_campaign ?? null,
+    utm_medium: f.utm_medium ?? null,
+    utm_content: f.utm_content ?? null,
+    utm_term: f.utm_term ?? null,
+  };
+}
+
+/** Acrescenta a origem da primeira visita (UTM, src, sck e cliques) a um link que sai do site, sem sobrescrever o que o link já traz. */
+export function appendTracking(url: string): string {
+  const ft = getFirstTouch();
+  if (!ft) return url;
+  try {
+    const u = new URL(url);
+    for (const k of [...KEYS, ...RAW_KEYS]) {
+      if (k === "ref") continue;
+      const v = ft[k];
+      if (v && !u.searchParams.has(k)) u.searchParams.set(k, v);
+    }
+    return u.toString();
+  } catch {
+    return url;
+  }
 }

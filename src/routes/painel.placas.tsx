@@ -156,7 +156,15 @@ function Placas() {
     [q, searching, statusFilter, period],
   );
 
-  const statusCounts = (rows ?? []).reduce<Record<string, number>>((acc, r) => {
+  const scoped = useMemo(
+    () => (rows ?? []).filter((r) => {
+      if (period.preset === "tudo") return true;
+      const d = r.sold_at ?? r.activated_at;
+      return !!d && inPeriod(period, d.slice(0, 10));
+    }),
+    [rows, period],
+  );
+  const statusCounts = scoped.reduce<Record<string, number>>((acc, r) => {
     acc[r.status] = (acc[r.status] ?? 0) + 1;
     return acc;
   }, {});
@@ -197,9 +205,9 @@ function Placas() {
 
   const all = useMemo(() => (rows ?? []).filter(matches), [rows, matches]);
 
-  const totalInLotes = (rows ?? []).filter((r) => r.batch_id).length;
-  const totalBatches = new Set((rows ?? []).filter((r) => r.batch_id).map((r) => r.batch_id)).size;
-  const totalStock = (rows ?? []).filter((r) => !r.batch_id && !r.orders).length;
+  const totalInLotes = scoped.filter((r) => r.batch_id).length;
+  const totalBatches = new Set(scoped.filter((r) => r.batch_id).map((r) => r.batch_id)).size;
+  const totalStock = scoped.filter((r) => !r.batch_id && !r.orders).length;
 
   function toggle(id: string) {
     setOpen((prev) => {
@@ -299,7 +307,7 @@ function Placas() {
 
   const VIEWS: [View, string][] = [
     ["estoque", `Livres em estoque · ${totalStock}`],
-    ["todas", `Todas · ${rows?.length ?? 0}`],
+    ["todas", `Todas · ${scoped.length}`],
   ];
 
   return (
@@ -313,7 +321,7 @@ function Placas() {
       </div>
 
       <div className="metrics mb" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
-        <div className="metric"><div className="xs muted">Placas emitidas</div><div className="v">{rows?.length ?? 0}</div></div>
+        <div className="metric"><div className="xs muted">Placas emitidas</div><div className="v">{scoped.length}</div></div>
         <div className="metric"><div className="xs muted">Ativadas</div><div className="v">{statusCounts["ativada"] ?? 0}</div></div>
         <div className="metric"><div className="xs muted">Livres em estoque</div><div className="v">{totalStock}</div></div>
         <div className={`metric ${(statusCounts["bloqueada"] ?? 0) ? "warn" : ""}`}><div className="xs muted">Bloqueadas</div><div className="v">{statusCounts["bloqueada"] ?? 0}</div></div>
@@ -331,7 +339,7 @@ function Placas() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar token, código, negócio ou lote" className="input" style={{ flex: "1 1 260px", width: "auto" }} />
         <PeriodFilter value={period} onChange={(v) => { setPeriod(v); setLimit(PAGE); }} />
         <select aria-label="Situação" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="input" style={{ flex: "0 1 220px", width: "auto" }}>
-          <option value="all">Todas as situações ({rows?.length ?? 0})</option>
+          <option value="all">Todas as situações ({scoped.length})</option>
           {STATUS.map((st) => (
             <option key={st} value={st}>{STATUS_LABEL[st]} ({statusCounts[st] ?? 0})</option>
           ))}

@@ -5,6 +5,7 @@ import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import { BENEFITS, FAQ, STEPS } from "@/components/ativar/PlusHub";
 import { AreaChart, Donut } from "@/components/ativar/Charts";
 import { PLUS_CHECKOUT, PLUS_PRICE } from "@/lib/plus";
+import { TrackedAnchor } from "@/components/TrackedAnchor";
 
 export const Route = createFileRoute("/plus")({
   head: () => ({
@@ -43,7 +44,7 @@ function Pricing() {
   return (
     <div className="gl-grid" style={{ marginTop: 18 }}>
       {(["mensal", "anual"] as const).map((p) => (
-        <a key={p} href={PLUS_CHECKOUT[p]} target="_blank" rel="noopener noreferrer" className="card col" style={{ gap: 8, flex: "1 1 300px", maxWidth: 380, textDecoration: "none", color: "inherit", position: "relative", borderColor: p === "anual" ? "var(--brand)" : undefined }}>
+        <TrackedAnchor key={p} href={PLUS_CHECKOUT[p]} target="_blank" rel="noopener noreferrer" className="card col" style={{ gap: 8, flex: "1 1 300px", maxWidth: 380, textDecoration: "none", color: "inherit", position: "relative", borderColor: p === "anual" ? "var(--brand)" : undefined }}>
           {p === "anual" && <span className="plustag" style={{ position: "absolute", top: -11, left: 18 }}>MELHOR VALOR</span>}
           <b style={{ fontFamily: "var(--font-display)", fontSize: 20 }}>{p === "mensal" ? "Mensal" : "Anual"}</b>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 36, letterSpacing: "-0.03em" }}>{p === "mensal" ? "R$ 19,90" : "R$ 15,90"}<span className="sm muted">/mês</span></div>
@@ -52,7 +53,7 @@ function Pricing() {
             <div key={x} className="row sm" style={{ gap: 8 }}><Check size={15} color="var(--brand)" />{x}</div>
           ))}
           <span className={`btn ${p === "anual" ? "goldbtn" : "primary"} block`} style={{ marginTop: 8 }}>Assinar {p}</span>
-        </a>
+        </TrackedAnchor>
       ))}
     </div>
   );
@@ -80,8 +81,8 @@ function PlusPage() {
                 <h1 className="lp-h1">QR Code que <span className="accent">você troca</span> sem reimprimir</h1>
                 <p className="lp-lead">Crie QR Codes ilimitados com a sua marca, programe o destino por horário e mande relatórios de leituras para os seus clientes. É para quem usa placas e QR Codes no dia a dia do negócio.</p>
                 <div className="row wrap" style={{ gap: 8, marginTop: 20 }}>
-                  <a href={PLUS_CHECKOUT.anual} target="_blank" rel="noopener noreferrer" className="btn goldbtn"><Sparkles size={16} /> Assinar o anual</a>
-                  <a href={PLUS_CHECKOUT.mensal} target="_blank" rel="noopener noreferrer" className="btn">Prefiro o mensal</a>
+                  <TrackedAnchor href={PLUS_CHECKOUT.anual} target="_blank" rel="noopener noreferrer" className="btn goldbtn"><Sparkles size={16} /> Assinar o anual</TrackedAnchor>
+                  <TrackedAnchor href={PLUS_CHECKOUT.mensal} target="_blank" rel="noopener noreferrer" className="btn">Prefiro o mensal</TrackedAnchor>
                 </div>
                 <p className="xs muted" style={{ marginTop: 12 }}>{PLUS_PRICE.anual} · {PLUS_PRICE.mensal} · cancele quando quiser</p>
               </div>
