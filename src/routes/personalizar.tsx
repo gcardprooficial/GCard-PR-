@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
-import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
+import { ArrowRight, Download } from "lucide-react";
 import { money, resolveUnitPrice } from "@/lib/pricing";
 import { catalogQuery, plansFrom } from "@/lib/site-catalog";
 
@@ -84,103 +85,97 @@ function KitPrices() {
   }).filter((r): r is NonNullable<typeof r> => r !== null);
   if (rows.length === 0) return null;
   return (
-    <section className="mt-10 rounded-2xl border border-border bg-card p-6 card-soft">
-      <h2 className="text-xl font-bold">Kit para personalizar</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Acrílico liso, sem arte. O QR de cada placa é grátis; o chip NFC é opcional. O kit já abre com {KIT_QUANTITY} unidades, QR e chip marcados; você muda quantidade, cor e chip na compra.
-      </p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+    <section className="lp-sec">
+      <div className="lp-head2 rv"><div className="lp-label">Kit para personalizar</div><h2 className="lp-h2">Comece pelo acrílico liso.</h2>
+        <p className="lp-sub">O QR de cada placa é grátis; o chip NFC é opcional. O kit já abre com {KIT_QUANTITY} unidades, QR e chip marcados; você muda quantidade, cor e chip na compra.</p></div>
+      <div className="gl-grid rv">
         {rows.map((r) => (
-          <div key={r.slug} className="rounded-xl border border-border p-4">
-            <p className="font-bold">{r.label}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {money(r.unit)} por unidade (a partir de {KIT_QUANTITY} un.) · cor cristal
-            </p>
-            <p className="text-sm text-muted-foreground">
-              QR grátis{r.chip > 0 ? ` · chip NFC ${money(r.chip)} por unidade` : ""}
-            </p>
-            <p className="mt-2 text-sm">
-              Kit de {KIT_QUANTITY}{r.chip > 0 ? " com chip" : ""}: <strong>{money(r.total)}</strong>
-            </p>
-            <Button asChild size="sm" className="mt-3 rounded-xl font-bold">
-              <Link to="/comprar" search={{ kit: r.kit }}>Montar este kit</Link>
-            </Button>
+          <div key={r.slug} className="card col" style={{ gap: 6, flex: "1 1 300px", maxWidth: 420 }}>
+            <b>{r.label}</b>
+            <span className="sm muted">{money(r.unit)} por unidade (a partir de {KIT_QUANTITY} un.) · cor cristal</span>
+            <span className="sm muted">QR grátis{r.chip > 0 ? ` · chip NFC ${money(r.chip)} por unidade` : ""}</span>
+            <span className="sm">Kit de {KIT_QUANTITY}{r.chip > 0 ? " com chip" : ""}: <b>{money(r.total)}</b></span>
+            <Link to="/comprar" search={{ kit: r.kit }} className="btn primary" style={{ marginTop: 6, alignSelf: "flex-start" }}>Montar este kit <ArrowRight size={16} /></Link>
           </div>
         ))}
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">Cores como branco, preto e azul podem ter pequeno adicional por unidade. O total final aparece na compra.</p>
+      <p className="xs muted center" style={{ marginTop: 12 }}>Cores como branco, preto e azul podem ter pequeno adicional por unidade. O total final aparece na compra.</p>
     </section>
   );
 }
 
 function Personalizar() {
+  useEffect(() => {
+    const els = document.querySelectorAll(".lp .rv");
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.1 });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
   return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader />
-      <section className="bg-foreground text-white">
-        <div className="mx-auto max-w-3xl px-5 py-12 md:py-16">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Passo a passo</p>
-          <h1 className="mt-3 text-4xl leading-tight sm:text-5xl">Como personalizar sua placa</h1>
-          <p className="mt-3 text-white/70">
-            Do acrílico com NFC até a placa pronta com a sua arte. Sem complicação e sem precisar de programa especial.
-          </p>
-        </div>
-      </section>
+    <div className="v2">
+      <div className="lp">
+        <div className="lp-bg" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /></div>
+        <SiteHeader />
+        <main className="lp-col">
+          <section className="lp-hero" style={{ textAlign: "center" }}>
+            <div className="rv" style={{ maxWidth: 760, margin: "0 auto" }}>
+              <div className="lp-label">Passo a passo</div>
+              <h1 className="lp-h1">Como <span className="accent">personalizar</span> sua placa</h1>
+              <p className="lp-lead">Do acrílico com NFC até a placa pronta com a sua arte. Sem complicação e sem precisar de programa especial.</p>
+            </div>
+          </section>
 
-      <div className="mx-auto max-w-3xl px-5 py-12">
-        <ol className="space-y-5">
-          {STEPS.map((s, i) => (
-            <li key={s.title} className="flex gap-4 rounded-2xl border border-border bg-card p-5 card-soft">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary font-black text-primary-foreground">{i + 1}</span>
-              <div>
-                <h2 className="text-lg font-bold">{s.title}</h2>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{s.text}</p>
+          <section className="lp-sec">
+            <div className="lp-head2 rv"><div className="lp-label">Em 5 passos</div><h2 className="lp-h2">Da compra à placa pronta.</h2></div>
+            <div className="col rv" style={{ maxWidth: 820, margin: "0 auto", gap: 12 }}>
+              {STEPS.map((s, i) => (
+                <div key={s.title} className="card row" style={{ gap: 16, alignItems: "flex-start" }}>
+                  <span className="lp-num">{i + 1}</span>
+                  <div><b>{s.title}</b><p className="sm muted" style={{ marginTop: 4 }}>{s.text}</p></div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <KitPrices />
+
+          <section className="lp-sec">
+            <div className="lp-head2 rv"><div className="lp-label">Arquivos</div><h2 className="lp-h2">Gabaritos para baixar.</h2>
+              <p className="lp-sub">Com a área segura e a área do QR marcadas. Importe no Canva e apague as marcações antes de imprimir.</p></div>
+            <div className="row wrap rv" style={{ gap: 10, justifyContent: "center" }}>
+              {GABARITOS.map((g) => (
+                <a key={g.href} href={g.href} download className="btn"><Download size={15} /> {g.label}</a>
+              ))}
+              {CANVA_TEMPLATES.map((t) =>
+                t.url.startsWith("TODO") ? (
+                  <span key={t.label} className="badge">{t.label} no Canva: em breve</span>
+                ) : (
+                  <a key={t.label} href={t.url} target="_blank" rel="noopener noreferrer" className="btn">{t.label} no Canva</a>
+                ),
+              )}
+            </div>
+          </section>
+
+          <section className="lp-sec">
+            <div className="lp-head2 rv"><div className="lp-label">Antes de imprimir</div><h2 className="lp-h2">Checklist de teste.</h2></div>
+            <div className="card col rv" style={{ maxWidth: 820, margin: "0 auto", gap: 10 }}>
+              {CHECKLIST.map((c) => (
+                <label key={c} className="row sm" style={{ gap: 10, alignItems: "flex-start" }}><input type="checkbox" style={{ marginTop: 3 }} /><span>{c}</span></label>
+              ))}
+            </div>
+          </section>
+
+          <section className="lp-sec lp-final">
+            <div className="center rv">
+              <div className="row wrap" style={{ gap: 8, justifyContent: "center" }}>
+                <Link to="/produtos" className="btn primary">Ver produtos <ArrowRight size={16} /></Link>
+                <Link to="/ativar" className="btn">Ir para o meu painel</Link>
               </div>
-            </li>
-          ))}
-        </ol>
-
-        <KitPrices />
-
-        <section className="mt-10 rounded-2xl border border-border bg-card p-6 card-soft">
-          <h2 className="text-xl font-bold">Gabaritos para baixar</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Com a área segura e a área do QR marcadas. Importe no Canva e apague as marcações antes de imprimir.</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {GABARITOS.map((g) => (
-              <Button key={g.href} asChild variant="outline" className="rounded-xl">
-                <a href={g.href} download>{g.label}</a>
-              </Button>
-            ))}
-          </div>
-          <h3 className="mt-6 text-sm font-bold uppercase tracking-wider text-muted-foreground">Modelos no Canva</h3>
-          <div className="mt-2 flex flex-wrap gap-3">
-            {CANVA_TEMPLATES.map((t) =>
-              t.url.startsWith("TODO") ? (
-                <span key={t.label} className="rounded-xl border border-dashed border-border px-4 py-2 text-sm text-muted-foreground">{t.label}: em breve</span>
-              ) : (
-                <Button key={t.label} asChild variant="outline" className="rounded-xl">
-                  <a href={t.url} target="_blank" rel="noopener noreferrer">{t.label}</a>
-                </Button>
-              ),
-            )}
-          </div>
-        </section>
-
-        <section className="mt-10 rounded-2xl border border-border bg-card p-6 card-soft">
-          <h2 className="text-xl font-bold">Checklist de teste antes de imprimir</h2>
-          <ul className="mt-3 space-y-2 text-sm">
-            {CHECKLIST.map((c) => (
-              <li key={c} className="flex gap-2"><span aria-hidden>☐</span><span>{c}</span></li>
-            ))}
-          </ul>
-        </section>
-
-        <div className="mt-10 flex flex-wrap gap-3">
-          <Button asChild size="lg" className="rounded-xl font-bold"><Link to="/produtos">Ver produtos</Link></Button>
-          <Button asChild size="lg" variant="outline" className="rounded-xl font-bold"><Link to="/ativar">Ir para o meu painel</Link></Button>
-        </div>
+            </div>
+          </section>
+        </main>
+        <SiteFooter />
       </div>
-      <SiteFooter />
     </div>
   );
 }

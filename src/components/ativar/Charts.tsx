@@ -1,16 +1,20 @@
 // Gráficos em SVG puro (sem biblioteca): área suave e rosca. Cores vêm das variáveis do tema.
 
-/** Área com linha suave. `values` na ordem dos dias. */
+/** Área com linha suave, grade com valores e datas nas pontas. `values` na ordem dos dias. */
 export function AreaChart({ values, labels, height = 160 }: { values: number[]; labels?: [string, string]; height?: number }) {
-  const w = 600;
+  const w = 640;
   const h = height;
-  const pad = 6;
+  const left = 30;
+  const right = 8;
+  const top = 10;
+  const bottom = 6;
   const max = Math.max(1, ...values);
+  // topo "redondo" para a grade ficar com números limpos
+  const nice = max <= 4 ? max : Math.ceil(max / 4) * 4;
   const n = values.length;
-  const x = (i: number) => (n <= 1 ? w / 2 : pad + (i * (w - pad * 2)) / (n - 1));
-  const y = (v: number) => h - pad - (v / max) * (h - pad * 2 - 8);
+  const x = (i: number) => (n <= 1 ? (left + w - right) / 2 : left + (i * (w - left - right)) / (n - 1));
+  const y = (v: number) => top + (1 - v / nice) * (h - top - bottom);
   const pts = values.map((v, i) => [x(i), y(v)] as const);
-  // curva suave (Catmull-Rom → Bézier)
   const line = pts.reduce((d, [px, py], i) => {
     if (i === 0) return `M${px},${py}`;
     const [p0x, p0y] = pts[i - 2] ?? pts[i - 1]!;
@@ -20,24 +24,36 @@ export function AreaChart({ values, labels, height = 160 }: { values: number[]; 
     const c2x = px - (p3x - p1x) / 6, c2y = py - (p3y - p1y) / 6;
     return `${d} C${c1x},${c1y} ${c2x},${c2y} ${px},${py}`;
   }, "");
-  const area = pts.length ? `${line} L${pts[pts.length - 1]![0]},${h} L${pts[0]![0]},${h} Z` : "";
+  const base = h - bottom;
+  const area = pts.length ? `${line} L${pts[pts.length - 1]![0]},${base} L${pts[0]![0]},${base} Z` : "";
+  const last = pts[pts.length - 1];
+  const grid = [0, 0.5, 1];
   return (
     <div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label="Gráfico de leituras por dia" preserveAspectRatio="none">
+      <svg viewBox={`0 0 ${w} ${h}`} className="h-auto w-full" role="img" aria-label="Gráfico de leituras por dia">
         <defs>
           <linearGradient id="plusArea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.45" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.38" />
             <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
-        {[0.25, 0.5, 0.75].map((g) => (
-          <line key={g} x1="0" x2={w} y1={h * g} y2={h * g} stroke="currentColor" strokeOpacity="0.08" />
+        {grid.map((g) => (
+          <g key={g}>
+            <line x1={left} x2={w - right} y1={y(nice * g)} y2={y(nice * g)} stroke="currentColor" strokeOpacity={g === 0 ? 0.18 : 0.08} strokeDasharray={g === 0 ? undefined : "3 4"} />
+            <text x={left - 6} y={y(nice * g) + 3.5} textAnchor="end" fontSize="10" fill="currentColor" opacity="0.55">{Math.round(nice * g)}</text>
+          </g>
         ))}
         {area && <path d={area} fill="url(#plusArea)" />}
-        {line && <path d={line} fill="none" stroke="var(--primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
+        {line && <path d={line} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+        {last && n > 1 && (
+          <g>
+            <circle cx={last[0]} cy={last[1]} r="6" fill="var(--primary)" opacity="0.25" />
+            <circle cx={last[0]} cy={last[1]} r="3.5" fill="var(--primary)" stroke="var(--card)" strokeWidth="1.5" />
+          </g>
+        )}
       </svg>
       {labels && (
-        <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+        <div className="flex justify-between text-[11px] text-muted-foreground" style={{ paddingLeft: 30 }}>
           <span>{labels[0]}</span>
           <span>{labels[1]}</span>
         </div>

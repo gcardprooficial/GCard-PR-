@@ -18,7 +18,7 @@ const STATUS_LABEL: Record<string, string> = {
   bloqueada: "Bloqueada",
 };
 
-const PAGE = 40;
+const PAGE = 20;
 
 /** Etapa do código (os estados do banco continuam nao_ativada / ativada / bloqueada). */
 function stageOf(r: { status: string; sold_at: string | null; batch_id: string | null; orders: unknown }): string {
@@ -63,7 +63,7 @@ function Placas() {
   const [rows, setRows] = useState<Plate[] | null>(null);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | (typeof STATUS)[number]>("all");
-  const [view, setView] = useState<View>("lotes");
+  const [view, setView] = useState<View>("todas");
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [limit, setLimit] = useState(PAGE);
   // Hosts de destino aceitos: tabela única do banco (a mesma do /r, do /ativar e do gatilho SQL).
@@ -291,7 +291,6 @@ function Placas() {
   }
 
   const VIEWS: [View, string][] = [
-    ["lotes", `Por lote · ${totalBatches}`],
     ["estoque", `Livres em estoque · ${totalStock}`],
     ["todas", `Todas · ${rows?.length ?? 0}`],
   ];
@@ -302,7 +301,7 @@ function Placas() {
         <div className="eyebrow">Produção</div>
         <h1>Placas</h1>
         <p className="muted sm" style={{ marginTop: 4 }}>
-          Cada placa é um objeto físico já impresso: ela nunca é apagada. Veja por lote, só as livres em estoque ou todas.
+          Busca e ajuste de uma placa por vez (destino, bloqueio). Para ver os pedidos e os clientes, use Lotes.
         </p>
       </div>
 

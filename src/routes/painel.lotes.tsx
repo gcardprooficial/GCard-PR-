@@ -74,6 +74,7 @@ function Lotes() {
   // Quantas placas soltas de cada produto já estão num grupo (= já foram impressas).
   const [printed, setPrinted] = useState<Record<string, number>>({});
   const [tab, setTab] = useState<"lotes" | "impressao">("lotes");
+  const [batchLimit, setBatchLimit] = useState(10);
 
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | (typeof BATCH_STATUS)[number]>("all");
@@ -582,6 +583,15 @@ function Lotes() {
         <button type="button" className={`chip ${tab === "impressao" ? "on" : ""}`} onClick={() => setTab("impressao")}>Impressão e estoque · {Object.values(stock).reduce((a, b) => a + b, 0)}</button>
       </div>
 
+      {tab === "lotes" && batches && batches.length > 0 && (
+        <div className="metrics mb" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
+          <div className="metric"><div className="xs muted">Lotes</div><div className="v">{batches.length}</div></div>
+          <div className="metric"><div className="xs muted">Códigos emitidos</div><div className="v">{batches.reduce((n, b) => n + b.quantity, 0)}</div></div>
+          <div className="metric"><div className="xs muted">Ativados</div><div className="v">{Object.values(counts).reduce((n, c) => n + c.active, 0)}</div></div>
+          <div className={`metric ${batches.some((b) => !b.owner_user_id) ? "warn" : ""}`}><div className="xs muted">Aguardando resgate</div><div className="v">{batches.filter((b) => !b.owner_user_id).length}</div></div>
+        </div>
+      )}
+
       {tab === "impressao" && (
       <div className="rounded-2xl bg-card p-5 card-soft">
         <p className="text-sm font-semibold">Placas soltas por produto</p>
@@ -1009,7 +1019,7 @@ function Lotes() {
             <p className="mt-6 text-sm text-muted-foreground">Nenhum lote encontrado.</p>
           ) : (
           <div className="mt-3 space-y-3">
-            {filteredBatches.map((b) => {
+            {filteredBatches.slice(0, batchLimit).map((b) => {
               const c = counts[b.id] ?? { active: 0, total: b.quantity };
               return (
                 <div key={b.id} className="rounded-2xl bg-card p-5 card-soft">
@@ -1050,7 +1060,9 @@ function Lotes() {
                     </select>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-border pt-3">
+                  <details className="mt-3 border-t border-border pt-3">
+                  <summary className="cursor-pointer text-sm font-semibold">Ações do lote</summary>
+                  <div className="mt-3 flex flex-wrap items-end gap-3">
                     <Button size="sm" variant="outline" onClick={() => void exportCodes(b)}>
                       Exportar códigos (CSV)
                     </Button>
@@ -1094,9 +1106,17 @@ function Lotes() {
                       </div>
                     </div>
                   </div>
+                  </details>
                 </div>
               );
             })}
+            {filteredBatches.length > batchLimit && (
+              <div className="center">
+                <button type="button" className="btn" onClick={() => setBatchLimit((l) => l + 10)}>
+                  Mostrar mais ({filteredBatches.length - batchLimit} restantes)
+                </button>
+              </div>
+            )}
           </div>
           )}
         </>
