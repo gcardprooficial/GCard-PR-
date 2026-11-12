@@ -291,59 +291,44 @@ function Placas() {
   }
 
   const VIEWS: [View, string][] = [
-    ["lotes", `Por lote (${totalBatches} lotes · ${totalInLotes} placas)`],
-    ["estoque", `Estoque livre (${totalStock})`],
-    ["todas", `Todas (${rows?.length ?? 0})`],
+    ["lotes", `Por lote · ${totalBatches}`],
+    ["estoque", `Livres em estoque · ${totalStock}`],
+    ["todas", `Todas · ${rows?.length ?? 0}`],
   ];
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl">Placas</h1>
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar token, código, negócio, lote…"
-          className="h-10 w-full sm:w-64"
-        />
+      <div className="mb">
+        <div className="eyebrow">Produção</div>
+        <h1>Placas</h1>
+        <p className="muted sm" style={{ marginTop: 4 }}>
+          Cada placa é um objeto físico já impresso: ela nunca é apagada. Veja por lote, só as livres em estoque ou todas.
+        </p>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="metrics mb" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
+        <div className="metric"><div className="xs muted">Placas emitidas</div><div className="v">{rows?.length ?? 0}</div></div>
+        <div className="metric"><div className="xs muted">Ativadas</div><div className="v">{statusCounts["ativada"] ?? 0}</div></div>
+        <div className="metric"><div className="xs muted">Livres em estoque</div><div className="v">{totalStock}</div></div>
+        <div className={`metric ${(statusCounts["bloqueada"] ?? 0) ? "warn" : ""}`}><div className="xs muted">Bloqueadas</div><div className="v">{statusCounts["bloqueada"] ?? 0}</div></div>
+      </div>
+
+      <div className="seg" style={{ marginBottom: 12 }}>
         {VIEWS.map(([k, l]) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setView(k)}
-            className={`rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors ${
-              view === k
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-card text-muted-foreground hover:text-foreground"
-            }`}
-          >
+          <button key={k} type="button" onClick={() => setView(k)} className={`chip ${view === k ? "on" : ""}`}>
             {l}
           </button>
         ))}
       </div>
 
-      <div className="mt-2 flex flex-wrap gap-1 text-xs font-semibold text-muted-foreground">
-        <span className="self-center pr-1">Status:</span>
-        {(
-          [
-            ["all", `Todos (${rows?.length ?? 0})`],
-            ...STATUS.map((s) => [s, `${STATUS_LABEL[s]} (${statusCounts[s] ?? 0})`] as const),
-          ] as const
-        ).map(([k, l]) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setStatusFilter(k)}
-            className={`rounded-full px-3 py-1 transition-colors ${
-              statusFilter === k ? "bg-muted font-bold text-foreground ring-1 ring-border" : "hover:text-foreground"
-            }`}
-          >
-            {l}
-          </button>
-        ))}
+      <div className="row wrap" style={{ gap: 8 }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar token, código, negócio ou lote" className="input" style={{ flex: "1 1 260px", width: "auto" }} />
+        <select aria-label="Situação" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="input" style={{ flex: "0 1 220px", width: "auto" }}>
+          <option value="all">Todas as situações ({rows?.length ?? 0})</option>
+          {STATUS.map((st) => (
+            <option key={st} value={st}>{STATUS_LABEL[st]} ({statusCounts[st] ?? 0})</option>
+          ))}
+        </select>
       </div>
 
       {rows === null ? (

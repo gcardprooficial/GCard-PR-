@@ -117,14 +117,20 @@ function CardStock({ userId }: { userId: string }) {
   if (!loaded || products.length === 0) return null;
 
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-card p-5 card-soft">
-      <h2 className="text-lg font-bold">Estoque sem QR Code</h2>
+    <section className="rounded-2xl border border-border bg-card p-5 card-soft">
+      <h2 className="text-lg font-bold">Produtos prontos (sem QR Code)</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Cartão PVC e acrílico sem arte: sem código, não usam lote. Registre quantos você produziu; os
         vendidos entram sozinhos dos pedidos pagos.
       </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4" style={{ overflowX: "auto" }}>
+        <div className="row xs muted" style={{ padding: "0 4px 8px", gap: 8, minWidth: 560 }}>
+          <span className="grow">Produto</span>
+          {["Produzidos", "Vendidos", "A enviar", "Em estoque"].map((h) => (
+            <span key={h} style={{ width: 92, textAlign: "right" }}>{h}</span>
+          ))}
+        </div>
         {products.map((prod) => {
           const mine = entries.filter((e) => e.product_id === prod.id);
           const produced = mine.filter((e) => e.quantity > 0).reduce((n, e) => n + e.quantity, 0);
@@ -135,43 +141,23 @@ function CardStock({ userId }: { userId: string }) {
             .filter((r) => ["recebido", "em_producao"].includes(r.orders?.fulfillment_status ?? ""))
             .reduce((n, r) => n + r.quantity, 0);
           const inStock = produced + adjusts - soldTotal;
-          const stats: [string, number][] = [
-            ["Produzidos", produced],
-            ["Vendidos", soldTotal],
-            ["A enviar", toShip],
-            ["Em estoque", inStock],
-          ];
           return (
-            <div key={prod.id} className="rounded-xl border border-border p-4">
-              <p className="font-semibold">{prod.name}</p>
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-                {stats.map(([label, value]) => {
-                  const highlight = label === "Em estoque";
-                  return (
-                    <div
-                      key={label}
-                      className={`rounded-xl px-1 py-3 ${
-                        highlight ? "border border-primary/40 bg-primary/15" : "bg-muted"
-                      }`}
-                    >
-                      <dd
-                        className={`font-display text-2xl leading-none ${
-                          highlight && value < 0 ? "text-red-700" : "text-foreground"
-                        }`}
-                      >
-                        {value}
-                      </dd>
-                      <dt className="mt-1.5 text-[11px] font-semibold text-muted-foreground">{label}</dt>
-                    </div>
-                  );
-                })}
-              </dl>
-              {adjusts !== 0 && (
-                <p className="mt-2 text-xs text-muted-foreground">Baixas/ajustes: {adjusts}</p>
-              )}
+            <div key={prod.id} style={{ borderTop: "1px solid var(--line)", padding: "12px 4px", minWidth: 560 }}>
+              <div className="row" style={{ gap: 8 }}>
+                <div className="grow">
+                  <b>{prod.name}</b>
+                  {adjusts !== 0 && <div className="xs muted">Baixas e ajustes: {adjusts}</div>}
+                </div>
+                <span style={{ width: 92, textAlign: "right" }}>{produced}</span>
+                <span style={{ width: 92, textAlign: "right" }}>{soldTotal}</span>
+                <span style={{ width: 92, textAlign: "right" }}>{toShip}</span>
+                <span style={{ width: 92, textAlign: "right" }}>
+                  <span className={`badge ${inStock <= 0 ? "warn" : "green"}`}><b>{inStock}</b></span>
+                </span>
+              </div>
               {inStock < 0 && (
-                <p className="mt-2 text-xs font-semibold text-red-700">
-                  Vendeu mais do que foi registrado como produzido — lance a produção que faltou.
+                <p className="xs" style={{ marginTop: 6, color: "var(--danger)" }}>
+                  Vendeu mais do que foi registrado como produzido: lance a produção que faltou.
                 </p>
               )}
             </div>
@@ -337,24 +323,21 @@ function ComponentStock({ userId }: { userId: string }) {
   if (!loaded) return null;
 
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-card p-5 card-soft">
-      <h2 className="text-lg font-bold">Estoque de insumo avulso</h2>
+    <section className="rounded-2xl border border-border bg-card p-5 card-soft">
+      <h2 className="text-lg font-bold">Insumos avulsos</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Chip NFC solto, arte impressa avulsa, cartão PVC sem arte aplicada -- ainda não é um
         produto pronto pra vender, mas você tem em mãos e quer controlar.
       </p>
 
       {names.length > 0 && (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4">
           {names.map((n) => {
             const total = entries.filter((e) => e.name === n).reduce((sum, e) => sum + e.quantity, 0);
             return (
-              <div key={n} className="rounded-xl border border-border p-4">
-                <p className="font-semibold">{n}</p>
-                <p className={`mt-2 font-display text-2xl ${total < 0 ? "text-red-700" : "text-foreground"}`}>
-                  {total}
-                </p>
-                <p className="text-xs text-muted-foreground">em estoque</p>
+              <div key={n} className="row" style={{ borderTop: "1px solid var(--line)", padding: "12px 4px", gap: 8 }}>
+                <b className="grow">{n}</b>
+                <span className={`badge ${total <= 0 ? "warn" : "green"}`}><b>{total}</b> em estoque</span>
               </div>
             );
           })}
@@ -435,15 +418,21 @@ function ComponentStock({ userId }: { userId: string }) {
 
 function Estoque() {
   const { userId } = usePanel();
+  const [tab, setTab] = useState<"produtos" | "insumos">("produtos");
   return (
     <>
-      <h1 className="text-2xl">Estoque</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Tudo que não gera QR Code (não entra em lote): cartão PVC, acrílico sem arte, e insumo
-        avulso que ainda não virou produto pronto.
-      </p>
-      <CardStock userId={userId} />
-      <ComponentStock userId={userId} />
+      <div className="mb">
+        <div className="eyebrow">Produção</div>
+        <h1>Estoque</h1>
+        <p className="muted sm" style={{ marginTop: 4 }}>
+          O que não gera QR Code e não entra em lote. Produtos prontos: o que você produziu menos o que já vendeu. Insumos: o que você tem em mãos.
+        </p>
+      </div>
+      <div className="seg" style={{ marginBottom: 12 }}>
+        <button type="button" className={`chip ${tab === "produtos" ? "on" : ""}`} onClick={() => setTab("produtos")}>Produtos prontos</button>
+        <button type="button" className={`chip ${tab === "insumos" ? "on" : ""}`} onClick={() => setTab("insumos")}>Insumos avulsos</button>
+      </div>
+      {tab === "produtos" ? <CardStock userId={userId} /> : <ComponentStock userId={userId} />}
     </>
   );
 }

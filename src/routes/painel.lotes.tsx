@@ -71,6 +71,9 @@ function Lotes() {
   const [counts, setCounts] = useState<Record<string, { active: number; total: number }>>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [stock, setStock] = useState<Record<string, number>>({});
+  // Quantas placas soltas de cada produto já estão num grupo (= já foram impressas).
+  const [printed, setPrinted] = useState<Record<string, number>>({});
+  const [tab, setTab] = useState<"lotes" | "impressao">("lotes");
 
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | (typeof BATCH_STATUS)[number]>("all");
@@ -341,13 +344,16 @@ function Lotes() {
     if (!productId && pr.data?.[0]) setProductId(pr.data[0].id);
     if (!stockProductId && pr.data?.[0]) setStockProductId(pr.data[0].id);
 
-    const s = await supabase.from("plates").select("product_id").is("batch_id", null).limit(50000);
+    const s = await supabase.from("plates").select("product_id, print_group").is("batch_id", null).limit(50000);
     const stockMap: Record<string, number> = {};
+    const printedMap: Record<string, number> = {};
     for (const row of s.data ?? []) {
       const k = row.product_id as string;
       stockMap[k] = (stockMap[k] ?? 0) + 1;
+      if ((row as { print_group?: string | null }).print_group) printedMap[k] = (printedMap[k] ?? 0) + 1;
     }
     setStock(stockMap);
+    setPrinted(printedMap);
   }, [productId, stockProductId]);
 
   useEffect(() => {
@@ -562,15 +568,26 @@ function Lotes() {
 
   return (
     <>
-      <h1 className="text-2xl">Lotes (revenda)</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Cada lote gera códigos únicos. O revendedor ativa cada código no painel dele em{" "}
-        <code className="rounded bg-muted px-1">/ativar</code> usando o mesmo e-mail.
-      </p>
+      <div className="mb">
+        <div className="eyebrow">Produção</div>
+        <h1>Lotes e impressão</h1>
+        <p className="muted sm" style={{ marginTop: 4 }}>
+          {tab === "lotes"
+            ? "Lotes montados para os pedidos de revenda. O revendedor ativa os códigos em /ativar com o mesmo e-mail."
+            : "Placas soltas, ainda sem dono: o que já foi impresso (em grupo) e o que falta imprimir."}
+        </p>
+      </div>
+      <div className="seg" style={{ marginBottom: 16 }}>
+        <button type="button" className={`chip ${tab === "lotes" ? "on" : ""}`} onClick={() => setTab("lotes")}>Lotes de revenda{batches ? ` · ${batches.length}` : ""}</button>
+        <button type="button" className={`chip ${tab === "impressao" ? "on" : ""}`} onClick={() => setTab("impressao")}>Impressão e estoque · {Object.values(stock).reduce((a, b) => a + b, 0)}</button>
+      </div>
 
-      <div className="mt-6 rounded-2xl bg-card p-5 card-soft">
-        <p className="text-sm font-semibold">Estoque disponível (plaquinhas soltas, sem dono)</p>
-        <p className="mt-1 text-xs text-muted-foreground">Clique num produto pra ver os códigos parados no estoque</p>
+      {tab === "impressao" && (
+      <div className="rounded-2xl bg-card p-5 card-soft">
+        <p className="text-sm font-semibold">Placas soltas por produto</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          <b>Impressas</b> já estão num grupo (ex.: Estoque 1). <b>A imprimir</b> ainda não têm grupo. Clique num produto para ver os grupos e gerar o PDF.
+        </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((p) => (
             <button
@@ -582,14 +599,11 @@ function Lotes() {
               }`}
             >
               <span className="text-sm">{p.name}</span>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                  (stock[p.id] ?? 0) > 0
-                    ? "bg-green-100 text-green-800 border border-green-200"
-                    : "bg-amber-100 text-amber-900 border border-amber-200"
-                }`}
-              >
-                {stock[p.id] ?? 0} un.
+              <span className="flex flex-col items-end gap-0.5 text-xs">
+                <b>{stock[p.id] ?? 0} em estoque</b>
+                <span className="text-muted-foreground">
+                  {printed[p.id] ?? 0} impressas · {(stock[p.id] ?? 0) - (printed[p.id] ?? 0)} a imprimir
+                </span>
               </span>
             </button>
           ))}
@@ -653,7 +667,7 @@ function Lotes() {
                         groupFilter === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                       }`}
                     >
-                      Todos ({stockPlates.length})
+                      Todas ({stockPlates.length})
                     </button>
                     <button
                       type="button"
@@ -665,7 +679,7 @@ function Lotes() {
                         groupFilter === "none" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                       }`}
                     >
-                      Sem grupo ({ungroupedCount})
+                      A imprimir, sem grupo ({ungroupedCount})
                     </button>
                     {groups.map(([name, count]) => (
                       <button
@@ -679,7 +693,7 @@ function Lotes() {
                           groupFilter === name ? "bg-primary text-primary-foreground" : "text-muted-foreground"
                         }`}
                       >
-                        {name} ({count})
+                        ✓ {name} ({count})
                       </button>
                     ))}
                   </div>
@@ -836,8 +850,10 @@ function Lotes() {
           </div>
         )}
       </div>
+      )}
 
-      <form onSubmit={create} className="mt-4 rounded-2xl bg-card p-5 card-soft">
+      {tab === "lotes" && (
+      <form onSubmit={create} className="rounded-2xl bg-card p-5 card-soft">
         <p className="text-sm font-semibold">Montar lote pro pedido (puxa do estoque)</p>
         <p className="mt-1 text-xs text-muted-foreground">
           Cliente comprou N unidades? Monta um lote de N aqui. Se souber o e-mail dele, o lote já
@@ -894,7 +910,7 @@ function Lotes() {
         </Button>
         {quantity > (stock[productId] ?? 0) && (
           <p className="mt-2 text-xs text-destructive">
-            Só há {stock[productId] ?? 0} un. em estoque desse produto — gere mais estoque abaixo.
+            Só há {stock[productId] ?? 0} un. em estoque desse produto: gere mais na aba Impressão e estoque.
           </p>
         )}
         {lastCreated && (
@@ -906,7 +922,9 @@ function Lotes() {
           </div>
         )}
       </form>
+      )}
 
+      {tab === "impressao" && (
       <form onSubmit={createStock} className="mt-4 rounded-2xl bg-card p-5 card-soft border border-dashed">
         <p className="text-sm font-semibold">Gerar estoque (plaquinhas soltas, sem dono)</p>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -945,8 +963,9 @@ function Lotes() {
           </div>
         </div>
       </form>
+      )}
 
-      {batches === null ? (
+      {tab === "lotes" && (batches === null ? (
         <p className="mt-8 text-sm text-muted-foreground">Carregando…</p>
       ) : batches.length === 0 ? (
         <p className="mt-8 text-sm text-muted-foreground">Nenhum lote ainda.</p>
@@ -1081,7 +1100,7 @@ function Lotes() {
           </div>
           )}
         </>
-      )}
+      ))}
     </>
   );
 }

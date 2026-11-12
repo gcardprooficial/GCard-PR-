@@ -139,9 +139,10 @@ function Integracoes() {
 
   return (
     <>
-      <h1 className="text-2xl">Integrações</h1>
+      <div className="mb"><div className="eyebrow">Sistema</div><h1>Integrações</h1><p className="muted sm" style={{ marginTop: 4 }}>Conexões com o Melhor Envio e o Hub. Chaves e senhas ficam só no servidor.</p></div>
 
-      <div className="mt-6 max-w-xl rounded-2xl bg-card p-5 card-soft">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="rounded-2xl bg-card p-5 card-soft">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-bold">Melhor Envio</p>
@@ -170,7 +171,7 @@ function Integracoes() {
         {testResult && <p className="mt-3 text-sm text-muted-foreground">{testResult}</p>}
       </div>
 
-      <div className="mt-4 rounded-2xl bg-card p-5 card-soft">
+      <div className="rounded-2xl bg-card p-5 card-soft">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-bold">Hub</p>
@@ -197,6 +198,7 @@ function Integracoes() {
           </Button>
         </div>
         {hubFullResult && <p className="mt-3 text-sm text-muted-foreground">{hubFullResult}</p>}
+      </div>
       </div>
     </>
   );
