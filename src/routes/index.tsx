@@ -236,7 +236,7 @@ export function HomeView({ minQty, lines, heroImage, pixLabel }: HomeViewProps) 
                 </Link>
               ))}
             </div>
-            <div className="rv" style={{ marginTop: 16, maxWidth: 420 }}><DeliveryTimes /></div>
+            <div className="rv" style={{ margin: "16px auto 0", maxWidth: 460 }}><DeliveryTimes /></div>
           </section>
 
           <section id="plus" className="lp-sec">
@@ -276,7 +276,7 @@ export function HomeView({ minQty, lines, heroImage, pixLabel }: HomeViewProps) 
           )}
 
           <section id="gerar-link" className="lp-sec">
-            <div className="card col rv" style={{ gap: 8, alignItems: "flex-start" }}>
+            <div className="card col rv" style={{ gap: 8, alignItems: "center", textAlign: "center", maxWidth: 760, margin: "0 auto" }}>
               <div className="lp-label" style={{ margin: 0 }}>Ferramenta grátis</div>
               <h2 className="lp-h2" style={{ fontSize: 26 }}>Gerar link de avaliação do Google</h2>
               <p className="sm muted">Ache o seu negócio no Google e pegue o link de avaliação. É grátis: basta entrar ou criar a sua conta.</p>
