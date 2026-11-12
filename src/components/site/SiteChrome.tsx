@@ -95,7 +95,7 @@ export function SiteHeader() {
             ) : (
               <Link to="/ativar" className="btn ghost lp-hide-sm" style={{ padding: "7px 12px" }}>Acessar painel</Link>
             )}
-            <Link to="/comprar" search={{}} className="btn primary" style={{ padding: "7px 14px" }}>Comprar</Link>
+            <Link to="/produtos" className="btn primary" style={{ padding: "7px 14px" }}>Comprar</Link>
             <Sheet>
               <SheetTrigger asChild>
                 <button type="button" aria-label="Abrir menu" className="btn ghost lp-menu" style={{ padding: 8 }}><Menu size={20} /></button>
@@ -116,7 +116,7 @@ export function SiteHeader() {
                       ))}
                     </nav>
                     <div className="col" style={{ padding: 16, gap: 10, borderTop: "1px solid var(--line)" }}>
-                      <SheetClose asChild><Link to="/comprar" search={{}} className="btn primary block">Comprar agora</Link></SheetClose>
+                      <SheetClose asChild><Link to="/produtos" className="btn primary block">Comprar agora</Link></SheetClose>
                       <SheetClose asChild><Link to="/ativar" className="btn block">Acessar painel</Link></SheetClose>
                       {logged ? <button type="button" onClick={() => void supabase.auth.signOut()} className="btn ghost sm">Sair ({logged.split("@")[0]})</button> : null}
                       {WHATSAPP_CONTACTS.map((c) => (
@@ -151,7 +151,7 @@ export function SiteFooter() {
               <div className="col" style={{ gap: 6 }}>
                 <b className="sm">Produto</b>
                 <Link to="/produtos" className="xs muted">Todos os produtos</Link>
-                <Link to="/comprar" search={{}} className="xs muted">Comprar kits para revenda</Link>
+                <Link to="/produtos" className="xs muted">Comprar kits para revenda</Link>
                 <Link to="/gerador" className="xs muted">Gerar link de avaliação grátis</Link>
                 <Link to="/guia" className="xs muted">Guia NFC e cartão digital</Link>
               </div>

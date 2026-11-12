@@ -444,7 +444,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
           </div>
           <button type="button" className={`nav ${aba === "inicio" ? "on" : ""}`} onClick={() => goAba("inicio")}><LayoutDashboard size={18} /> Início</button>
           <button type="button" className={`nav ${aba === "placas" ? "on" : ""}`} onClick={() => goAba("placas")}><LayoutGrid size={18} /> Minhas placas</button>
-          <Link to="/comprar" search={{}} className="nav"><ShoppingBag size={18} /> Comprar</Link>
+          <Link to="/produtos" className="nav"><ShoppingBag size={18} /> Comprar</Link>
           <Link to="/personalizar" className="nav"><Palette size={18} /> Personalizar</Link>
           {showPlus && <button type="button" className={`nav plus ${aba === "plus" ? "on" : ""}`} onClick={() => goAba("plus")}><Crown size={18} /> GCard Plus <span className="plustag">Plus</span></button>}
           <button type="button" className={`nav ${aba === "relatorios" ? "on" : ""}`} onClick={() => goAba("relatorios")}><FileText size={18} /> Relatórios</button>
@@ -584,7 +584,7 @@ function Lote({ email, userId }: { email: string; userId: string }) {
         <nav className="tabbar" aria-label="Painel">
           <button type="button" className={`tab ${aba === "inicio" ? "on" : ""}`} onClick={() => goAba("inicio")}><LayoutDashboard size={20} />Início</button>
           <button type="button" className={`tab ${aba === "placas" ? "on" : ""}`} onClick={() => goAba("placas")}><LayoutGrid size={20} />Placas</button>
-          <Link to="/comprar" search={{}} className="tab"><ShoppingBag size={20} />Comprar</Link>
+          <Link to="/produtos" className="tab"><ShoppingBag size={20} />Comprar</Link>
           {showPlus ? <button type="button" className={`tab ${aba === "plus" ? "on" : ""}`} onClick={() => goAba("plus")}><Crown size={20} />Plus</button> : <button type="button" className={`tab ${aba === "ajuda" ? "on" : ""}`} onClick={() => goAba("ajuda")}><BookOpen size={20} />Ajuda</button>}
           <button type="button" className={`tab ${aba === "conta" ? "on" : ""}`} onClick={() => goAba("conta")}><User size={20} />Conta</button>
         </nav>
@@ -924,7 +924,7 @@ function InicioTab(props: {
         </form>
         <div className="card row wrap" style={{ gap: 12 }}>
           <div className="grow"><b>Precisa de mais placas?</b><div className="sm muted">Revenda a partir de 10 unidades, frete grátis.</div></div>
-          <Link to="/comprar" search={{}} className="btn">Comprar</Link>
+          <Link to="/produtos" className="btn">Comprar</Link>
         </div>
       </div>
     </>

@@ -179,8 +179,7 @@ function Article() {
           <h2 className="text-2xl font-bold">Pronto para começar a revender?</h2>
           <p className="mt-2 text-sm opacity-75">Kits a partir de 10 unidades, com frete grátis para todo o Brasil.</p>
           <Link
-            to="/comprar"
-            search={{}}
+            to="/produtos"
             className="mt-5 inline-block rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
           >
             Ver kits para revenda

@@ -595,6 +595,10 @@ function Comprar() {
 
   // Abre o produto do kit, pula a escolha de modelo (a cor é a próxima etapa) e registra a visita com origem "personalizar".
   const trackVisit = useServerFn(trackClientEvent);
+  // A escolha do produto é só na página do produto: quem chega aqui sem produto volta para a lista.
+  useEffect(() => {
+    if (!produto && !kit) void navigate({ to: "/produtos", replace: true });
+  }, [produto, kit, navigate]);
   const kitApplied = useRef(false);
   useEffect(() => {
     if (!kit || kitApplied.current) return;
@@ -929,7 +933,7 @@ function Comprar() {
       <div className="cmp-wrap cmp-top">
         <button
             type="button"
-            onClick={() => navigate({ to: "/comprar" })}
+            onClick={() => navigate({ to: "/produtos" })}
             className="btn"
           >
             <svg
