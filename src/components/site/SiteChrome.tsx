@@ -9,6 +9,7 @@ import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
 import { COMPANY, COMPANY_ADDRESS } from "@/lib/company";
 import logoIcone from "@/assets/logo/header-icone.png";
 import { BUSINESS_HOURS } from "@/lib/business-hours";
+import { ChatWidget } from "@/components/site/ChatWidget";
 
 // Cabeçalho, rodapé e avisos do site no desenho do protótipo v2 (classes de proto.css, tudo dentro de .v2).
 // O wrapper usa display: contents para o cabeçalho continuar "grudando" no topo ao rolar.
@@ -164,6 +165,7 @@ const SELOS = ["Compra segura: Stone ou InfinitePay", "Pix, cartão e boleto", "
 export function SiteFooter() {
   return (
     <div className="v2" style={{ display: "contents" }}>
+      <ChatWidget />
       <footer className="lp-foot">
         <div className="lp-col col" style={{ gap: 18, padding: "24px 20px" }}>
           <div className="row between wrap" style={{ gap: 16, alignItems: "flex-start" }}>

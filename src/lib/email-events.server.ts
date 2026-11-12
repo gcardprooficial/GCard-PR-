@@ -774,3 +774,22 @@ export async function sendPlusEmail(input: { to: string; subject: string; title:
     return { sent: false };
   }
 }
+
+/** Avisa a equipe de uma mensagem nova no chat do site (só a primeira de cada rajada, para não lotar a caixa). */
+export async function notifyAdminChatMessage(msg: { name: string; email: string; text: string }) {
+  const to = process.env["ADMIN_NOTIFY_EMAIL"];
+  if (!to) return { skipped: true, reason: "ADMIN_NOTIFY_EMAIL ausente" };
+  const html = emailShell({
+    title: "Nova mensagem no chat do site",
+    bodyHtml:
+      `<p><strong>${escapeHtml(msg.name)}</strong> (${escapeHtml(msg.email)}) escreveu:</p>` +
+      `<p style="white-space:pre-wrap;">${escapeHtml(msg.text.slice(0, 600))}</p>` +
+      `<p>Responda no painel, em <strong>Atendimento, Chat do site</strong>.</p>`,
+  });
+  try {
+    return await sendWithResend({ to, subject: `Chat do site — ${msg.name.replace(/\s+/g, " ").slice(0, 60)}`, html });
+  } catch (error) {
+    console.error("Falha ao avisar sobre mensagem do chat", error);
+    return { sent: false };
+  }
+}

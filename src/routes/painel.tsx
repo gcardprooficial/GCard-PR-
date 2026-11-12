@@ -32,7 +32,7 @@ const GROUPS: PGroup[] = [
   { key: "dinheiro", label: "Dinheiro", icon: Wallet, tabs: [{ to: "/painel/financeiro", label: "Financeiro" }, { to: "/painel/calculadora", label: "Calculadora" }, { to: "/painel/contador", label: "Contador" }, { to: "/painel/conciliacao", label: "Conciliação MP" }] },
   { key: "crescimento", label: "Crescimento", icon: Megaphone, tabs: [{ to: "/painel/afiliados", label: "Afiliados" }] },
   { key: "seguranca", label: "Segurança", icon: ShieldAlert, tabs: [{ to: "/painel/liberacoes", label: "Liberações de destino" }, { to: "/painel/denuncias", label: "Denúncias" }] },
-  { key: "atendimento", label: "Atendimento", icon: MessageCircle, tabs: [{ to: "/painel/whatsapp", label: "WhatsApp" }] },
+  { key: "atendimento", label: "Atendimento", icon: MessageCircle, tabs: [{ to: "/painel/whatsapp", label: "WhatsApp" }, { to: "/painel/suporte", label: "Chat do site" }] },
   { key: "sistema", label: "Sistema", icon: Plug, tabs: [{ to: "/painel/integracoes", label: "Integrações" }] },
 ];
 
