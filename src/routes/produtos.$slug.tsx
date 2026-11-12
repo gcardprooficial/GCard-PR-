@@ -61,6 +61,18 @@ export type ProdutoViewProps = {
 export function ProdutoView(p: ProdutoViewProps) {
   const [qty, setQty] = useState(p.minQty);
   const [pic, setPic] = useState(0);
+  // Produtos que a pessoa já separou no carrinho (guardado ao clicar em "Adicionar e comprar outro produto").
+  const [inCart, setInCart] = useState(0);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("gcard-cart-v1");
+      if (!raw) return;
+      const v = JSON.parse(raw) as { at?: number; cart?: unknown[] };
+      if (typeof v.at === "number" && Date.now() - v.at < 30 * 60_000 && Array.isArray(v.cart)) setInCart(v.cart.length);
+    } catch {
+      /* sem armazenamento */
+    }
+  }, []);
   const [chip, setChip] = useState(false);
   const [wantQr, setWantQr] = useState(false);
   useEffect(() => {
@@ -157,6 +169,7 @@ export function ProdutoView(p: ProdutoViewProps) {
                     <div className="row"><b className="grow">Total estimado</b><b className="gp-sum">{money(total)}</b></div>
                     {pixOff > 0 && <div className="row sm" style={{ color: "var(--brand-text)" }}><span className="grow">No Pix, com {PIX_DISCOUNT_PCT}% OFF</span><b>{money(total - pixOff)}</b></div>}
                   </div>
+                  {inCart > 0 && <p className="sm"><span className="badge green">Carrinho</span> Você já separou {inCart} produto{inCart > 1 ? "s" : ""}. Este entra junto, no mesmo pedido e com o mesmo frete.</p>}
                   <Link to="/comprar" search={{ produto: p.slug, qtd: qty, ...(p.isBlank ? { chip: chip ? 1 : 0, qr: wantQr ? 1 : 0 } : {}) }} className="btn primary block" data-analytics-event="begin_checkout" data-analytics-label={`produto ${p.slug}`}>Comprar este kit</Link>
                   <p className="xs muted" style={{ margin: 0 }}>{p.isBlank || p.isSupply ? `Vendido só para revendedores, a partir de ${p.minQty} unidades. A quantidade escolhida aqui segue para a compra.` : nfcOnly ? "Chega com o chip NFC em branco; você grava o link com o app NFC Tools. A quantidade escolhida aqui segue para a compra." : "Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente. A quantidade escolhida aqui segue para a compra."}</p>
                 </div>
