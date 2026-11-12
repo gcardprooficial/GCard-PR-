@@ -327,6 +327,10 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   }
 
   async function deactivate(plate: Plate) {
+    // Trava (2026-11-12, pedido do Leonardo): desativar tira o destino e a placa impressa para de abrir o site.
+    if (!window.confirm(`Desativar o código ${plate.short_code}?
+
+O destino é apagado e a placa já impressa para de abrir o link até você ativar de novo.`)) return;
     const { error } = await supabase
       .from("plates")
       .update({ status: "nao_ativada", destination_url: null })

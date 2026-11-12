@@ -1161,6 +1161,16 @@ function Orders() {
                     value={r.payment_status}
                     onChange={(e) => {
                       const status = e.target.value;
+                      // Trava (2026-11-12, pedido do Leonardo): mudar o pagamento mexe em dinheiro e na produção, então pede confirmação.
+                      // Sem confirmar, nada é gravado e o campo volta ao valor de antes.
+                      if (status !== r.payment_status && ["pago", "cancelado", "estornado"].includes(status)) {
+                        const texto: Record<string, string> = {
+                          pago: "Marcar este pedido como PAGO? Confirme só se o dinheiro já entrou.",
+                          cancelado: "Marcar como NÃO PAGO (cancelado)? A produção deste pedido também sai da fila.",
+                          estornado: "Marcar como ESTORNADO? A produção deste pedido também sai da fila.",
+                        };
+                        if (!window.confirm(`${texto[status]}`)) return;
+                      }
                       // Cancelado/estornado nunca deve deixar resíduo de "Em produção"/"Enviado"
                       // confundindo a aba de produção -- some junto com o pagamento.
                       const clearsFulfillment = status === "cancelado" || status === "estornado";
