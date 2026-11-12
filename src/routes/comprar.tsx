@@ -398,18 +398,18 @@ function Comprar() {
   // Quantidade vinda da página do produto: não pergunta de novo (nos produtos com opções de QR/chip a etapa fica, só com as opções).
   const [qtyLocked, setQtyLocked] = useState(false);
   const stepsFull = isSupply
-    ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
+    ? (["estilo", "conta", "quantidade", "dados", "revisao"] as const)
     : isBlank
     ? isResale
-      ? (["estilo", "cor", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
-      : (["estilo", "cor", "quantidade", "dados", "entrega", "revisao"] as const)
+      ? (["estilo", "cor", "conta", "quantidade", "dados", "revisao"] as const)
+      : (["estilo", "cor", "quantidade", "dados", "revisao"] as const)
     : isResale
       ? (skipVideos
-          ? (["estilo", "conta", "quantidade", "carrinho", "dados", "entrega", "revisao"] as const)
-          : (["estilo", "conta", "quantidade", "carrinho", "dados", "entrega", "videos", "revisao"] as const))
+          ? (["estilo", "conta", "quantidade", "carrinho", "dados", "revisao"] as const)
+          : (["estilo", "conta", "quantidade", "carrinho", "dados", "videos", "revisao"] as const))
       : skipVideos
-        ? (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "entrega", "revisao"] as const)
-        : (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "entrega", "videos", "revisao"] as const);
+        ? (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "revisao"] as const)
+        : (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "videos", "revisao"] as const);
   const steps = (qtyLocked && !isBlank ? (stepsFull as readonly string[]).filter((x) => x !== "quantidade") : stepsFull) as unknown as typeof stepsFull;
   const step = steps[stepIndex];
 
@@ -868,10 +868,7 @@ function Comprar() {
           customer.document.replace(/\D/g, "").length >= 11 &&
           customer.phone.replace(/\D/g, "").length >= 10 &&
           /.+@.+\..+/.test(customer.email) &&
-          emailsMatch
-        );
-      case "entrega":
-        return (
+          emailsMatch &&
           address.zip.replace(/\D/g, "").length === 8 &&
           address.street.length >= 3 &&
           address.number.length >= 1 &&
@@ -894,7 +891,7 @@ function Comprar() {
     confirmar: "Confirmar",
     quantidade: "Qtd.",
     carrinho: "Carrinho",
-    dados: "Dados",
+    dados: "Dados e entrega",
     entrega: "Entrega",
     videos: "Tutorial",
     revisao: "Finalizar",
@@ -1883,8 +1880,8 @@ function Comprar() {
             </div>
           )}
 
-          {step === "entrega" && (
-            <div>
+          {step === "dados" && (
+            <div style={{ marginTop: 32, paddingTop: 28, borderTop: "1px solid var(--line)" }}>
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h1 className="text-2xl leading-tight sm:text-3xl">

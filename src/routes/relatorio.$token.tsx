@@ -33,63 +33,57 @@ function Relatorio() {
   }, [report]);
 
   return (
-    <div className="min-h-screen bg-surface print:bg-white">
-      <header className="bg-foreground text-white print:bg-white print:text-black">
-        <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
-          <img src={logoMarca} alt="GCard-PRÓ" className="h-5 w-auto print:invert" />
-          <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl border border-white/25 px-3 py-2 text-xs font-bold hover:bg-white/10 print:hidden">
-            <Printer className="size-4" /> Salvar em PDF
-          </button>
-        </div>
-      </header>
-      <main className="mx-auto max-w-3xl px-5 py-8">
-        {error ? (
-          <div className="rounded-2xl border border-border bg-card p-8 text-center">
-            <h1 className="font-display text-xl font-bold">{error === "rate_limited" ? "Muitos acessos" : "Relatório indisponível"}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {error === "not_found" ? "Esse link não existe ou foi desativado." : error === "rate_limited" ? "Aguarde um minuto e recarregue." : "Este relatório está indisponível no momento. Fale com quem enviou o link."}
-            </p>
+    <div className="v2">
+      <div className="lp" style={{ minHeight: "100vh" }}>
+        <div className="lp-bg print:hidden" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /></div>
+        <header style={{ borderBottom: "1px solid var(--line)", background: "color-mix(in srgb, var(--card) 85%, transparent)" }}>
+          <div className="row between" style={{ maxWidth: 860, margin: "0 auto", padding: "14px 20px" }}>
+            <img src={logoMarca} alt="GCard-PRÓ" className="h-5 w-auto" style={{ filter: "invert(1)" }} />
+            <button type="button" onClick={() => window.print()} className="btn print:hidden"><Printer size={15} /> Salvar em PDF</button>
           </div>
-        ) : !report ? (
-          <p className="text-sm text-muted-foreground">Carregando…</p>
-        ) : (
-          <>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Relatório de leituras</p>
-            <h1 className="font-display text-3xl font-bold">{report.name}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {fmt(report.from)} a {fmt(report.to)} · código {report.shortCode}
-            </p>
-            <div className="mt-4 flex gap-1 self-start rounded-full bg-muted p-1 text-xs font-semibold print:hidden">
-              {([7, 30, 90] as const).map((d) => (
-                <button key={d} type="button" onClick={() => setDays(d)} className={`rounded-full px-3 py-1.5 ${d === days ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-                  {d} dias
-                </button>
-              ))}
+        </header>
+        <main style={{ maxWidth: 860, margin: "0 auto", padding: "28px 20px 56px" }}>
+          {error ? (
+            <div className="card col center" style={{ padding: 32, alignItems: "center" }}>
+              <h1>{error === "rate_limited" ? "Muitos acessos" : "Relatório indisponível"}</h1>
+              <p className="sm muted">
+                {error === "not_found" ? "Esse link não existe ou foi desativado." : error === "rate_limited" ? "Aguarde um minuto e recarregue." : "Este relatório está indisponível no momento. Fale com quem enviou o link."}
+              </p>
             </div>
-            <div className="mt-5 grid grid-cols-3 gap-3">
-              {[["Leituras", t.total], ["Toques NFC", t.nfc], ["Leituras de QR", t.qr]].map(([l, v]) => (
-                <div key={l as string} className="rounded-2xl border border-border bg-card p-4">
-                  <p className="font-display text-3xl font-black leading-none">{v}</p>
-                  <p className="mt-1 text-xs font-semibold text-muted-foreground">{l}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-[1.6fr_1fr]">
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <p className="text-sm font-semibold">Leituras por dia</p>
-                <div className="mt-3"><AreaChart values={report.series.map((s) => s.leituras)} labels={[fmt(report.from), fmt(report.to)]} /></div>
+          ) : !report ? (
+            <p className="sm muted">Carregando…</p>
+          ) : (
+            <div className="col" style={{ gap: 16 }}>
+              <div>
+                <div className="eyebrow">Relatório de leituras</div>
+                <h1>{report.name}</h1>
+                <p className="sm muted" style={{ marginTop: 4 }}>{fmt(report.from)} a {fmt(report.to)} · código {report.shortCode}</p>
               </div>
-              <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-4">
-                <p className="self-start text-sm font-semibold">De onde vêm</p>
-                <div className="mt-2">
-                  <Donut parts={[{ value: t.nfc, color: "var(--secondary)", label: "NFC" }, { value: t.qr, color: "var(--primary)", label: "QR" }, { value: Math.max(0, t.total - t.nfc - t.qr), color: "#CBD5E1", label: "Sem origem" }]} />
+              <div className="seg print:hidden">
+                {([7, 30, 90] as const).map((d) => (
+                  <button key={d} type="button" onClick={() => setDays(d)} className={`chip ${d === days ? "on" : ""}`}>{d} dias</button>
+                ))}
+              </div>
+              <div className="metrics" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+                {[["Leituras", t.total], ["Toques NFC", t.nfc], ["Leituras de QR", t.qr]].map(([l, v]) => (
+                  <div key={l as string} className="metric"><div className="xs muted">{l}</div><div className="v">{v}</div></div>
+                ))}
+              </div>
+              <div className="grid gap-4 md:grid-cols-[1.6fr_1fr]">
+                <div className="card">
+                  <b>Leituras por dia</b>
+                  <div style={{ marginTop: 10 }}><AreaChart values={report.series.map((s) => s.leituras)} labels={[fmt(report.from), fmt(report.to)]} height={170} /></div>
+                </div>
+                <div className="card col" style={{ alignItems: "center" }}>
+                  <b style={{ alignSelf: "flex-start" }}>De onde vêm</b>
+                  <Donut parts={[{ value: t.nfc, color: "var(--brand)", label: "NFC" }, { value: t.qr, color: "var(--ink)", label: "QR" }, { value: Math.max(0, t.total - t.nfc - t.qr), color: "var(--line)", label: "Sem origem" }]} />
                 </div>
               </div>
+              <p className="xs muted">Contagem de leituras do código (só pessoas, sem robôs), agregada por dia. Nenhum dado pessoal é coletado ou mostrado. Gerado pelo GCard-PRÓ Plus.</p>
             </div>
-            <p className="mt-6 text-[11px] text-muted-foreground">Contagem de leituras do código (só pessoas, sem robôs), agregada por dia. Nenhum dado pessoal é coletado ou mostrado. Gerado pelo GCard-PRÓ Plus.</p>
-          </>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
