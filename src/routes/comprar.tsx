@@ -78,6 +78,11 @@ const searchSchema = z.object({
   kit: z.enum(["personalizar", "personalizar-l"]).optional().catch(undefined),
   // Vindo da página de um produto: já abre com ele escolhido (pula a etapa "estilo").
   produto: z.string().max(80).optional().catch(undefined),
+  // Quantidade já escolhida na página do produto: a compra não pergunta de novo.
+  qtd: z.coerce.number().int().min(1).max(500).optional().catch(undefined),
+  // Opções do acrílico liso escolhidas na página do produto (1 = sim): chip NFC em todas as unidades e QR Code de cada placa.
+  chip: z.coerce.number().int().min(0).max(1).optional().catch(undefined),
+  qr: z.coerce.number().int().min(0).max(1).optional().catch(undefined),
 });
 
 const KIT_SLUGS = { personalizar: "acrilico-10x10-sem-arte", "personalizar-l": "acrilico-15x10-l-sem-arte" } as const;
@@ -268,7 +273,7 @@ function VideoGate() {
 }
 
 function Comprar() {
-  const { kit, produto } = Route.useSearch();
+  const { kit, produto, qtd, chip, qr } = Route.useSearch();
   const navigate = useNavigate();
   const { data } = useSuspenseQuery(catalogQuery);
   const runSearch = useServerFn(searchBusinesses);
@@ -391,7 +396,9 @@ function Comprar() {
   // Tutorial de QR/NFC só nas placas com arte do Google (10x10/10x15, has_qr). Acrílico liso
   // e cartão só NFC não têm QR pra configurar. Quem já comprou (pago) antes também pula.
   const skipVideos = isReturningCustomer === true || !product?.has_qr;
-  const steps = isSupply
+  // Quantidade vinda da página do produto: não pergunta de novo (nos produtos com opções de QR/chip a etapa fica, só com as opções).
+  const [qtyLocked, setQtyLocked] = useState(false);
+  const stepsFull = isSupply
     ? (["estilo", "conta", "quantidade", "dados", "entrega", "revisao"] as const)
     : isBlank
     ? isResale
@@ -404,6 +411,7 @@ function Comprar() {
       : skipVideos
         ? (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "entrega", "revisao"] as const)
         : (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "entrega", "videos", "revisao"] as const);
+  const steps = (qtyLocked && !isBlank ? (stepsFull as readonly string[]).filter((x) => x !== "quantidade") : stepsFull) as unknown as typeof stepsFull;
   const step = steps[stepIndex];
 
   const [term, setTerm] = useState("");
@@ -491,7 +499,16 @@ function Comprar() {
   const qrCodeQty = isBlank && wantsQr ? quantity : 0;
   // Atalho do kit: na primeira vez que o produto do kit é escolhido, já vem com QR = Sim e o chip em todas as unidades.
   const kitPreset = useRef<string | null>(null);
+  // Opções (chip e QR) vindas da página do produto, aplicadas quando o produto é escolhido.
+  const incomingOpts = useRef<{ chip: boolean; qr: boolean; qty: number } | null>(null);
   useEffect(() => {
+    const incoming = incomingOpts.current;
+    if (incoming && product) {
+      setNfcAddonQty(incoming.chip ? incoming.qty : 0);
+      setWantsQr(incoming.qr);
+      incomingOpts.current = null;
+      return;
+    }
     const preset = kitPreset.current !== null && product?.slug === kitPreset.current;
     setNfcAddonQty(preset ? KIT_QUANTITY : 0);
     setWantsQr(preset);
@@ -525,6 +542,7 @@ function Comprar() {
     setColor(null);
     setQuantity(isResale ? 10 : 1);
     setNfcAddonQty(0);
+    setQtyLocked(false);
   }
 
   function removeFromCart(index: number) {
@@ -596,11 +614,16 @@ function Comprar() {
     if (!produto || kit) return;
     const item = products.find((p) => p.slug === produto && p.status === "ativo");
     if (!item) return;
+    const step = Math.max(1, (item as { quantity_step?: number }).quantity_step ?? 1);
+    const wanted = qtd ? Math.ceil(qtd / step) * step : 0;
+    const finalQty = Math.max(KIT_QUANTITY, item.min_quantity ?? 0, wanted);
+    if (item.is_blank) incomingOpts.current = { chip: chip === 1, qr: qr === 1, qty: finalQty };
     setProduct(item);
-    setQuantity(Math.max(KIT_QUANTITY, item.min_quantity ?? 0));
+    setQuantity(finalQty);
+    setQtyLocked(Boolean(qtd));
     setStepIndex(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [produto, kit]);
+  }, [produto, kit, qtd, chip, qr]);
 
   const go = (delta: number) => {
     if (isTransitioning) return;
@@ -1478,7 +1501,7 @@ function Comprar() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h1 className="text-2xl leading-tight sm:text-3xl">
-                    Quantas <span className="highlight-yellow">unidades</span>?
+                    {qtyLocked ? <>Opções do <span className="highlight-yellow">seu kit</span></> : <>Quantas <span className="highlight-yellow">unidades</span>?</>}
                   </h1>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
                     {isResale
@@ -1519,6 +1542,17 @@ function Comprar() {
                 </span>
               </div>
 
+              {qtyLocked ? (
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4">
+                  <p className="text-sm">
+                    <strong>{quantity} unidades</strong> · {money(unitPrice)} por unidade · total {money(unitPrice * quantity)}
+                  </p>
+                  <button type="button" onClick={() => setQtyLocked(false)} className="text-sm font-semibold underline">
+                    Alterar quantidade
+                  </button>
+                </div>
+              ) : (
+                <>
               <div className="mt-7 grid gap-4 sm:grid-cols-2 md:gap-5">
                 {(isSupply
                   ? (quantityStep > 1
@@ -1627,6 +1661,9 @@ function Comprar() {
                   </button>
                 </div>
               </div>
+
+                </>
+              )}
 
               {isBlank && (
                 <div className="mt-6 rounded-2xl border-2 border-border bg-background p-5 sm:p-6">

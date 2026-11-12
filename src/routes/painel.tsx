@@ -2,27 +2,7 @@ import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-r
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import {
-  LayoutDashboard,
-  Package,
-  Users,
-  Boxes,
-  Wallet,
-  Calculator,
-  CreditCard,
-  ScanLine,
-  ShieldAlert,
-  Menu,
-  Plug,
-  Archive,
-  MessageCircle,
-  Truck,
-  FileSpreadsheet,
-  Handshake,
-  BarChart3,
-  Activity,
-  ShieldCheck,
-} from "lucide-react";
+import { ClipboardList, Ellipsis, Factory, LayoutDashboard, Megaphone, MessageCircle, Moon, Plug, ScanLine, ShieldAlert, Sun, Wallet, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
@@ -30,7 +10,8 @@ import { DomainExpiryBanner } from "@/components/DomainExpiryBanner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import logoIconBranco from "@/assets/logo/Icone_G_Logo_512x512_Branco.png";
+import { GLogo } from "@/components/site/SiteChrome";
+import { useV2Theme } from "@/lib/use-v2-theme";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 export const Route = createFileRoute("/painel")({
@@ -38,58 +19,25 @@ export const Route = createFileRoute("/painel")({
   component: PanelLayout,
 });
 
-// Menu em grupos: o que a pessoa procura fica junto (antes era uma lista única de 19 itens).
-const GROUPS = [
-  {
-    title: "Vendas",
-    items: [
-      { to: "/painel/visao-geral", label: "Visão geral", icon: LayoutDashboard },
-      { to: "/painel", label: "Pedidos", exact: true, icon: Package },
-      { to: "/painel/clientes", label: "Clientes", icon: Users },
-      { to: "/painel/afiliados", label: "Afiliados", icon: Handshake },
-      { to: "/painel/relatorios", label: "Relatórios", icon: BarChart3 },
-    ],
-  },
-  {
-    title: "Produção e estoque",
-    items: [
-      { to: "/painel/lotes", label: "Lotes", icon: Boxes },
-      { to: "/painel/placas", label: "Placas", icon: CreditCard },
-      { to: "/painel/estoque", label: "Estoque", icon: Archive },
-      { to: "/painel/frete", label: "Frete por estado", icon: Truck },
-    ],
-  },
-  {
-    title: "Atendimento",
-    items: [{ to: "/painel/whatsapp", label: "WhatsApp", icon: MessageCircle }],
-  },
-  {
-    title: "Uso dos códigos",
-    items: [
-      { to: "/painel/scans", label: "Scans", icon: ScanLine },
-      { to: "/painel/estatisticas", label: "Estatísticas (Plus)", icon: Activity },
-      { to: "/painel/liberacoes", label: "Liberações de destino", icon: ShieldCheck },
-      { to: "/painel/denuncias", label: "Denúncias", icon: ShieldAlert },
-    ],
-  },
-  {
-    title: "Financeiro",
-    items: [
-      { to: "/painel/financeiro", label: "Financeiro", icon: Wallet },
-      { to: "/painel/calculadora", label: "Calculadora", icon: Calculator },
-      { to: "/painel/contador", label: "Contador", icon: FileSpreadsheet },
-      { to: "/painel/conciliacao", label: "Conciliação MP", icon: Wallet },
-    ],
-  },
-  {
-    title: "Sistema",
-    items: [{ to: "/painel/integracoes", label: "Integrações", icon: Plug }],
-  },
-] as const;
+// Administração no desenho do protótipo: 9 grupos; as telas parecidas viram abas dentro do grupo.
+// Cada aba é uma tela que já existe (nenhum endereço mudou).
+type PTab = { to: string; label: string; exact?: boolean };
+type PGroup = { key: string; label: string; icon: LucideIcon; tabs: PTab[]; extra?: string[] };
 
-type Tab = (typeof GROUPS)[number]["items"][number];
-const TABS: readonly Tab[] = GROUPS.flatMap((g) => g.items as readonly Tab[]);
-const isActive = (t: Tab, pathname: string) => ("exact" in t && t.exact ? pathname === t.to : pathname.startsWith(t.to));
+const GROUPS: PGroup[] = [
+  { key: "visao", label: "Visão geral", icon: LayoutDashboard, tabs: [{ to: "/painel/visao-geral", label: "Visão geral" }] },
+  { key: "vendas", label: "Vendas", icon: ClipboardList, extra: ["/painel/dossie"], tabs: [{ to: "/painel", label: "Pedidos", exact: true }, { to: "/painel/clientes", label: "Clientes" }, { to: "/painel/relatorios", label: "Relatórios" }] },
+  { key: "producao", label: "Produção", icon: Factory, tabs: [{ to: "/painel/lotes", label: "Lotes" }, { to: "/painel/placas", label: "Placas" }, { to: "/painel/estoque", label: "Estoque" }, { to: "/painel/frete", label: "Frete por estado" }] },
+  { key: "leituras", label: "Leituras", icon: ScanLine, tabs: [{ to: "/painel/scans", label: "Scans" }, { to: "/painel/estatisticas", label: "Estatísticas (Plus)" }] },
+  { key: "dinheiro", label: "Dinheiro", icon: Wallet, tabs: [{ to: "/painel/financeiro", label: "Financeiro" }, { to: "/painel/calculadora", label: "Calculadora" }, { to: "/painel/contador", label: "Contador" }, { to: "/painel/conciliacao", label: "Conciliação MP" }] },
+  { key: "crescimento", label: "Crescimento", icon: Megaphone, tabs: [{ to: "/painel/afiliados", label: "Afiliados" }] },
+  { key: "seguranca", label: "Segurança", icon: ShieldAlert, tabs: [{ to: "/painel/liberacoes", label: "Liberações de destino" }, { to: "/painel/denuncias", label: "Denúncias" }] },
+  { key: "atendimento", label: "Atendimento", icon: MessageCircle, tabs: [{ to: "/painel/whatsapp", label: "WhatsApp" }] },
+  { key: "sistema", label: "Sistema", icon: Plug, tabs: [{ to: "/painel/integracoes", label: "Integrações" }] },
+];
+
+const tabActive = (t: PTab, pathname: string) => (t.exact ? pathname === t.to : pathname === t.to || pathname.startsWith(`${t.to}/`));
+const groupOf = (pathname: string) => GROUPS.find((g) => g.tabs.some((t) => tabActive(t, pathname)) || (g.extra ?? []).some((e) => pathname.startsWith(e))) ?? null;
 
 function PanelLayout() {
   const [session, setSession] = useState<Session | null>(null);
@@ -97,6 +45,7 @@ function PanelLayout() {
   const [isTeam, setIsTeam] = useState<boolean | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [menuOpen, setMenuOpen] = useState(false);
+  const { theme, toggle } = useV2Theme();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -136,115 +85,71 @@ function PanelLayout() {
       </Shell>
     );
 
-  const sidebar = (
+  const current = groupOf(pathname);
+  const nav = (
     <>
-      <div className="flex items-center gap-2.5 border-b border-white/10 px-5 py-[22px]">
-        <img src={logoIconBranco} alt="GCard-PRÓ" className="size-7 object-contain" draggable={false} />
-        <span className="text-sm font-bold text-white/70">/ painel</span>
+      <div className="brand"><GLogo size={20} /></div>
+      <div className="psw" role="tablist" aria-label="Área">
+        <Link to="/ativar" role="tab" aria-selected={false} style={{ flex: 1, textAlign: "center", padding: "7px 8px", fontSize: 13, fontWeight: 600, color: "var(--muted)", textDecoration: "none" }}>Revendedor</Link>
+        <button role="tab" aria-selected className="on">Administração</button>
       </div>
-      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
-        {GROUPS.map((g) => (
-          <div key={g.title}>
-            <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/35">{g.title}</p>
-            <div className="flex flex-col gap-0.5">
-              {g.items.map((t) => {
-                const active = isActive(t, pathname);
-                const Icon = t.icon;
-                return (
-                  <Link
-                    key={t.to}
-                    to={t.to}
-                    className={`relative flex items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold transition-colors md:py-2 ${
-                      active ? "bg-primary/15 text-primary" : "text-white/70 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    {active && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-primary" aria-hidden />}
-                    <Icon className="size-[18px] shrink-0" />
-                    {t.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
-      <div className="border-t border-white/10 px-5 py-4">
-        <p className="break-all text-xs text-white/50">{session.user.email}</p>
-        <Button
-          size="sm"
-          variant="outline"
-          className="mt-2.5 h-9 w-full border-white/15 bg-white/[0.08] text-white hover:bg-white/15 hover:text-white"
-          onClick={() => supabase.auth.signOut()}
-        >
-          Sair
-        </Button>
+      {GROUPS.map((g) => {
+        const Icon = g.icon;
+        return (
+          <Link key={g.key} to={g.tabs[0]!.to} className={`nav ${current?.key === g.key ? "on" : ""}`} aria-current={current?.key === g.key ? "page" : undefined}>
+            <Icon size={18} aria-hidden="true" /> {g.label}
+          </Link>
+        );
+      })}
+      <div style={{ marginTop: "auto" }} className="col">
+        <span className="badge green">Equipe GCard</span>
+        <span className="xs muted" title={session.user.email ?? ""} style={{ padding: "0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</span>
+        <button type="button" className="nav" onClick={toggle}>{theme === "light" ? <Moon size={18} /> : <Sun size={18} />} {theme === "light" ? "Modo escuro" : "Modo claro"}</button>
+        <button type="button" className="nav" onClick={() => supabase.auth.signOut()}>Sair</button>
       </div>
     </>
   );
 
-  const current = TABS.find((t) => isActive(t, pathname));
-
   return (
-    <div className="flex min-h-screen flex-col bg-surface md:flex-row">
-      {/* Celular: barra no topo + menu lateral deslizante */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between bg-foreground px-4 text-white md:hidden">
-        <div className="flex items-center gap-2.5">
-          <img src={logoIconBranco} alt="GCard-PRÓ" className="size-6 object-contain" draggable={false} />
-          <span className="text-sm font-bold">{current?.label ?? "Painel"}</span>
-        </div>
-        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-          <SheetTrigger asChild>
-            <button
-              type="button"
-              aria-label="Abrir menu"
-              className="flex size-10 items-center justify-center rounded-xl hover:bg-white/10"
-            >
-              <Menu className="size-6" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="left" className="flex w-72 flex-col border-0 bg-foreground p-0 text-white">
-            <SheetTitle className="sr-only">Menu do painel</SheetTitle>
-            {sidebar}
-          </SheetContent>
-        </Sheet>
-      </header>
-
-      {/* Desktop: sidebar fixa */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-foreground text-white md:flex">
-        {sidebar}
-      </aside>
-
-      <PanelCtx.Provider value={{ userId: session.user.id, email: session.user.email ?? "" }}>
-        <main className="min-w-0 flex-1 px-4 pb-24 pt-5 sm:px-6 md:px-9 md:pb-16 md:pt-8">
-          <DomainExpiryBanner />
-          <Outlet />
-        </main>
-      </PanelCtx.Provider>
-
-      {/* Celular: barra de abas fixa embaixo (atalhos + "Mais" abre o menu completo) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card md:hidden" aria-label="Atalhos do painel">
-        <ul className="grid h-16 grid-cols-5 items-center text-[11px] font-semibold">
-          {(["/painel", "/painel/clientes", "/painel/whatsapp", "/painel/estoque"] as const).map((to) => {
-            const t = TABS.find((x) => x.to === to)!;
-            const active = isActive(t, pathname);
-            const Icon = t.icon;
+    <div className="v2 gpanel">
+      <div className="app">
+        <aside className="side">{nav}</aside>
+        <PanelCtx.Provider value={{ userId: session.user.id, email: session.user.email ?? "" }}>
+          <main className="main">
+            <div className="topwash" />
+            <div className="frame">
+              <DomainExpiryBanner />
+              {current && current.tabs.length > 1 && (
+                <div className="seg mb">
+                  {current.tabs.map((t) => (
+                    <Link key={t.to} to={t.to} className={`chip ${tabActive(t, pathname) ? "on" : ""}`}>{t.label}</Link>
+                  ))}
+                </div>
+              )}
+              <Outlet />
+            </div>
+          </main>
+        </PanelCtx.Provider>
+        <nav className="tabbar" aria-label="Atalhos do painel">
+          {GROUPS.slice(0, 3).map((g) => {
+            const Icon = g.icon;
             return (
-              <li key={to}>
-                <Link to={to} className={`flex flex-col items-center gap-0.5 ${active ? "text-foreground" : "text-muted-foreground"}`}>
-                  <Icon className={`size-5 ${active ? "text-primary" : ""}`} />
-                  {t.label}
-                </Link>
-              </li>
+              <Link key={g.key} to={g.tabs[0]!.to} className={`tab ${current?.key === g.key ? "on" : ""}`}><Icon size={20} />{g.label}</Link>
             );
           })}
-          <li>
-            <button type="button" onClick={() => setMenuOpen(true)} className="mx-auto flex flex-col items-center gap-0.5 text-muted-foreground">
-              <Menu className="size-5" />
-              Mais
-            </button>
-          </li>
-        </ul>
-      </nav>
+          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+            <SheetTrigger asChild>
+              <button type="button" className="tab" aria-label="Abrir menu"><Ellipsis size={20} />Mais</button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex w-72 flex-col border-0 p-0">
+              <SheetTitle className="sr-only">Menu do painel</SheetTitle>
+              <div className="v2 gpanel" style={{ display: "contents" }}>
+                <div className="side" style={{ display: "flex", height: "100%", position: "static" }}>{nav}</div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </nav>
+      </div>
     </div>
   );
 }

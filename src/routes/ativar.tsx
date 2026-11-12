@@ -14,7 +14,9 @@ import { AtivarTabs, ABAS, type Aba } from "@/components/ativar/AtivarTabs";
 import { PlusHub } from "@/components/ativar/PlusHub";
 import { ToqyStrip } from "@/components/ativar/ToqyStrip";
 import { AjudaTab, ContaTab } from "@/components/ativar/AjudaConta";
-import { BookOpen, Crown, LayoutGrid, Pencil, Plus, Trash2, User } from "lucide-react";
+import { BookOpen, Crown, LayoutGrid, Moon, Palette, Pencil, Plus, ShoppingBag, Sun, Trash2, User } from "lucide-react";
+import { GLogo } from "@/components/site/SiteChrome";
+import { useV2Theme } from "@/lib/use-v2-theme";
 import { releaseBatch, releasePlate, renameMyBatch } from "@/lib/plates.functions";
 import { PlateScanStats } from "@/components/PlateScanStats";
 import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
@@ -163,6 +165,12 @@ function Lote({ email, userId }: { email: string; userId: string }) {
     window.scrollTo({ top: 0 });
   };
   const navigate = Route.useNavigate();
+  const { theme, toggle: toggleTheme } = useV2Theme();
+  const [isTeamUser, setIsTeamUser] = useState(false);
+  useEffect(() => {
+    supabase.from("user_roles").select("role").in("role", ["admin", "staff"]).then(({ data }) => setIsTeamUser((data?.length ?? 0) > 0));
+  }, [userId]);
+
   const goAba = (a: Aba) => {
     void navigate({ search: { aba: a } });
     window.scrollTo({ top: 0 });
@@ -426,24 +434,34 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   if (batches === null) return <Center>Carregando…</Center>;
 
   return (
-    <div id="topo" className="min-h-screen bg-surface pb-24 md:pb-0">
-      <header className="sticky top-0 z-40 bg-foreground text-white">
-        <div className="mx-auto flex h-16 max-w-4xl items-center justify-between gap-3 px-5">
-          <Link to="/" className="inline-flex items-center gap-2.5" aria-label="GCard-PRÓ — início">
-            <img src={logoIcone} alt="" className="h-9 w-auto" draggable={false} />
-            <img src={logoMarca} alt="GCard-PRÓ" className="hidden h-5 w-auto sm:block" draggable={false} />
-          </Link>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden text-white/60 sm:inline">{email}</span>
-            <Button size="sm" variant="outline" className="rounded-xl border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white" onClick={() => supabase.auth.signOut()}>
-              Sair
-            </Button>
+    <div id="topo" className="v2 gpanel">
+      <div className="app">
+        <aside className="side">
+          <div className="brand"><GLogo size={20} /></div>
+          <div className="psw" role="tablist" aria-label="Área">
+            <button role="tab" aria-selected className="on">Revendedor</button>
+            {isTeamUser ? <Link to="/painel/visao-geral" role="tab" aria-selected={false} style={{ flex: 1, textAlign: "center", padding: "7px 8px", fontSize: 13, fontWeight: 600, color: "var(--muted)", textDecoration: "none" }}>Administração</Link> : null}
           </div>
-        </div>
-      </header>
-      <AtivarTabs aba={showPlus || aba !== "plus" ? aba : "codigos"} onChange={goAba} showPlus={showPlus} />
+          {([["codigos", "Meus códigos", LayoutGrid]] as const).map(([k, label, Icon]) => (
+            <button key={k} type="button" className={`nav ${aba === k ? "on" : ""}`} onClick={() => goAba(k)}><Icon size={18} /> {label}</button>
+          ))}
+          <Link to="/comprar" search={{}} className="nav"><ShoppingBag size={18} /> Comprar</Link>
+          <Link to="/personalizar" className="nav"><Palette size={18} /> Personalizar</Link>
+          {showPlus && <button type="button" className={`nav plus ${aba === "plus" ? "on" : ""}`} onClick={() => goAba("plus")}><Crown size={18} /> GCard Plus <span className="plustag">Plus</span></button>}
+          <button type="button" className={`nav ${aba === "ajuda" ? "on" : ""}`} onClick={() => goAba("ajuda")}><BookOpen size={18} /> Como usar</button>
+          <button type="button" className={`nav ${aba === "conta" ? "on" : ""}`} onClick={() => goAba("conta")}><User size={18} /> Minha conta</button>
+          <div style={{ marginTop: "auto" }} className="col">
+            <span className="badge green">Conta de revendedor</span>
+            <span className="xs muted" title={email} style={{ padding: "0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</span>
+            <button type="button" className="nav" onClick={toggleTheme}>{theme === "light" ? <Moon size={18} /> : <Sun size={18} />} {theme === "light" ? "Modo escuro" : "Modo claro"}</button>
+            <button type="button" className="nav" onClick={() => supabase.auth.signOut()}>Sair</button>
+          </div>
+        </aside>
 
-      <div className="mx-auto max-w-4xl px-5 py-8">
+        <main className="main">
+          <div className="topwash" />
+          <div className="frame">
+          <div>
         {aba === "plus" && showPlus && (
           <PlusHub plates={plates} rules={rules} allowedUrls={allowedUrls} active={plus.active} sub={plus.sub} onDone={() => void load()} onRemove={(p) => void removePlate(p as Plate)} detailId={detailId} onDetail={goDetail} />
         )}
@@ -575,7 +593,6 @@ function Lote({ email, userId }: { email: string; userId: string }) {
         )}
         </>
         )}
-      </div>
 
       <Dialog open={release !== null} onOpenChange={(o) => !o && setRelease(null)}>
         <DialogContent>
@@ -594,50 +611,17 @@ function Lote({ email, userId }: { email: string; userId: string }) {
         </DialogContent>
       </Dialog>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card md:hidden" aria-label="Painel">
-        <ul className="mx-auto grid h-16 max-w-md grid-cols-5 items-center text-[11px] font-semibold text-muted-foreground">
-          {(
-            [
-              ["codigos", "Códigos", LayoutGrid],
-              ["plus", "Plus", Crown],
-            ] as const
-          )
-            .filter(([k]) => k !== "plus" || showPlus)
-            .map(([k, label, Icon]) => (
-              <li key={k}>
-                <button type="button" onClick={() => goAba(k)} className={`mx-auto flex flex-col items-center gap-0.5 ${aba === k ? "text-foreground" : ""}`}>
-                  <Icon className={`size-5 ${k === "plus" ? "text-primary" : ""}`} />
-                  {label}
-                </button>
-              </li>
-            ))}
-          <li className="flex justify-center">
-            <button
-              type="button"
-              aria-label="Resgatar lote"
-              onClick={() => {
-                goAba("codigos");
-                setTimeout(() => document.getElementById("resgatar")?.scrollIntoView({ behavior: "smooth" }), 80);
-              }}
-              className="-mt-6 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
-            >
-              <Plus className="size-7" />
-            </button>
-          </li>
-          <li>
-            <button type="button" onClick={() => goAba("ajuda")} className={`mx-auto flex flex-col items-center gap-0.5 ${aba === "ajuda" ? "text-foreground" : ""}`}>
-              <BookOpen className="size-5" />
-              Ajuda
-            </button>
-          </li>
-          <li>
-            <button type="button" onClick={() => goAba("conta")} className={`mx-auto flex flex-col items-center gap-0.5 ${aba === "conta" ? "text-foreground" : ""}`}>
-              <User className="size-5" />
-              Conta
-            </button>
-          </li>
-        </ul>
-      </nav>
+                </div>
+          </div>
+        </main>
+
+        <nav className="tabbar" aria-label="Painel">
+          <button type="button" className={`tab ${aba === "codigos" ? "on" : ""}`} onClick={() => goAba("codigos")}><LayoutGrid size={20} />Códigos</button>
+          <Link to="/comprar" search={{}} className="tab"><ShoppingBag size={20} />Comprar</Link>
+          {showPlus ? <button type="button" className={`tab ${aba === "plus" ? "on" : ""}`} onClick={() => goAba("plus")}><Crown size={20} />Plus</button> : <button type="button" className={`tab ${aba === "ajuda" ? "on" : ""}`} onClick={() => goAba("ajuda")}><BookOpen size={20} />Ajuda</button>}
+          <button type="button" className={`tab ${aba === "conta" ? "on" : ""}`} onClick={() => goAba("conta")}><User size={20} />Conta</button>
+        </nav>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { trackClientEvent } from "@/lib/events.functions";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowLeft, Minus, Plus, ShieldCheck, Truck, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowRight, Minus, Plus, ShieldCheck, Truck, Wallet } from "lucide-react";
 import { money } from "@/lib/pricing";
 import { DeliveryTimes, SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import { MERCADO_LIVRE_LINKS, PRODUCT_IMAGES, SHOW_MERCADO_LIVRE, mockupsFor, catalogQuery, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
@@ -57,6 +57,8 @@ export type ProdutoViewProps = {
 export function ProdutoView(p: ProdutoViewProps) {
   const [qty, setQty] = useState(p.minQty);
   const [pic, setPic] = useState(0);
+  const [chip, setChip] = useState(false);
+  const [wantQr, setWantQr] = useState(false);
   useEffect(() => {
     const els = document.querySelectorAll(".lp .rv");
     const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.08 });
@@ -67,7 +69,8 @@ export function ProdutoView(p: ProdutoViewProps) {
   const tierFor = (n: number) => [...p.tiers].reverse().find((t) => n >= t.min_quantity) ?? p.tiers[0];
   const t = tierFor(qty);
   const unit = t?.unit_price_cents ?? 0;
-  const total = unit * qty;
+  const chipCents = p.isBlank && chip && p.nfcAddonCents ? p.nfcAddonCents * qty : 0;
+  const total = unit * qty + chipCents;
   const pixOff = p.pixOn && !p.isBlank && !p.isSupply ? pixDiscountCents(total, 1) : 0;
   const stage = pic === 0 ? p.image : (p.gallery[pic - 1] ?? p.image);
   const step = (d: number) => setQty(Math.max(p.minQty, qty + d * Math.max(1, p.step)));
@@ -130,13 +133,27 @@ export function ProdutoView(p: ProdutoViewProps) {
                     </div>
                   </div>
                   <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>{quick.map((n) => <button key={n} type="button" className={`chip ${qty === n ? "on" : ""}`} onClick={() => setQty(n)}>{n}</button>)}</div>
+                  {p.isBlank && (
+                    <div className="col" style={{ gap: 8 }}>
+                      {p.nfcAddonCents ? (
+                        <label className="row sm" style={{ gap: 10, cursor: "pointer", alignItems: "flex-start" }}>
+                          <input type="checkbox" checked={chip} onChange={(e) => setChip(e.target.checked)} style={{ marginTop: 3 }} />
+                          <span className="grow"><b>Chip NFC em cada unidade</b> <span className="muted">(+ {money(p.nfcAddonCents)} cada)</span><br /><span className="xs muted">Enviamos solto, você cola na placa.</span></span>
+                        </label>
+                      ) : null}
+                      <label className="row sm" style={{ gap: 10, cursor: "pointer", alignItems: "flex-start" }}>
+                        <input type="checkbox" checked={wantQr} onChange={(e) => setWantQr(e.target.checked)} style={{ marginTop: 3 }} />
+                        <span className="grow"><b>QR Code de cada placa</b> <span className="muted">(grátis)</span><br /><span className="xs muted">Quer trocar o destino depois sem reimprimir? Use o <Link to="/plus" style={{ textDecoration: "underline" }}><b>GCard Plus</b></Link>.</span></span>
+                      </label>
+                    </div>
+                  )}
                   <div className="gp-total">
-                    <div className="row sm"><span className="grow muted">{qty} × {money(unit)}</span></div>
+                    <div className="row sm"><span className="grow muted">{qty} × {money(unit)}{chipCents ? ` + chips ${money(chipCents)}` : ""}</span></div>
                     <div className="row"><b className="grow">Total estimado</b><b className="gp-sum">{money(total)}</b></div>
                     {pixOff > 0 && <div className="row sm" style={{ color: "var(--brand-text)" }}><span className="grow">No Pix, com {PIX_DISCOUNT_PCT}% OFF</span><b>{money(total - pixOff)}</b></div>}
                   </div>
-                  <Link to="/comprar" search={{ produto: p.slug }} className="btn primary block" data-analytics-event="begin_checkout" data-analytics-label={`produto ${p.slug}`}>Comprar este kit</Link>
-                  <p className="xs muted" style={{ margin: 0 }}>{p.isBlank || p.isSupply ? `Vendido só para revendedores, a partir de ${p.minQty} unidades. A quantidade final você escolhe na compra.` : "Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente. A quantidade final você escolhe na compra."}</p>
+                  <Link to="/comprar" search={{ produto: p.slug, qtd: qty, ...(p.isBlank ? { chip: chip ? 1 : 0, qr: wantQr ? 1 : 0 } : {}) }} className="btn primary block" data-analytics-event="begin_checkout" data-analytics-label={`produto ${p.slug}`}>Comprar este kit</Link>
+                  <p className="xs muted" style={{ margin: 0 }}>{p.isBlank || p.isSupply ? `Vendido só para revendedores, a partir de ${p.minQty} unidades. A quantidade escolhida aqui segue para a compra.` : "Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente. A quantidade escolhida aqui segue para a compra."}</p>
                 </div>
               )}
 
@@ -144,6 +161,18 @@ export function ProdutoView(p: ProdutoViewProps) {
             </div>
           </div>
 
+          {p.isBlank && (
+            <section className="gp-sec rv">
+              <div className="gp-plus">
+                <div className="row" style={{ gap: 8, justifyContent: "center" }}><span className="plustag">GCard Plus</span><b>Vai precisar do QR Code?</b></div>
+                <span className="sm muted">Com o Plus o QR da sua placa vira <b>dinâmico</b>: você troca o destino quando quiser, programa por horário e data e acompanha as leituras, sem reimprimir nada. Ideal para quem personaliza a própria arte.</span>
+                <div className="row wrap" style={{ gap: 8, justifyContent: "center" }}>
+                  <Link to="/plus" className="btn goldbtn">Conhecer o GCard Plus <ArrowRight size={16} /></Link>
+                  <span className="xs muted">a partir de R$ 15,90/mês no plano anual</span>
+                </div>
+              </div>
+            </section>
+          )}
           {p.isBlank && (
             <section className="gp-sec rv">
               <div className="gp-custom">
@@ -234,7 +263,7 @@ function Produto() {
       isBlank={Boolean(p.is_blank)}
       isSupply={Boolean(p.is_supply)}
       soon={p.status !== "ativo"}
-      minQty={(p as { min_quantity?: number | null }).min_quantity ?? 10}
+      minQty={tiers[0]?.min_quantity ?? (p as { min_quantity?: number | null }).min_quantity ?? 10}
       step={(p as { quantity_step?: number | null }).quantity_step ?? 1}
       tiers={tiers.map((t) => ({ min_quantity: t.min_quantity, unit_price_cents: t.unit_price_cents, label: t.label }))}
       nfcAddonCents={(p as { nfc_addon_price_cents?: number | null }).nfc_addon_price_cents ?? null}
