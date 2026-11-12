@@ -157,8 +157,8 @@ export function ProdutoView(p: ProdutoViewProps) {
                           const on = c.slug === color;
                           const dot: Record<string, string> = { cristal: "#e6f0f4", branco: "#ffffff", preto: "#111827", azul: "#2563eb" };
                           return (
-                            <button key={c.slug} type="button" aria-pressed={on} onClick={() => { setColor(c.slug); setPic(0); setAdded(false); }} className={`chip ${on ? "on" : ""}`} style={{ gap: 8 }}>
-                              <span style={{ width: 16, height: 16, borderRadius: 99, background: dot[c.slug] ?? "#ccc", border: "1px solid var(--line)", display: "inline-grid", placeItems: "center" }}>{on && <Check size={11} color={c.slug === "preto" || c.slug === "azul" ? "#fff" : "#111"} />}</span>
+                            <button key={c.slug} type="button" aria-pressed={on} onClick={() => { setColor(c.slug); setPic(0); setAdded(false); }} className={`chip ${on ? "on" : ""}`} style={{ gap: 8, display: "inline-flex", alignItems: "center" }}>
+                              <span style={{ width: 16, height: 16, borderRadius: 99, background: dot[c.slug] ?? "#ccc", border: "1px solid color-mix(in srgb, var(--ink) 35%, transparent)", display: "inline-grid", placeItems: "center", flex: "none" }}>{on && <Check size={11} color={c.slug === "preto" || c.slug === "azul" ? "#fff" : "#111"} />}</span>
                               {c.name}{c.delta ? ` +${money(c.delta)}` : ""}
                             </button>
                           );
