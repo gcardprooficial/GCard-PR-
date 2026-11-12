@@ -234,7 +234,7 @@ function Produto() {
       isBlank={Boolean(p.is_blank)}
       isSupply={Boolean(p.is_supply)}
       soon={p.status !== "ativo"}
-      minQty={(p as { min_quantity?: number | null }).min_quantity ?? 10}
+      minQty={tiers[0]?.min_quantity ?? (p as { min_quantity?: number | null }).min_quantity ?? 10}
       step={(p as { quantity_step?: number | null }).quantity_step ?? 1}
       tiers={tiers.map((t) => ({ min_quantity: t.min_quantity, unit_price_cents: t.unit_price_cents, label: t.label }))}
       nfcAddonCents={(p as { nfc_addon_price_cents?: number | null }).nfc_addon_price_cents ?? null}
