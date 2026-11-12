@@ -35,6 +35,7 @@ type Order = {
 function Customers() {
   const [contacts, setContacts] = useState<Contact[] | null>(null);
   const [query, setQuery] = useState("");
+  const [lim, setLim] = useState(15);
   const [segment, setSegment] = useState<"todos" | "consentidos" | "descadastrados" | "revenda" | "clientes">("todos");
   const loadMarketing = useServerFn(listMarketingStatus);
 
@@ -215,7 +216,7 @@ function Customers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {visible.map((contact) => (
+              {visible.slice(0, lim).map((contact) => (
                 <tr key={contact.email} className="hover:bg-muted/60">
                   <td className="px-3 py-4">
                     <p className="font-semibold">{contact.name}</p>
@@ -264,6 +265,11 @@ function Customers() {
               )}
             </tbody>
           </table>
+          {visible.length > lim && (
+          <div className="center" style={{ marginTop: 12 }}>
+            <button type="button" className="btn" onClick={() => setLim((l) => l + 15)}>Mostrar mais ({visible.length - lim} restantes)</button>
+          </div>
+        )}
         </div>
       </div>
     </div>

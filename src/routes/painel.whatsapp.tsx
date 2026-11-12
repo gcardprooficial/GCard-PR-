@@ -142,6 +142,7 @@ function Conversas() {
   const sendQuick = useServerFn(sendWhatsAppQuickReply);
   const sendSurvey = useServerFn(sendWhatsAppOriginSurvey);
   const [convs, setConvs] = useState<Conv[]>([]);
+  const [convLim, setConvLim] = useState(25);
   const [filter, setFilter] = useState<"todas" | "humano" | "bot" | "resolvido">("todas");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -297,7 +298,7 @@ function Conversas() {
         </div>
         <div className="max-h-[65vh] space-y-1 overflow-y-auto">
           {shown.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nenhuma conversa ainda.</p>}
-          {shown.map((c) => (
+          {shown.slice(0, convLim).map((c) => (
             <button
               key={c.id}
               type="button"
@@ -327,6 +328,11 @@ function Conversas() {
               </div>
             </button>
           ))}
+          {shown.length > convLim && (
+          <div className="center" style={{ marginTop: 12 }}>
+            <button type="button" className="btn" onClick={() => setConvLim((l) => l + 25)}>Mostrar mais ({shown.length - convLim} restantes)</button>
+          </div>
+        )}
         </div>
       </div>
 
