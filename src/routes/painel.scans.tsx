@@ -14,6 +14,7 @@ type PlateRow = {
   scan_count: number;
   last_scan_at: string | null;
   batch_id: string | null;
+  business_name: string | null;
   businesses: { name: string } | null;
   products: { name: string } | null;
   batches: { code: string; label: string | null; owner_email: string | null } | null;
@@ -39,7 +40,7 @@ function Scans() {
     const [p, e] = await Promise.all([
       supabase
         .from("plates")
-        .select("id, token, short_code, status, scan_count, last_scan_at, batch_id, businesses(name), products(name), batches(code, label, owner_email)")
+        .select("id, token, short_code, status, scan_count, last_scan_at, batch_id, business_name, businesses(name), products(name), batches(code, label, owner_email)")
         .order("scan_count", { ascending: false })
         .limit(500),
       supabase.from("plate_scan_events").select("plate_id, created_at, device").gte("created_at", since).limit(5000),
@@ -105,7 +106,7 @@ function Scans() {
     return (
       p.short_code.toLowerCase().includes(t) ||
       p.token.toLowerCase().includes(t) ||
-      p.businesses?.name.toLowerCase().includes(t) ||
+      (p.business_name ?? p.businesses?.name ?? "").toLowerCase().includes(t) ||
       ownerOf(p).toLowerCase().includes(t) ||
       p.batches?.code.toLowerCase().includes(t)
     );
@@ -175,7 +176,7 @@ function Scans() {
                   const s = stats.per.get(p.id) ?? { d7: 0, d30: 0 };
                   return (
                     <tr key={p.id} style={{ borderTop: "1px solid var(--line)" }}>
-                      <td className="p-3"><b>{p.businesses?.name ?? "Sem negócio"}</b><div className="xs muted">{p.products?.name ?? ""}</div></td>
+                      <td className="p-3"><b>{p.business_name ?? p.businesses?.name ?? "Placa em branco"}</b><div className="xs muted">{p.products?.name ?? ""}</div></td>
                       <td className="p-3 font-mono text-xs">{p.short_code}{p.status === "bloqueada" && <span className="badge warn" style={{ marginLeft: 6 }}>bloqueada</span>}</td>
                       <td className="p-3">{ownerOf(p)}{p.batches ? <div className="xs muted font-mono">{p.batches.code}</div> : null}</td>
                       <td className="p-3 text-right">{s.d7}</td>

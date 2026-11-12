@@ -35,7 +35,7 @@ async function renderPlateQrCanvas(p: { token: string; short_code: string; track
 
 export const Route = createFileRoute("/painel/lotes")({ component: Lotes });
 
-type LotePlate = { id: string; short_code: string; status: string; scan_count: number; businesses: { name: string } | null };
+type LotePlate = { id: string; short_code: string; status: string; scan_count: number; business_name: string | null; businesses: { name: string } | null };
 
 /** Placas de um lote: só busca quando a pessoa abre, e mostra de 20 em 20. */
 function LotePlates({ batchId }: { batchId: string }) {
@@ -46,7 +46,7 @@ function LotePlates({ batchId }: { batchId: string }) {
     if (!open || rows) return;
     void supabase
       .from("plates")
-      .select("id, short_code, status, scan_count, businesses(name)")
+      .select("id, short_code, status, scan_count, business_name, businesses(name)")
       .eq("batch_id", batchId)
       .order("short_code")
       .limit(1000)
@@ -62,7 +62,7 @@ function LotePlates({ batchId }: { batchId: string }) {
           {rows.slice(0, lim).map((p) => (
             <div key={p.id} className="flex items-center gap-3 border-t border-border/60 py-1.5 text-sm">
               <span className="w-28 font-mono text-xs font-semibold">{p.short_code}</span>
-              <span className="min-w-0 flex-1 truncate">{p.businesses?.name ?? <span className="text-muted-foreground">em branco</span>}</span>
+              <span className="min-w-0 flex-1 truncate">{p.business_name ?? p.businesses?.name ?? <span className="text-muted-foreground">em branco</span>}</span>
               <span className="text-xs text-muted-foreground">{p.scan_count} leituras</span>
               <span className={`badge ${p.status === "ativada" ? "green" : p.status === "bloqueada" ? "warn" : ""}`}>{p.status === "ativada" ? "ativa" : p.status === "bloqueada" ? "bloqueada" : "em branco"}</span>
             </div>
