@@ -9,12 +9,11 @@ type P = { id: string; short_code: string; business_name: string | null };
 
 const PERIODS = [7, 30, 90] as const;
 
-function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: number; tone: string }) {
+function Kpi({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 card-soft">
-      <span className={`inline-flex size-9 items-center justify-center rounded-xl ${tone}`}>{icon}</span>
-      <p className="mt-3 font-display text-3xl font-black leading-none">{value}</p>
-      <p className="mt-1 text-xs font-semibold text-muted-foreground">{label}</p>
+    <div className="metric">
+      <div className="xs muted row" style={{ gap: 6 }}>{icon}{label}</div>
+      <div className="v">{value}</div>
     </div>
   );
 }
@@ -74,15 +73,15 @@ export function PlusStats({ plates, onOpen }: { plates: P[]; onOpen?: (id: strin
   const fmt = (d: string) => d.split("-").reverse().slice(0, 2).join("/");
 
   if (plates.length === 0) {
-    return <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">Ative um código para ver as estatísticas aqui.</p>;
+    return <div className="card panel center sm muted" style={{ padding: 22 }}>Ative um código para ver as estatísticas aqui.</div>;
   }
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-display text-lg font-bold">Visão geral</h3>
-        <div className="flex gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
+      <div className="row between wrap mb" style={{ rowGap: 10 }}>
+        <h2>Visão geral</h2>
+        <div className="seg">
           {PERIODS.map((d) => (
-            <button key={d} type="button" onClick={() => setDays(d)} className={`rounded-full px-3 py-1.5 transition-colors ${d === days ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+            <button key={d} type="button" onClick={() => setDays(d)} className={`chip ${d === days ? "on" : ""}`}>
               {d} dias
             </button>
           ))}
@@ -90,63 +89,61 @@ export function PlusStats({ plates, onOpen }: { plates: P[]; onOpen?: (id: strin
       </div>
 
       {error ? (
-        <p className="mt-3 text-sm text-muted-foreground">Não consegui carregar agora.</p>
+        <p className="sm muted">Não consegui carregar agora.</p>
       ) : rows === null ? (
-        <p className="mt-3 text-sm text-muted-foreground">Carregando…</p>
+        <p className="sm muted">Carregando…</p>
       ) : (
-        <>
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <Kpi icon={<Eye className="size-4" />} label="Leituras" value={total} tone="bg-primary/20 text-foreground" />
-            <Kpi icon={<Radio className="size-4" />} label="Toques NFC" value={nfc} tone="bg-secondary text-secondary-foreground" />
-            <Kpi icon={<QrCode className="size-4" />} label="Leituras de QR" value={qr} tone="bg-muted text-foreground" />
+        <div className="col" style={{ gap: 14 }}>
+          <div className="metrics" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+            <Kpi icon={<Eye size={14} />} label="Leituras" value={total} />
+            <Kpi icon={<Radio size={14} />} label="Toques NFC" value={nfc} />
+            <Kpi icon={<QrCode size={14} />} label="Leituras de QR" value={qr} />
           </div>
 
-          <div className="mt-4 grid gap-4 md:grid-cols-[1.6fr_1fr]">
-            <div className="rounded-2xl border border-border bg-card p-4 card-soft">
-              <p className="text-sm font-semibold">Leituras por dia</p>
-              <div className="mt-3">
-                <AreaChart values={series} labels={[fmt(firstDay), fmt(lastDay)]} />
+          <div className="grid gap-4 md:grid-cols-[1.6fr_1fr]">
+            <div className="card">
+              <b>Leituras por dia</b>
+              <div style={{ marginTop: 10 }}>
+                <AreaChart values={series} labels={[fmt(firstDay), fmt(lastDay)]} height={170} />
               </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">Só pessoas, sem robôs. Números agregados por dia.</p>
+              <p className="xs muted" style={{ marginTop: 6 }}>Só pessoas, sem robôs. Números agregados por dia.</p>
             </div>
-            <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-4 card-soft">
-              <p className="self-start text-sm font-semibold">De onde vêm</p>
-              <div className="mt-2">
-                <Donut
-                  parts={[
-                    { value: nfc, color: "var(--secondary)", label: "NFC" },
-                    { value: qr, color: "var(--primary)", label: "QR" },
-                    { value: other, color: "#CBD5E1", label: "Sem origem" },
-                  ]}
-                />
+            <div className="card col" style={{ alignItems: "center" }}>
+              <b style={{ alignSelf: "flex-start" }}>De onde vêm</b>
+              <Donut
+                parts={[
+                  { value: nfc, color: "var(--brand)", label: "NFC" },
+                  { value: qr, color: "var(--ink)", label: "QR" },
+                  { value: other, color: "var(--line)", label: "Sem origem" },
+                ]}
+              />
+              <div className="col sm" style={{ width: "100%", gap: 6 }}>
+                <div className="row" style={{ gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 99, background: "var(--brand)" }} />NFC <b style={{ marginLeft: "auto" }}>{nfc}</b></div>
+                <div className="row" style={{ gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 99, background: "var(--ink)" }} />QR <b style={{ marginLeft: "auto" }}>{qr}</b></div>
+                <div className="row" style={{ gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 99, background: "var(--line)" }} />Placas antigas <b style={{ marginLeft: "auto" }}>{other}</b></div>
               </div>
-              <ul className="mt-2 w-full space-y-1 text-xs">
-                <li className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-secondary" />NFC <b className="ml-auto">{nfc}</b></li>
-                <li className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-primary" />QR <b className="ml-auto">{qr}</b></li>
-                <li className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-slate-300" />Placas antigas <b className="ml-auto">{other}</b></li>
-              </ul>
             </div>
           </div>
 
           {plates.length > 1 && (
-          <div className="mt-4 rounded-2xl border border-border bg-card p-4 card-soft">
-            <p className="flex items-center gap-2 text-sm font-semibold"><Trophy className="size-4 text-primary" /> Códigos mais lidos</p>
-            <ul className="mt-3 space-y-3">
+            <div className="card col" style={{ gap: 12 }}>
+              <b className="row" style={{ gap: 8 }}><Trophy size={16} color="var(--brand)" /> Códigos mais lidos</b>
               {byCode.slice(0, 8).map(({ p, c }, i) => (
-                <li key={p.id}>
-                  <div className="flex items-baseline justify-between gap-2 text-sm">
-                    <button type="button" disabled={!onOpen} onClick={() => onOpen?.(p.id)} className="min-w-0 truncate text-left enabled:hover:underline" title={onOpen ? "Ver só este código" : undefined}><span className="mr-2 text-xs text-muted-foreground">{i + 1}º</span><b>{p.business_name || p.short_code}</b> <span className="font-mono text-[11px] text-muted-foreground">{p.short_code}</span></button>
-                    <span className="font-display font-black">{c.total}</span>
+                <div key={p.id}>
+                  <div className="row sm" style={{ gap: 8 }}>
+                    <button type="button" disabled={!onOpen} onClick={() => onOpen?.(p.id)} className="grow" style={{ background: "none", border: 0, padding: 0, textAlign: "left", cursor: onOpen ? "pointer" : "default", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={onOpen ? "Ver só este código" : undefined}>
+                      <span className="xs muted" style={{ marginRight: 8 }}>{i + 1}º</span><b>{p.business_name || p.short_code}</b> <span className="xs muted font-mono">{p.short_code}</span>
+                    </button>
+                    <b>{c.total}</b>
                   </div>
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${Math.max(c.total ? 4 : 0, (c.total / topMax) * 100)}%` }} />
+                  <div style={{ marginTop: 4, height: 8, borderRadius: 99, background: "var(--panel)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", borderRadius: 99, background: "var(--brand-grad)", width: `${Math.max(c.total ? 4 : 0, (c.total / topMax) * 100)}%` }} />
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
-          </div>
+            </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

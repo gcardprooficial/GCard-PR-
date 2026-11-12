@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { untyped } from "@/lib/db-untyped";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AreaChart } from "@/components/ativar/Charts";
 
 export const Route = createFileRoute("/painel/estatisticas")({ component: Stats });
 
@@ -33,12 +34,15 @@ function Stats() {
 
   return (
     <div>
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">GCard Plus</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Estatísticas por código</h1>
-      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3 text-sm">
-        <span>Recurso: <strong>{enabled === null ? "…" : enabled ? "ligado" : "desligado"}</strong></span>
-        {enabled !== null && <Button size="sm" variant="outline" onClick={toggle}>{enabled ? "Desligar" : "Ligar"}</Button>}
-        <span className="text-muted-foreground">Não cobra nada. Só mostra toques e leituras por dia.</span>
+      <div className="mb">
+        <div className="eyebrow">GCard Plus</div>
+        <h1>Estatísticas por código</h1>
+        <p className="muted sm" style={{ marginTop: 4 }}>Toques NFC e leituras QR por dia, no total e por código.</p>
+      </div>
+      <div className="card goldframe row wrap mb" style={{ gap: 12 }}>
+        <span className="plustag">Plus</span>
+        <span className="sm grow">Recurso <b>{enabled === null ? "…" : enabled ? "ligado" : "desligado"}</b>. Não cobra nada: só mostra toques e leituras por dia.</span>
+        {enabled !== null && <button type="button" className="btn" onClick={toggle}>{enabled ? "Desligar" : "Ligar"}</button>}
       </div>
       {enabled && <Viewer />}
     </div>
@@ -79,8 +83,90 @@ function Viewer() {
   );
   const max = Math.max(1, ...(days ?? []).map((d) => d.leituras));
 
+  type Top = { id: string; short_code: string; name: string; owner: string; nfc: number; qr: number; total: number };
+  const [ov, setOv] = useState<{ nfc: number; qr: number; total: number; codes: number; series: number[]; tops: Top[] } | null>(null);
+  const [ovErr, setOvErr] = useState(false);
+  useEffect(() => {
+    setOv(null);
+    setOvErr(false);
+    const since = new Date(Date.now() - range * DAY_MS).toISOString().slice(0, 10);
+    db.from("plate_scan_daily").select("plate_id, day, leituras, nfc, qr").gte("day", since).limit(20000)
+      .then(async ({ data, error }: { data: { plate_id: string; day: string; leituras: number; nfc: number; qr: number }[] | null; error: unknown }) => {
+        if (error) return setOvErr(true);
+        const rows = data ?? [];
+        const byDay = new Map<string, number>();
+        const per = new Map<string, { nfc: number; qr: number; total: number }>();
+        let nfc = 0, qr = 0, total = 0;
+        for (const r of rows) {
+          byDay.set(r.day, (byDay.get(r.day) ?? 0) + r.leituras);
+          const c = per.get(r.plate_id) ?? { nfc: 0, qr: 0, total: 0 };
+          c.nfc += r.nfc; c.qr += r.qr; c.total += r.leituras;
+          per.set(r.plate_id, c);
+          nfc += r.nfc; qr += r.qr; total += r.leituras;
+        }
+        const series = Array.from({ length: range }, (_, i) => byDay.get(new Date(Date.now() - (range - 1 - i) * DAY_MS).toISOString().slice(0, 10)) ?? 0);
+        const top = [...per.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 10);
+        let tops: Top[] = [];
+        if (top.length) {
+          const { data: pl } = await db.from("plates").select("id, short_code, businesses(name), batches(label, owner_email, code)").in("id", top.map(([id]) => id));
+          const info = new Map<string, { short_code: string; businesses: { name: string } | null; batches: { label: string | null; owner_email: string | null; code: string } | null }>((pl ?? []).map((x: { id: string; short_code: string; businesses: { name: string } | null; batches: { label: string | null; owner_email: string | null; code: string } | null }) => [x.id, x]));
+          tops = top.map(([id, c]) => {
+            const i = info.get(id);
+            return { id, short_code: i?.short_code ?? id.slice(0, 8), name: i?.businesses?.name ?? "Sem negócio", owner: i?.batches ? i.batches.label || i.batches.owner_email || i.batches.code : "Estoque solto", ...c };
+          });
+        }
+        setOv({ nfc, qr, total, codes: per.size, series, tops });
+      });
+  }, [range]);
+
   return (
-    <div className="mt-5 grid gap-5 md:grid-cols-[18rem_1fr]">
+    <>
+    <div className="mt-2">
+      <div className="seg mb">
+        {[7, 30, 90].map((r) => (
+          <button key={r} type="button" className={`chip ${range === r ? "on" : ""}`} onClick={() => setRange(r)}>{r} dias</button>
+        ))}
+      </div>
+      {ovErr ? (
+        <div className="card panel sm muted">Não consegui carregar o resumo agora. Use a busca por código abaixo.</div>
+      ) : ov === null ? (
+        <p className="sm muted">Carregando resumo…</p>
+      ) : (
+        <div className="col" style={{ gap: 14 }}>
+          <div className="metrics" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
+            <div className="metric"><div className="xs muted">Leituras</div><div className="v">{ov.total}</div></div>
+            <div className="metric"><div className="xs muted">Toques NFC</div><div className="v">{ov.nfc}</div></div>
+            <div className="metric"><div className="xs muted">Leituras QR</div><div className="v">{ov.qr}</div></div>
+            <div className="metric"><div className="xs muted">Códigos com leitura</div><div className="v">{ov.codes}</div></div>
+          </div>
+          <div className="card"><b>Leituras por dia</b><AreaChart values={ov.series} height={130} /></div>
+          <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+            <div style={{ padding: "14px 16px 6px" }}><b>Mais lidos no período</b></div>
+            {ov.tops.length === 0 ? (
+              <p className="sm muted" style={{ padding: "0 16px 16px" }}>Sem leituras neste período.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs muted"><tr><th className="p-3">Negócio</th><th className="p-3">Cliente / lote</th><th className="p-3">Código</th><th className="p-3 text-right">NFC</th><th className="p-3 text-right">QR</th><th className="p-3 text-right">Total</th></tr></thead>
+                <tbody>
+                  {ov.tops.map((t) => (
+                    <tr key={t.id} style={{ borderTop: "1px solid var(--line)", cursor: "pointer" }} onClick={() => { setPicked({ id: t.id, token: "", short_code: t.short_code, status: "", scan_count: t.total }); document.getElementById("ver-codigo")?.scrollIntoView({ behavior: "smooth" }); }}>
+                      <td className="p-3"><b>{t.name}</b></td>
+                      <td className="p-3">{t.owner}</td>
+                      <td className="p-3 font-mono text-xs">{t.short_code}</td>
+                      <td className="p-3 text-right">{t.nfc}</td>
+                      <td className="p-3 text-right">{t.qr}</td>
+                      <td className="p-3 text-right"><b>{t.total}</b></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+    <h2 id="ver-codigo" className="mt-8">Ver um código</h2>
+    <div className="mt-3 grid gap-5 md:grid-cols-[18rem_1fr]">
       <div>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código…" className="h-9" />
         <ul className="mt-2 max-h-96 overflow-y-auto rounded-xl border border-border bg-card text-sm">
@@ -147,6 +233,7 @@ function Viewer() {
         )}
       </div>
     </div>
+    </>
   );
 }
 

@@ -69,6 +69,7 @@ export function ProdutoView(p: ProdutoViewProps) {
   const tierFor = (n: number) => [...p.tiers].reverse().find((t) => n >= t.min_quantity) ?? p.tiers[0];
   const t = tierFor(qty);
   const unit = t?.unit_price_cents ?? 0;
+  const nfcOnly = p.hasNfc && !p.hasQr && !p.isBlank && !p.isSupply;
   const chipCents = p.isBlank && chip && p.nfcAddonCents ? p.nfcAddonCents * qty : 0;
   const total = unit * qty + chipCents;
   const pixOff = p.pixOn && !p.isBlank && !p.isSupply ? pixDiscountCents(total, 1) : 0;
@@ -153,7 +154,7 @@ export function ProdutoView(p: ProdutoViewProps) {
                     {pixOff > 0 && <div className="row sm" style={{ color: "var(--brand-text)" }}><span className="grow">No Pix, com {PIX_DISCOUNT_PCT}% OFF</span><b>{money(total - pixOff)}</b></div>}
                   </div>
                   <Link to="/comprar" search={{ produto: p.slug, qtd: qty, ...(p.isBlank ? { chip: chip ? 1 : 0, qr: wantQr ? 1 : 0 } : {}) }} className="btn primary block" data-analytics-event="begin_checkout" data-analytics-label={`produto ${p.slug}`}>Comprar este kit</Link>
-                  <p className="xs muted" style={{ margin: 0 }}>{p.isBlank || p.isSupply ? `Vendido só para revendedores, a partir de ${p.minQty} unidades. A quantidade escolhida aqui segue para a compra.` : "Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente. A quantidade escolhida aqui segue para a compra."}</p>
+                  <p className="xs muted" style={{ margin: 0 }}>{p.isBlank || p.isSupply ? `Vendido só para revendedores, a partir de ${p.minQty} unidades. A quantidade escolhida aqui segue para a compra.` : nfcOnly ? "Chega com o chip NFC em branco; você grava o link com o app NFC Tools. A quantidade escolhida aqui segue para a compra." : "Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente. A quantidade escolhida aqui segue para a compra."}</p>
                 </div>
               )}
 
@@ -187,12 +188,28 @@ export function ProdutoView(p: ProdutoViewProps) {
           )}
 
           <section className="gp-sec rv">
-            <div className="lp-label">Como funciona</div>
+            <div className="lp-label">{nfcOnly ? "Como gravar" : "Como funciona"}</div>
             <div className="gp-steps">
-              {[["1", "Receba o kit", "As placas chegam com um código cada, em branco, prontas para ativar."], ["2", "Ative com o link do cliente", "Em Ativar meus códigos, informe o negócio e cole o link de avaliação (ou o bio site Toqy)."], ["3", "O cliente encosta o celular", "O NFC abre sozinho; o QR Code abre pela câmera. Sem aplicativo."]].map(([n, a, b]) => (
+              {(nfcOnly
+                ? [
+                    ["1", "Receba o kit", "As placas chegam com o chip NFC em branco, prontas para gravar. Não precisa de código nem de ativação."],
+                    ["2", "Grave com o NFC Tools", "No app NFC Tools (grátis): Escrever, Adicionar registro e escolha o tipo, por exemplo URL para o Instagram ou o Pix. Cole o link e toque em Escrever."],
+                    ["3", "Encoste o celular na placa", "Com o app aberto, aproxime o celular do chip para gravar. Depois disso, quem encostar o celular abre o destino sozinho, sem aplicativo."],
+                  ]
+                : [
+                    ["1", "Receba o kit", "As placas chegam com um código cada, em branco, prontas para ativar."],
+                    ["2", "Ative com o link do cliente", "Em Ativar meus códigos, informe o negócio e cole o link de avaliação (ou o bio site Toqy)."],
+                    ["3", "O cliente encosta o celular", "O NFC abre sozinho; o QR Code abre pela câmera. Sem aplicativo."],
+                  ]
+              ).map(([n, a, b]) => (
                 <div key={n} className="lp-stepitem"><span className="lp-num">{n}</span><b>{a}</b><p className="sm muted">{b}</p></div>
               ))}
             </div>
+            {nfcOnly && (
+              <p className="sm muted" style={{ marginTop: 12, textAlign: "center" }}>
+                Passo a passo com fotos no <Link to="/guia/como-configurar-placa-gcard" style={{ textDecoration: "underline" }}>guia de configuração</Link>.
+              </p>
+            )}
           </section>
 
           <section className="gp-sec rv">
