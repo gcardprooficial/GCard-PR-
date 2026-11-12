@@ -612,7 +612,7 @@
   --card: #151c18; --card-foreground: #f2f5f3;
   --popover: #151c18; --popover-foreground: #f2f5f3;
   --surface: #141b17; --surface-foreground: #f2f5f3;
-  --muted: #1b241f; --muted-foreground: #a3b1aa;
+  --muted-foreground: #a3b1aa;
   --border: #2a3830; --input: #2a3830;
   --secondary: #1f2a24; --secondary-foreground: #f2f5f3;
   --destructive-foreground: #ffffff;
@@ -629,3 +629,6 @@
 .v2.gpanel[data-theme="dark"] .text-green-800, .v2.gpanel[data-theme="dark"] .text-emerald-800 { color: #6ee7b7; }
 .v2.gpanel[data-theme="dark"] .bg-red-50 { background-color: #3b1515; }
 .v2.gpanel[data-theme="dark"] .text-red-700, .v2.gpanel[data-theme="dark"] .text-red-800 { color: #fca5a5; }
+
+/* O protótipo usa --muted para texto cinza; o shadcn usa para fundo suave. Dentro do .v2 o fundo suave vem do --panel. */
+.v2 { --muted-bg: var(--panel); }
