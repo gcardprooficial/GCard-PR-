@@ -1,3 +1,4 @@
+import { PeriodFilter, inPeriod, periodPreset, type PeriodValue } from "@/components/PeriodFilter";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -71,26 +72,7 @@ function formatCep(zip: string): string {
   return digits.replace(/(\d{5})(\d{3})/, "$1-$2");
 }
 
-type Period = "todos" | "hoje" | "ontem" | "7d" | "mes" | "custom";
 type SortBy = "recentes" | "antigos" | "maior" | "menor";
-
-/** Intervalo [início, fim) no fuso do navegador (BRT pra vocês), pelo dia em que o pedido foi feito. */
-function periodRange(p: Period, from: string, to: string): [number, number] | null {
-  if (p === "todos") return null;
-  const d0 = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const day = 86_400_000;
-  const today = d0(new Date()).getTime();
-  if (p === "hoje") return [today, today + day];
-  if (p === "ontem") return [today - day, today];
-  if (p === "7d") return [today - 6 * day, today + day];
-  if (p === "mes") {
-    const n = new Date();
-    return [new Date(n.getFullYear(), n.getMonth(), 1).getTime(), new Date(n.getFullYear(), n.getMonth() + 1, 1).getTime()];
-  }
-  const f = from ? new Date(`${from}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY;
-  const t = to ? new Date(`${to}T00:00:00`).getTime() + day : Number.POSITIVE_INFINITY;
-  return [f, t];
-}
 
 type OrderRow = {
   id: string;
@@ -458,9 +440,7 @@ function Orders() {
   const [stage, setStage] = useState<Stage | "todos">("a_produzir");
   const [checkingPayments, setCheckingPayments] = useState(false);
   const [q, setQ] = useState(search.q ?? "");
-  const [period, setPeriod] = useState<Period>("todos");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [period, setPeriod] = useState<PeriodValue>(() => periodPreset("tudo"));
   const [sortBy, setSortBy] = useState<SortBy>("recentes");
   const [sendingPaymentFor, setSendingPaymentFor] = useState<string | null>(null);
   const [deletingFor, setDeletingFor] = useState<string | null>(null);
@@ -843,13 +823,13 @@ function Orders() {
   }
 
   // Período vale pra tudo (abas, contagens, totais e lista).
-  const range = periodRange(period, dateFrom, dateTo);
-  const inPeriod = (r: OrderRow) => {
+  const range = period.preset !== "tudo" ? period : null;
+  const inRange = (r: OrderRow) => {
     if (!range) return true;
-    const t = new Date(r.created_at).getTime();
-    return t >= range[0] && t < range[1];
+    const d = new Date(r.created_at);
+    return inPeriod(period, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
   };
-  const dated = (rows ?? []).filter(inPeriod);
+  const dated = (rows ?? []).filter(inRange);
   const periodBase = dated.filter((r) => kindFilter === "all" || r.kind === kindFilter);
   const periodPaid = periodBase.filter((r) => r.payment_status === "pago");
   const periodOpen = periodBase.filter((r) => r.payment_status === "pendente");
@@ -945,27 +925,13 @@ function Orders() {
           <option value="individual">Loja própria ({counts.individual})</option>
           <option value="revenda">Revenda / lote ({counts.revenda})</option>
         </select>
-        <select aria-label="Período" value={period} onChange={(e) => setPeriod(e.target.value as typeof period)} className="input" style={{ flex: "0 1 170px", width: "auto" }}>
-          <option value="todos">Todo o período</option>
-          <option value="hoje">Hoje</option>
-          <option value="ontem">Ontem</option>
-          <option value="7d">Últimos 7 dias</option>
-          <option value="mes">Este mês</option>
-          <option value="custom">Escolher datas</option>
-        </select>
+        <PeriodFilter value={period} onChange={setPeriod} />
         <select aria-label="Ordenar por" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className="input" style={{ flex: "0 1 170px", width: "auto" }}>
           <option value="recentes">Mais recentes</option>
           <option value="antigos">Mais antigos</option>
           <option value="maior">Maior valor</option>
           <option value="menor">Menor valor</option>
         </select>
-        {period === "custom" && (
-          <span className="row" style={{ gap: 6 }}>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input" style={{ width: 150 }} />
-            <span className="xs muted">até</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input" style={{ width: 150 }} />
-          </span>
-        )}
       </div>
 
       {rows !== null && rows.length >= 500 && range && (

@@ -7,6 +7,7 @@ import { usePanel } from "@/lib/panelContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PeriodFilter, describePeriod, inPeriod, periodPreset, resolvePeriod, type PeriodValue } from "@/components/PeriodFilter";
 
 export const Route = createFileRoute("/painel/financeiro")({ component: Financeiro });
 
@@ -48,16 +49,9 @@ function gateway(x: Entry): { label: string; cls: string; manual: boolean } | nu
   return { label: "Pix direto (manual)", cls: "bg-amber-100 text-amber-900", manual: true };
 }
 
-function monthRange(ym: string): { start: string; end: string } {
-  const [y, m] = ym.split("-").map(Number);
-  const start = new Date(Date.UTC(y, m - 1, 1)).toISOString().slice(0, 10);
-  const end = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
-  return { start, end };
-}
-
 function Financeiro() {
   const { userId } = usePanel();
-  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [period, setPeriod] = useState<PeriodValue>(() => periodPreset("mes"));
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [entLim, setEntLim] = useState(25);
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -75,24 +69,28 @@ function Financeiro() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { start, end } = monthRange(month);
+    const { from, to } = resolvePeriod(period);
+    let entriesQuery = supabase
+      .from("finance_entries")
+      .select("id, kind, category, description, amount_cents, entry_date, is_recurring, created_at, order_id, orders(order_number, payment_provider)")
+      .order("entry_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (from) entriesQuery = entriesQuery.gte("entry_date", from);
+    if (to) entriesQuery = entriesQuery.lte("entry_date", to);
     const [e, p] = await Promise.all([
-      supabase
-        .from("finance_entries")
-        .select("id, kind, category, description, amount_cents, entry_date, is_recurring, created_at, order_id, orders(order_number, payment_provider)")
-        .gte("entry_date", start)
-        .lt("entry_date", end)
-        .order("entry_date", { ascending: false })
-        .order("created_at", { ascending: false }),
+      entriesQuery,
       supabase.from("finance_partners").select("id, name, share_percent").eq("is_active", true),
     ]);
     if (e.error) {
       toast.error("Não foi possível carregar o financeiro.");
       return;
     }
-    setEntries((e.data ?? []) as Entry[]);
+    // Meses soltos (ex.: janeiro e março): a busca traz o intervalo e aqui sobram só os meses marcados.
+    setEntries(((e.data ?? []) as Entry[]).filter((x) => inPeriod(period, x.entry_date)));
+    setEntLim(25);
     setPartners((p.data ?? []) as Partner[]);
-  }, [month]);
+  }, [period]);
 
   useEffect(() => {
     void load();
@@ -221,14 +219,13 @@ function Financeiro() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl">Financeiro</h1>
-        <Input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="h-10 w-44"
-        />
+      <div className="row between wrap mb" style={{ rowGap: 12 }}>
+        <div>
+          <div className="eyebrow">Dinheiro</div>
+          <h1>Financeiro</h1>
+          <p className="muted sm" style={{ marginTop: 4 }}>Resultado de {describePeriod(period).toLowerCase()}. Escolha um atalho, datas livres ou marque vários meses juntos.</p>
+        </div>
+        <PeriodFilter value={period} onChange={setPeriod} />
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -367,43 +364,29 @@ function Financeiro() {
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap items-end gap-3">
-        <div>
-          <Label className="text-xs">Ordenar por</Label>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortKey)}
-            className="mt-1 h-10 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="data_desc">Data (mais recente primeiro)</option>
-            <option value="data_asc">Data (mais antigo primeiro)</option>
-            <option value="nome_az">Nome / categoria (A–Z)</option>
-            <option value="nome_za">Nome / categoria (Z–A)</option>
-            <option value="valor_desc">Valor (maior primeiro)</option>
-            <option value="valor_asc">Valor (menor primeiro)</option>
-          </select>
-        </div>
-        <div className="flex gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
+      <div className="row wrap mb" style={{ gap: 8, marginTop: 24 }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar categoria, descrição ou nº do pedido" className="input" style={{ flex: "1 1 260px", width: "auto" }} />
+        <div className="seg">
           {([["todos", "Todos"], ["entrada", "Entradas"], ["saida", "Saídas"]] as const).map(([k, label]) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setKindFilter(k)}
-              className={`rounded-full px-3 py-1.5 ${kindFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-            >
-              {label}
-            </button>
+            <button key={k} type="button" onClick={() => setKindFilter(k)} className={`chip ${kindFilter === k ? "on" : ""}`}>{label}</button>
           ))}
         </div>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar categoria, descrição, nº do pedido" className="h-10 w-full sm:w-72" />
-        <span className="text-xs text-muted-foreground">{shown.length} lançamento(s)</span>
+        <select aria-label="Ordenar por" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)} className="input" style={{ flex: "0 1 230px", width: "auto" }}>
+          <option value="data_desc">Data: mais recente primeiro</option>
+          <option value="data_asc">Data: mais antiga primeiro</option>
+          <option value="nome_az">Categoria: A a Z</option>
+          <option value="nome_za">Categoria: Z a A</option>
+          <option value="valor_desc">Valor: maior primeiro</option>
+          <option value="valor_asc">Valor: menor primeiro</option>
+        </select>
+        <span className="xs muted">{shown.length} lançamento(s)</span>
       </div>
 
       <div className="mt-3 space-y-2">
         {entries === null ? (
           <p className="text-sm text-muted-foreground">Carregando…</p>
         ) : shown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum lançamento {entries.length ? "com esse filtro" : "neste mês"}.</p>
+          <p className="text-sm text-muted-foreground">Nenhum lançamento {entries.length ? "com esse filtro" : "neste período"}.</p>
         ) : (
           <>{shown.slice(0, entLim).map((x) => (
             <div

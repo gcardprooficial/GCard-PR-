@@ -1,3 +1,4 @@
+import { PeriodFilter, inPeriod, periodPreset, resolvePeriod, type PeriodValue } from "@/components/PeriodFilter";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -47,8 +48,10 @@ function Reports() {
 
 function Funnel() {
   const run = useServerFn(getFunnelReport);
-  const [from, setFrom] = useState(() => iso(new Date(Date.now() - 30 * 86_400_000)));
-  const [to, setTo] = useState(() => iso(new Date()));
+  const [per, setPer] = useState<PeriodValue>(() => periodPreset("30d"));
+  const { from: pf, to: pt } = resolvePeriod(per);
+  const from = pf ?? "2020-01-01";
+  const to = pt ?? iso(new Date());
   const [internal, setInternal] = useState(false);
   const [rows, setRows] = useState<FunnelRow[] | null>(null);
   const [originQ, setOriginQ] = useState("");
@@ -77,8 +80,7 @@ function Funnel() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-        <label className="flex items-center gap-2">De <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1" /></label>
-        <label className="flex items-center gap-2">até <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1" /></label>
+        <PeriodFilter value={per} onChange={setPer} allowMonths={false} />
         <label className="flex items-center gap-2"><input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} /> Incluir contas internas/teste</label>
         <input value={originQ} onChange={(e) => setOriginQ(e.target.value)} placeholder="Filtrar origem…" className="w-44 rounded-md border border-border bg-background px-2 py-1" />
       </div>
@@ -124,8 +126,7 @@ function Accounts() {
   const [q, setQ] = useState("");
   const [origin, setOrigin] = useState("todas");
   const [consent, setConsent] = useState<"todos" | "sim" | "nao">("todos");
-  const [since, setSince] = useState("");
-  const [until, setUntil] = useState("");
+  const [created, setCreated] = useState<PeriodValue>(() => periodPreset("tudo"));
 
   const load = useCallback(async () => {
     setRows(null);
@@ -146,8 +147,7 @@ function Accounts() {
       (origin === "todas" || r.source === origin) &&
       (consent === "todos" || (consent === "sim") === r.consented) &&
       (!needle || r.email.toLowerCase().includes(needle)) &&
-      (!since || r.created_at.slice(0, 10) >= since) &&
-      (!until || r.created_at.slice(0, 10) <= until),
+      inPeriod(created, r.created_at.slice(0, 10)),
   );
   const count = (e: AccountRow["engagement"]) => (rows ?? []).filter((r) => r.engagement === e).length;
 
@@ -208,10 +208,9 @@ function Accounts() {
             <option value="todos">Todos</option><option value="sim">Sim</option><option value="nao">Não</option>
           </select>
         </label>
-        <label className="flex items-center gap-2">Criada de <input type="date" value={since} onChange={(e) => setSince(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1" /></label>
-        <label className="flex items-center gap-2">até <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1" /></label>
-        {(q || origin !== "todas" || consent !== "todos" || since || until) && (
-          <Button size="sm" variant="ghost" onClick={() => { setQ(""); setOrigin("todas"); setConsent("todos"); setSince(""); setUntil(""); }}>Limpar filtros</Button>
+        <PeriodFilter value={created} onChange={setCreated} />
+        {(q || origin !== "todas" || consent !== "todos" || created.preset !== "tudo") && (
+          <Button size="sm" variant="ghost" onClick={() => { setQ(""); setOrigin("todas"); setConsent("todos"); setCreated(periodPreset("tudo")); }}>Limpar filtros</Button>
         )}
         <span className="text-muted-foreground">{shown.length} de {rows?.length ?? 0}</span>
       </div>
