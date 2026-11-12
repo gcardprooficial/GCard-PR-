@@ -601,3 +601,31 @@
   .v2 .cmp-step:not(.on) b { display: none; }
   .v2 .cmp-step:not(.on) { padding-right: 5px; }
 }
+
+/* ===== Painéis (Revendedor e Administração): centro mais largo e modo escuro completo ===== */
+@media (min-width: 1100px) {
+  .v2.gpanel .main { max-width: 1560px; padding-left: 32px; padding-right: 32px; }
+  .v2.gpanel .frame { padding: 30px 34px; }
+}
+.v2.gpanel[data-theme="dark"] {
+  --background: #0d1210; --foreground: #f2f5f3; --ink: #f2f5f3;
+  --card: #151c18; --card-foreground: #f2f5f3;
+  --popover: #151c18; --popover-foreground: #f2f5f3;
+  --surface: #141b17; --surface-foreground: #f2f5f3;
+  --muted: #1b241f; --muted-foreground: #a3b1aa;
+  --border: #2a3830; --input: #2a3830;
+  --secondary: #1f2a24; --secondary-foreground: #f2f5f3;
+  --destructive-foreground: #ffffff;
+  color-scheme: dark;
+}
+.v2.gpanel[data-theme="dark"] .input-soft,
+.v2.gpanel[data-theme="dark"] input,
+.v2.gpanel[data-theme="dark"] select,
+.v2.gpanel[data-theme="dark"] textarea { background-color: var(--card); color: var(--ink); border-color: var(--line); }
+.v2.gpanel[data-theme="dark"] .bg-white { background-color: var(--card); }
+.v2.gpanel[data-theme="dark"] .bg-amber-100 { background-color: #3a2e0b; }
+.v2.gpanel[data-theme="dark"] .text-amber-800 { color: #fcd34d; }
+.v2.gpanel[data-theme="dark"] .bg-green-50, .v2.gpanel[data-theme="dark"] .bg-emerald-50 { background-color: #112a20; }
+.v2.gpanel[data-theme="dark"] .text-green-800, .v2.gpanel[data-theme="dark"] .text-emerald-800 { color: #6ee7b7; }
+.v2.gpanel[data-theme="dark"] .bg-red-50 { background-color: #3b1515; }
+.v2.gpanel[data-theme="dark"] .text-red-700, .v2.gpanel[data-theme="dark"] .text-red-800 { color: #fca5a5; }
