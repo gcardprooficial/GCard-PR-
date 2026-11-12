@@ -35,6 +35,49 @@ async function renderPlateQrCanvas(p: { token: string; short_code: string; track
 
 export const Route = createFileRoute("/painel/lotes")({ component: Lotes });
 
+type LotePlate = { id: string; short_code: string; status: string; scan_count: number; businesses: { name: string } | null };
+
+/** Placas de um lote: só busca quando a pessoa abre, e mostra de 20 em 20. */
+function LotePlates({ batchId }: { batchId: string }) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<LotePlate[] | null>(null);
+  const [lim, setLim] = useState(20);
+  useEffect(() => {
+    if (!open || rows) return;
+    void supabase
+      .from("plates")
+      .select("id, short_code, status, scan_count, businesses(name)")
+      .eq("batch_id", batchId)
+      .order("short_code")
+      .limit(1000)
+      .then(({ data }) => setRows((data ?? []) as unknown as LotePlate[]));
+  }, [open, rows, batchId]);
+  return (
+    <details className="mt-3 border-t border-border pt-3" onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="cursor-pointer text-sm font-semibold">Placas deste lote</summary>
+      {rows === null ? (
+        <p className="mt-2 text-xs text-muted-foreground">Carregando…</p>
+      ) : (
+        <div className="mt-2">
+          {rows.slice(0, lim).map((p) => (
+            <div key={p.id} className="flex items-center gap-3 border-t border-border/60 py-1.5 text-sm">
+              <span className="w-28 font-mono text-xs font-semibold">{p.short_code}</span>
+              <span className="min-w-0 flex-1 truncate">{p.businesses?.name ?? <span className="text-muted-foreground">em branco</span>}</span>
+              <span className="text-xs text-muted-foreground">{p.scan_count} leituras</span>
+              <span className={`badge ${p.status === "ativada" ? "green" : p.status === "bloqueada" ? "warn" : ""}`}>{p.status === "ativada" ? "ativa" : p.status === "bloqueada" ? "bloqueada" : "em branco"}</span>
+            </div>
+          ))}
+          {rows.length > lim && (
+            <div className="center" style={{ marginTop: 8 }}>
+              <button type="button" className="btn" onClick={() => setLim((l) => l + 20)}>Mostrar mais ({rows.length - lim} restantes)</button>
+            </div>
+          )}
+        </div>
+      )}
+    </details>
+  );
+}
+
 const BATCH_STATUS = ["rascunho", "produzido", "vendido"] as const;
 
 type Batch = {
@@ -567,6 +610,19 @@ function Lotes() {
     );
   });
 
+  // Cliente > lotes > placas: agrupa os lotes pelo e-mail do revendedor (ou pela nota "vendido para").
+  const clientGroups = (() => {
+    const m = new Map<string, { key: string; name: string; batches: Batch[] }>();
+    for (const b of filteredBatches) {
+      const name = b.owner_email || b.sold_to || "Sem cliente identificado";
+      const key = name.toLowerCase();
+      const g = m.get(key) ?? { key, name, batches: [] };
+      g.batches.push(b);
+      m.set(key, g);
+    }
+    return [...m.values()];
+  })();
+
   return (
     <>
       <div className="mb">
@@ -1019,13 +1075,29 @@ function Lotes() {
             <p className="mt-6 text-sm text-muted-foreground">Nenhum lote encontrado.</p>
           ) : (
           <div className="mt-3 space-y-3">
-            {filteredBatches.slice(0, batchLimit).map((b) => {
+            {clientGroups.slice(0, batchLimit).map((g) => (
+              <details key={g.key} className="rounded-2xl border border-border bg-card p-4 card-soft">
+                <summary className="cursor-pointer list-none">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-semibold">{g.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {g.batches.length} lote(s) · {g.batches.reduce((n, b) => n + (counts[b.id]?.total ?? b.quantity), 0)} placas ·{" "}
+                        {g.batches.reduce((n, b) => n + (counts[b.id]?.active ?? 0), 0)} ativadas · último lote em{" "}
+                        {new Date(g.batches[0]!.created_at).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">abrir ▾</span>
+                  </div>
+                </summary>
+                <div className="mt-3 space-y-3">
+            {g.batches.map((b) => {
               const c = counts[b.id] ?? { active: 0, total: b.quantity };
               return (
-                <div key={b.id} className="rounded-2xl bg-card p-5 card-soft">
+                <div key={b.id} className="rounded-xl border border-border bg-background p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="font-mono text-sm font-semibold">{b.code}</p>
+                      <p className="font-mono text-sm font-semibold">{b.code} <span className="font-sans text-xs font-normal text-muted-foreground">· criado em {new Date(b.created_at).toLocaleDateString("pt-BR")}</span></p>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {b.label ? `${b.label} · ` : ""}
                         {b.products?.name ?? "—"} · {b.quantity} códigos
@@ -1060,6 +1132,7 @@ function Lotes() {
                     </select>
                   </div>
 
+                  <LotePlates batchId={b.id} />
                   <details className="mt-3 border-t border-border pt-3">
                   <summary className="cursor-pointer text-sm font-semibold">Ações do lote</summary>
                   <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -1110,10 +1183,13 @@ function Lotes() {
                 </div>
               );
             })}
-            {filteredBatches.length > batchLimit && (
+                </div>
+              </details>
+            ))}
+            {clientGroups.length > batchLimit && (
               <div className="center">
                 <button type="button" className="btn" onClick={() => setBatchLimit((l) => l + 10)}>
-                  Mostrar mais ({filteredBatches.length - batchLimit} restantes)
+                  Mostrar mais clientes ({clientGroups.length - batchLimit} restantes)
                 </button>
               </div>
             )}

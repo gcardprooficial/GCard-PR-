@@ -59,6 +59,7 @@ function Financeiro() {
   const { userId } = usePanel();
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [entries, setEntries] = useState<Entry[] | null>(null);
+  const [entLim, setEntLim] = useState(25);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [sortBy, setSortBy] = useState<SortKey>("data_desc");
   const [kindFilter, setKindFilter] = useState<"todos" | "entrada" | "saida">("todos");
@@ -404,7 +405,7 @@ function Financeiro() {
         ) : shown.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum lançamento {entries.length ? "com esse filtro" : "neste mês"}.</p>
         ) : (
-          shown.map((x) => (
+          <>{shown.slice(0, entLim).map((x) => (
             <div
               key={x.id}
               className="flex items-center justify-between gap-4 rounded-xl bg-card px-4 py-3 text-sm card-soft"
@@ -458,7 +459,13 @@ function Financeiro() {
                 </button>
               </div>
             </div>
-          ))
+          ))}
+          {shown.length > entLim && (
+          <div className="center" style={{ marginTop: 12 }}>
+            <button type="button" className="btn" onClick={() => setEntLim((l) => l + 25)}>Mostrar mais ({shown.length - entLim} restantes)</button>
+          </div>
+        )}
+          </>
         )}
       </div>
     </>

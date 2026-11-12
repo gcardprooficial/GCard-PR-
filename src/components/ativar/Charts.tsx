@@ -20,8 +20,11 @@ export function AreaChart({ values, labels, height = 160 }: { values: number[]; 
     const [p0x, p0y] = pts[i - 2] ?? pts[i - 1]!;
     const [p1x, p1y] = pts[i - 1]!;
     const [p3x, p3y] = pts[i + 1] ?? [px, py];
-    const c1x = p1x + (px - p0x) / 6, c1y = p1y + (py - p0y) / 6;
-    const c2x = px - (p3x - p1x) / 6, c2y = py - (p3y - p1y) / 6;
+    // Pontas das curvas presas entre os dois pontos: sem "estouro" abaixo de zero nem acima do pico.
+    const lo = Math.min(p1y, py), hi = Math.max(p1y, py);
+    const clamp = (v: number) => Math.max(lo, Math.min(hi, v));
+    const c1x = p1x + (px - p0x) / 6, c1y = clamp(p1y + (py - p0y) / 6);
+    const c2x = px - (p3x - p1x) / 6, c2y = clamp(py - (p3y - p1y) / 6);
     return `${d} C${c1x},${c1y} ${c2x},${c2y} ${px},${py}`;
   }, "");
   const base = h - bottom;

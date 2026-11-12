@@ -79,6 +79,7 @@ const money = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currenc
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : "—");
 
 export function Contatos() {
+  const [lim, setLim] = useState(30);
   const { rows, loading, reload } = useContacts();
   const [filter, setFilter] = useState<string>("todos");
   const [q, setQ] = useState("");
@@ -170,7 +171,7 @@ export function Contatos() {
       )}
 
       <div className="space-y-2">
-        {shown.slice(0, 300).map((c) => (
+        {shown.slice(0, lim).map((c) => (
           <div key={c.id} className="rounded-2xl bg-card p-4 card-soft">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
@@ -231,6 +232,11 @@ export function Contatos() {
             </div>
           </div>
         ))}
+        {shown.length > lim && (
+          <div className="center" style={{ marginTop: 12 }}>
+            <button type="button" className="btn" onClick={() => setLim((l) => l + 30)}>Mostrar mais ({shown.length - lim} restantes)</button>
+          </div>
+        )}
         {shown.length > 300 && (
           <p className="text-xs text-muted-foreground">Mostrando 300. Use a busca ou um filtro pra afunilar.</p>
         )}
