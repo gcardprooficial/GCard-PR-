@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, ShoppingBag, UserRound, X } from "lucide-react";
+import { Menu, Moon, ShoppingBag, Sun, UserRound, X } from "lucide-react";
+import { useSiteTheme } from "@/lib/use-v2-theme";
 import { useCartItems } from "@/lib/cart";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -73,6 +74,16 @@ function useLoggedEmail() {
   return email;
 }
 
+/** Botão de modo claro/escuro. */
+function ThemeButton() {
+  const { theme, toggle } = useSiteTheme();
+  return (
+    <button type="button" className="btn" onClick={toggle} aria-label={theme === "light" ? "Ativar modo escuro" : "Ativar modo claro"} title={theme === "light" ? "Modo escuro" : "Modo claro"} style={{ padding: "7px 12px" }}>
+      {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+    </button>
+  );
+}
+
 /** Ícone do carrinho com a quantidade de itens (some o número quando está vazio). */
 function CartButton() {
   const count = useCartItems().length;
@@ -107,6 +118,7 @@ export function SiteHeader() {
             ) : (
               <Link to="/ativar" className="btn ghost lp-hide-sm" style={{ padding: "7px 12px" }}>Acessar painel</Link>
             )}
+            <ThemeButton />
             <CartButton />
             <Link to="/produtos" className="btn primary" style={{ padding: "7px 14px" }}>Comprar</Link>
             <Sheet>
