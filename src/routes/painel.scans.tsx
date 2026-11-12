@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/fetch-all";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -47,7 +48,9 @@ function Scans() {
         .select("id, token, short_code, status, scan_count, last_scan_at, batch_id, business_name, businesses(name), products(name), batches(code, label, owner_email)")
         .order("scan_count", { ascending: false })
         .limit(500),
-      supabase.from("plate_scan_events").select("plate_id, created_at, device").gte("created_at", since).lt("created_at", until).limit(5000),
+      fetchAll<Event>((a, b) =>
+        supabase.from("plate_scan_events").select("plate_id, created_at, device").gte("created_at", since).lt("created_at", until).order("created_at", { ascending: false }).order("id").range(a, b) as unknown as PromiseLike<{ data: Event[] | null; error: unknown }>,
+      ),
     ]);
     if (p.error || e.error) {
       toast.error("Não foi possível carregar as leituras.");

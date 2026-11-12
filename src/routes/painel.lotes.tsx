@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/fetch-all";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -366,7 +367,7 @@ function Lotes() {
 
     // ponytail: pulls batch_id+status for every plate to count. Fine até alguns
     // milhares; virar rpc/view se crescer.
-    const p = await supabase.from("plates").select("batch_id, status").not("batch_id", "is", null).limit(50000);
+    const p = await fetchAll<{ batch_id: string | null; status: string }>((a, b) => supabase.from("plates").select("batch_id, status").not("batch_id", "is", null).order("id").range(a, b) as unknown as PromiseLike<{ data: { batch_id: string | null; status: string }[] | null; error: unknown }>);
     const map: Record<string, { active: number; total: number }> = {};
     for (const row of p.data ?? []) {
       const k = row.batch_id as string;
@@ -388,7 +389,7 @@ function Lotes() {
     if (!productId && pr.data?.[0]) setProductId(pr.data[0].id);
     if (!stockProductId && pr.data?.[0]) setStockProductId(pr.data[0].id);
 
-    const s = await supabase.from("plates").select("product_id, print_group").is("batch_id", null).limit(50000);
+    const s = await fetchAll<{ product_id: string; print_group?: string | null }>((a, b) => supabase.from("plates").select("product_id, print_group").is("batch_id", null).order("id").range(a, b) as unknown as PromiseLike<{ data: { product_id: string; print_group?: string | null }[] | null; error: unknown }>);
     const stockMap: Record<string, number> = {};
     const printedMap: Record<string, number> = {};
     for (const row of s.data ?? []) {

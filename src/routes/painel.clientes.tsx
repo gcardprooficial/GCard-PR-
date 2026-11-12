@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/fetch-all";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -41,13 +42,16 @@ function Customers() {
 
   const load = useCallback(async () => {
     const [ordersResult, marketing] = await Promise.all([
-      supabase
-        .from("orders")
-        .select(
-          "customer_email, customer_name, customer_phone, total_cents, payment_status, created_at, marketing_consent_at, kind",
-        )
-        .order("created_at", { ascending: false })
-        .limit(5000),
+      fetchAll<Order>((a, b) =>
+        supabase
+          .from("orders")
+          .select(
+            "customer_email, customer_name, customer_phone, total_cents, payment_status, created_at, marketing_consent_at, kind",
+          )
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(a, b) as unknown as PromiseLike<{ data: Order[] | null; error: unknown }>,
+      ),
       loadMarketing().catch(() => []),
     ]);
     if (ordersResult.error) {
