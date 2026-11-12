@@ -50,6 +50,7 @@ import { Route as PainelLotesRouteImport } from './routes/painel.lotes'
 import { Route as PainelPlacasRouteImport } from './routes/painel.placas'
 import { Route as PainelRelatoriosRouteImport } from './routes/painel.relatorios'
 import { Route as PainelScansRouteImport } from './routes/painel.scans'
+import { Route as PainelSuporteRouteImport } from './routes/painel.suporte'
 import { Route as PainelVisaoGeralRouteImport } from './routes/painel.visao-geral'
 import { Route as PainelWhatsappRouteImport } from './routes/painel.whatsapp'
 import { Route as ParceiroTokenRouteImport } from './routes/parceiro.$token'
@@ -69,6 +70,7 @@ import { Route as ApiWebhooksSuperfreteRouteImport } from './routes/api/webhooks
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks/whatsapp'
 import { Route as ApiWebhooksZapiRouteImport } from './routes/api/webhooks/zapi'
 import { Route as PainelDossieOrderIdRouteImport } from './routes/painel.dossie.$orderId'
+import { Route as ApiPartnerHubSupportReplyRouteImport } from './routes/api/partner/hub/support-reply'
 import { Route as ApiPartnerToqyAllowHostRouteImport } from './routes/api/partner/toqy/allow-host'
 
 const IndexRoute = IndexRouteImport.update({
@@ -280,6 +282,11 @@ const PainelScansRoute = PainelScansRouteImport.update({
   path: '/scans',
   getParentRoute: () => PainelRoute,
 } as any)
+const PainelSuporteRoute = PainelSuporteRouteImport.update({
+  id: '/suporte',
+  path: '/suporte',
+  getParentRoute: () => PainelRoute,
+} as any)
 const PainelVisaoGeralRoute = PainelVisaoGeralRouteImport.update({
   id: '/visao-geral',
   path: '/visao-geral',
@@ -375,6 +382,12 @@ const PainelDossieOrderIdRoute = PainelDossieOrderIdRouteImport.update({
   path: '/dossie/$orderId',
   getParentRoute: () => PainelRoute,
 } as any)
+const ApiPartnerHubSupportReplyRoute =
+  ApiPartnerHubSupportReplyRouteImport.update({
+    id: '/api/partner/hub/support-reply',
+    path: '/api/partner/hub/support-reply',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPartnerToqyAllowHostRoute = ApiPartnerToqyAllowHostRouteImport.update({
   id: '/api/partner/toqy/allow-host',
   path: '/api/partner/toqy/allow-host',
@@ -421,6 +434,7 @@ export interface FileRoutesByFullPath {
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/scans': typeof PainelScansRoute
+  '/painel/suporte': typeof PainelSuporteRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
   '/parceiro/$token': typeof ParceiroTokenRoute
@@ -442,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
   '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
+  '/api/partner/hub/support-reply': typeof ApiPartnerHubSupportReplyRoute
   '/api/partner/toqy/allow-host': typeof ApiPartnerToqyAllowHostRoute
 }
 export interface FileRoutesByTo {
@@ -482,6 +497,7 @@ export interface FileRoutesByTo {
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/scans': typeof PainelScansRoute
+  '/painel/suporte': typeof PainelSuporteRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
   '/parceiro/$token': typeof ParceiroTokenRoute
@@ -503,6 +519,7 @@ export interface FileRoutesByTo {
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
   '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
+  '/api/partner/hub/support-reply': typeof ApiPartnerHubSupportReplyRoute
   '/api/partner/toqy/allow-host': typeof ApiPartnerToqyAllowHostRoute
 }
 export interface FileRoutesById {
@@ -546,6 +563,7 @@ export interface FileRoutesById {
   '/painel/placas': typeof PainelPlacasRoute
   '/painel/relatorios': typeof PainelRelatoriosRoute
   '/painel/scans': typeof PainelScansRoute
+  '/painel/suporte': typeof PainelSuporteRoute
   '/painel/visao-geral': typeof PainelVisaoGeralRoute
   '/painel/whatsapp': typeof PainelWhatsappRoute
   '/parceiro/$token': typeof ParceiroTokenRoute
@@ -567,6 +585,7 @@ export interface FileRoutesById {
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
   '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
+  '/api/partner/hub/support-reply': typeof ApiPartnerHubSupportReplyRoute
   '/api/partner/toqy/allow-host': typeof ApiPartnerToqyAllowHostRoute
 }
 export interface FileRouteTypes {
@@ -611,6 +630,7 @@ export interface FileRouteTypes {
     | '/painel/placas'
     | '/painel/relatorios'
     | '/painel/scans'
+    | '/painel/suporte'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
     | '/parceiro/$token'
@@ -632,6 +652,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
     | '/painel/dossie/$orderId'
+    | '/api/partner/hub/support-reply'
     | '/api/partner/toqy/allow-host'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -672,6 +693,7 @@ export interface FileRouteTypes {
     | '/painel/placas'
     | '/painel/relatorios'
     | '/painel/scans'
+    | '/painel/suporte'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
     | '/parceiro/$token'
@@ -693,6 +715,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
     | '/painel/dossie/$orderId'
+    | '/api/partner/hub/support-reply'
     | '/api/partner/toqy/allow-host'
   id:
     | '__root__'
@@ -735,6 +758,7 @@ export interface FileRouteTypes {
     | '/painel/placas'
     | '/painel/relatorios'
     | '/painel/scans'
+    | '/painel/suporte'
     | '/painel/visao-geral'
     | '/painel/whatsapp'
     | '/parceiro/$token'
@@ -756,6 +780,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
     | '/painel/dossie/$orderId'
+    | '/api/partner/hub/support-reply'
     | '/api/partner/toqy/allow-host'
   fileRoutesById: FileRoutesById
 }
@@ -795,6 +820,7 @@ export interface RootRouteChildren {
   ApiWebhooksSuperfreteRoute: typeof ApiWebhooksSuperfreteRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
   ApiWebhooksZapiRoute: typeof ApiWebhooksZapiRoute
+  ApiPartnerHubSupportReplyRoute: typeof ApiPartnerHubSupportReplyRoute
   ApiPartnerToqyAllowHostRoute: typeof ApiPartnerToqyAllowHostRoute
 }
 
@@ -1087,6 +1113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelScansRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/painel/suporte': {
+      id: '/painel/suporte'
+      path: '/suporte'
+      fullPath: '/painel/suporte'
+      preLoaderRoute: typeof PainelSuporteRouteImport
+      parentRoute: typeof PainelRoute
+    }
     '/painel/visao-geral': {
       id: '/painel/visao-geral'
       path: '/visao-geral'
@@ -1220,6 +1253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelDossieOrderIdRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/api/partner/hub/support-reply': {
+      id: '/api/partner/hub/support-reply'
+      path: '/api/partner/hub/support-reply'
+      fullPath: '/api/partner/hub/support-reply'
+      preLoaderRoute: typeof ApiPartnerHubSupportReplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/partner/toqy/allow-host': {
       id: '/api/partner/toqy/allow-host'
       path: '/api/partner/toqy/allow-host'
@@ -1266,6 +1306,7 @@ interface PainelRouteChildren {
   PainelPlacasRoute: typeof PainelPlacasRoute
   PainelRelatoriosRoute: typeof PainelRelatoriosRoute
   PainelScansRoute: typeof PainelScansRoute
+  PainelSuporteRoute: typeof PainelSuporteRoute
   PainelVisaoGeralRoute: typeof PainelVisaoGeralRoute
   PainelWhatsappRoute: typeof PainelWhatsappRoute
   PainelIndexRoute: typeof PainelIndexRoute
@@ -1289,6 +1330,7 @@ const PainelRouteChildren: PainelRouteChildren = {
   PainelPlacasRoute: PainelPlacasRoute,
   PainelRelatoriosRoute: PainelRelatoriosRoute,
   PainelScansRoute: PainelScansRoute,
+  PainelSuporteRoute: PainelSuporteRoute,
   PainelVisaoGeralRoute: PainelVisaoGeralRoute,
   PainelWhatsappRoute: PainelWhatsappRoute,
   PainelIndexRoute: PainelIndexRoute,
@@ -1334,6 +1376,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWebhooksSuperfreteRoute: ApiWebhooksSuperfreteRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
   ApiWebhooksZapiRoute: ApiWebhooksZapiRoute,
+  ApiPartnerHubSupportReplyRoute: ApiPartnerHubSupportReplyRoute,
   ApiPartnerToqyAllowHostRoute: ApiPartnerToqyAllowHostRoute,
 }
 export const routeTree = rootRouteImport
