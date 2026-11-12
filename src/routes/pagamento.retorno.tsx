@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { PageShell } from "@/components/site/PageShell";
 import { verifyReturnedPayment } from "@/lib/payments/reconcile.functions";
 import { createInfinitePayCheckout, verifyInfinitePayReturn } from "@/lib/payments/infinitepay.functions";
 import { verifyPagarmeReturn } from "@/lib/payments/pagarme.functions";
@@ -100,29 +100,23 @@ function PagamentoRetorno() {
 
   const orderNumber = "orderNumber" in view ? view.orderNumber : null;
 
+  const tone = view.kind === "pago" ? "green" : view.kind === "falhou" ? "warn" : "";
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-5 py-16">
-      <div className="w-full max-w-lg rounded-[2rem] border border-border bg-card p-8 text-center card-soft sm:p-10">
-        <h1 className="text-3xl font-bold leading-tight sm:text-4xl">{content.title}</h1>
-        {orderNumber ? (
-          <p className="mt-4 text-base text-muted-foreground">
-            Pedido{" "}
-            <strong className="rounded-xl bg-foreground/5 px-2.5 py-1 font-display text-xl font-black text-foreground">
-              #{orderNumber}
-            </strong>
-          </p>
-        ) : null}
-        <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-          {content.body}
-        </p>
-        {view.kind === "pago" || view.kind === "pendente" ? <ProductionNotice className="mt-5" /> : null}
+    <PageShell width={560}>
+      <div className="card col" style={{ gap: 12, alignItems: "center", textAlign: "center", padding: 32 }}>
+        <span className={`badge ${tone}`}>{view.kind === "pago" ? "Pago" : view.kind === "falhou" ? "Não aprovado" : view.kind === "pendente" ? "Em processamento" : view.kind === "loading" ? "Conferindo" : "Sem confirmação"}</span>
+        <h1>{content.title}</h1>
+        {orderNumber ? <p className="muted">Pedido <span className="badge"><b>#{orderNumber}</b></span></p> : null}
+        <p className="muted" style={{ maxWidth: 440 }}>{content.body}</p>
+        {view.kind === "pago" || view.kind === "pendente" ? <ProductionNotice className="mt-2" /> : null}
 
         {view.kind === "falhou" && orderNumber && knownOrderId ? (
-          <div className="mt-6 rounded-2xl border border-primary/40 bg-primary/10 p-4 text-left">
-            <p className="text-sm font-bold">Tentar por outro meio de pagamento</p>
-            <p className="mt-1 text-xs text-muted-foreground">Pague este mesmo pedido por Pix ou cartão pela InfinitePay.</p>
-            <Button
-              className="mt-3 w-full rounded-xl font-bold"
+          <div className="card goldframe col" style={{ gap: 6, textAlign: "left", width: "100%" }}>
+            <b>Tentar por outro meio de pagamento</b>
+            <span className="sm muted">Pague este mesmo pedido por Pix ou cartão pela InfinitePay.</span>
+            <button
+              type="button"
+              className="btn goldbtn block"
               disabled={ipBusy}
               onClick={() => {
                 setIpBusy(true);
@@ -135,41 +129,30 @@ function PagamentoRetorno() {
               }}
             >
               {ipBusy ? "Abrindo…" : "Pagar com InfinitePay"}
-            </Button>
+            </button>
           </div>
         ) : null}
 
-        <div className="mt-8 grid gap-3">
-          {view.kind === "falhou" ? (
-            <Button asChild size="lg" className="rounded-2xl">
-              <Link to="/produtos">Tentar de novo</Link>
-            </Button>
-          ) : null}
+        <div className="col" style={{ width: "100%", marginTop: 8 }}>
+          {view.kind === "falhou" ? <Link to="/produtos" className="btn primary block">Tentar de novo</Link> : null}
           {view.kind === "falhou" || view.kind === "desconhecido" ? (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="row wrap" style={{ gap: 8, justifyContent: "center" }}>
               {WHATSAPP_CONTACTS.map((c) => (
-                <Button key={c.number} asChild variant="outline" className="rounded-2xl">
-                  <a
-                    href={whatsappLink(
-                      c.number,
-                      orderNumber
-                        ? `Oi! Preciso de ajuda com o pagamento do pedido #${orderNumber}.`
-                        : "Oi! Preciso de ajuda com o pagamento do meu pedido.",
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    WhatsApp {c.name}
-                  </a>
-                </Button>
+                <a
+                  key={c.number}
+                  className="btn"
+                  href={whatsappLink(c.number, orderNumber ? `Oi! Preciso de ajuda com o pagamento do pedido #${orderNumber}.` : "Oi! Preciso de ajuda com o pagamento do meu pedido.")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  WhatsApp {c.name}
+                </a>
               ))}
             </div>
           ) : null}
-          <Button asChild variant={view.kind === "falhou" ? "ghost" : "default"} size="lg" className="rounded-2xl">
-            <Link to="/">Voltar ao início</Link>
-          </Button>
+          <Link to="/" className={`btn ${view.kind === "falhou" ? "" : "primary"} block`}>Voltar ao início</Link>
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

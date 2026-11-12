@@ -24,8 +24,8 @@ const STEPS = [
 function Trocas() {
   const wa = WHATSAPP_CONTACTS[0];
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      <div className="pointer-events-none absolute -top-40 -right-32 size-[28rem] rounded-full bg-primary/15 blur-3xl" />
+    <div className="v2"><div className="lp">
+      <div className="lp-bg" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /></div>
       <SiteHeader />
       <main className="relative mx-auto max-w-3xl px-5 py-10 sm:py-14">
         <div className="mt-14 sm:mt-16">
@@ -118,6 +118,6 @@ function Trocas() {
         </p>
       </main>
       <SiteFooter />
-    </div>
+    </div></div>
   );
 }

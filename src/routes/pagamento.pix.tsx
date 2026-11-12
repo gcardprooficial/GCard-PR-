@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { PageShell } from "@/components/site/PageShell";
 import { getPagarmePix, verifyPagarmeReturn } from "@/lib/payments/pagarme.functions";
 import { ProductionNotice } from "@/components/ProductionNotice";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
@@ -69,35 +69,30 @@ function PagamentoPix() {
   const wa = WHATSAPP_CONTACTS[0] ? whatsappLink(WHATSAPP_CONTACTS[0].number, "Oi! Preciso de ajuda com o pagamento do meu pedido.") : null;
 
   return (
-    <main className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center px-4 py-12 text-center">
-      {!pix && !error && <p className="text-muted-foreground">Gerando seu Pix…</p>}
-      {error && (
-        <>
-          <h1 className="text-2xl font-semibold">Ops</h1>
-          <p className="mt-3 text-muted-foreground">{error} Chame a gente no WhatsApp que resolvemos.</p>
-          {wa && (
-            <Button asChild className="mt-6">
-              <a href={wa}>Chamar no WhatsApp</a>
-            </Button>
-          )}
-        </>
-      )}
-      {pix && (
-        <>
-          <h1 className="text-2xl font-semibold">Pague com Pix</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Pedido #{pix.orderNumber} · {brl(pix.totalCents)}</p>
-          {pix.qrUrl && <img src={pix.qrUrl} alt="QR Code Pix" className="mt-6 h-56 w-56 rounded-lg border bg-white p-2" />}
-          <p className="mt-6 text-sm text-muted-foreground">Ou copie o código e cole no app do seu banco:</p>
-          <textarea readOnly value={pix.qrCode} rows={3} className="mt-2 w-full rounded-md border bg-muted p-2 text-xs" onFocus={(e) => e.currentTarget.select()} />
-          <Button onClick={copy} className="mt-3 w-full">
-            {copied ? "Copiado!" : "Copiar código Pix"}
-          </Button>
-          <p className="mt-6 text-sm text-muted-foreground">
-            Assim que o pagamento cair, esta tela confirma sozinha. O código vale por 30 minutos.
-          </p>
-          <ProductionNotice className="mt-6" />
-        </>
-      )}
-    </main>
+    <PageShell width={460}>
+      <div className="card col" style={{ gap: 12, alignItems: "center", textAlign: "center", padding: 28 }}>
+        {!pix && !error && <p className="muted">Gerando seu Pix…</p>}
+        {error && (
+          <>
+            <h1>Ops</h1>
+            <p className="muted">{error} Chame a gente no WhatsApp que resolvemos.</p>
+            {wa && <a href={wa} className="btn primary">Chamar no WhatsApp</a>}
+          </>
+        )}
+        {pix && (
+          <>
+            <div className="lp-label">Pagamento</div>
+            <h1>Pague com Pix</h1>
+            <p className="sm muted">Pedido #{pix.orderNumber} · <b style={{ color: "var(--ink)" }}>{brl(pix.totalCents)}</b></p>
+            {pix.qrUrl && <img src={pix.qrUrl} alt="QR Code Pix" style={{ width: 220, height: 220, borderRadius: 16, border: "1px solid var(--line)", background: "#fff", padding: 8 }} />}
+            <p className="sm muted">Ou copie o código e cole no app do seu banco:</p>
+            <textarea readOnly value={pix.qrCode} rows={3} className="input" style={{ fontSize: 12 }} onFocus={(e) => e.currentTarget.select()} />
+            <button type="button" onClick={copy} className="btn primary block">{copied ? "Copiado!" : "Copiar código Pix"}</button>
+            <p className="xs muted">Assim que o pagamento cair, esta tela confirma sozinha. O código vale por 30 minutos.</p>
+            <ProductionNotice className="mt-2" />
+          </>
+        )}
+      </div>
+    </PageShell>
   );
 }
