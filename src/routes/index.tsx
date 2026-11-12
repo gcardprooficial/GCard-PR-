@@ -307,7 +307,7 @@ export function HomeView({ minQty, lines, heroImage, pixLabel }: HomeViewProps) 
               <p className="lp-sub" style={{ margin: "10px auto 0" }}>Entre no grupo de lançamento: condição especial para os primeiros, novidades dos novos formatos e uma comunidade de revendedores crescendo juntos.</p>
               <div className="row wrap" style={{ gap: 8, justifyContent: "center", marginTop: 16 }}>
                 <Link to="/produtos" className="btn primary" data-analytics-event="begin_checkout" data-analytics-label="cta final">Comprar meu kit <ArrowRight size={16} /></Link>
-                <a href="https://chat.whatsapp.com/EBYX68zzqOICn9mIlqHwQ5" data-analytics-event="generate_lead" data-analytics-label="whatsapp comunidade" target="_blank" rel="noopener noreferrer" className="btn">Entrar no grupo do WhatsApp</a>
+                <a href="https://chat.whatsapp.com/EC9Eh3dssZDEuZX4zDg8S6" data-analytics-event="generate_lead" data-analytics-label="whatsapp comunidade" target="_blank" rel="noopener noreferrer" className="btn">Entrar no grupo do WhatsApp</a>
               </div>
             </div>
           </section>

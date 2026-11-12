@@ -16,3 +16,21 @@ export function useV2Theme() {
   }, [theme]);
   return { theme, toggle: () => setTheme((t) => (t === "light" ? "dark" : "light")) };
 }
+
+/** Modo claro/escuro do site público (landing, produtos, carrinho). Mesma escolha guardada que o painel usa. */
+export function useSiteTheme() {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  useEffect(() => {
+    try { if (localStorage.getItem("gcard-theme") === "dark") setTheme("dark"); } catch { /* sem armazenamento */ }
+  }, []);
+  // Cada página tem o seu contêiner .v2: o atributo vai em todos, a cada renderização.
+  useEffect(() => {
+    document.querySelectorAll<HTMLElement>(".v2").forEach((el) => { if (el.dataset["theme"] !== theme) el.dataset["theme"] = theme; });
+  });
+  const toggle = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    try { localStorage.setItem("gcard-theme", next); } catch { /* sem armazenamento */ }
+  };
+  return { theme, toggle };
+}

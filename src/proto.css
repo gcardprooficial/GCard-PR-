@@ -607,7 +607,7 @@
   .v2.gpanel .main { max-width: 1560px; padding-left: 32px; padding-right: 32px; }
   .v2.gpanel .frame { padding: 30px 34px; }
 }
-.v2.gpanel[data-theme="dark"] {
+.v2[data-theme="dark"] {
   --background: #0d1210; --foreground: #f2f5f3; --ink: #f2f5f3;
   --card: #151c18; --card-foreground: #f2f5f3;
   --popover: #151c18; --popover-foreground: #f2f5f3;
@@ -618,17 +618,17 @@
   --destructive-foreground: #ffffff;
   color-scheme: dark;
 }
-.v2.gpanel[data-theme="dark"] .input-soft,
-.v2.gpanel[data-theme="dark"] input,
-.v2.gpanel[data-theme="dark"] select,
-.v2.gpanel[data-theme="dark"] textarea { background-color: var(--card); color: var(--ink); border-color: var(--line); }
-.v2.gpanel[data-theme="dark"] .bg-white { background-color: var(--card); }
-.v2.gpanel[data-theme="dark"] .bg-amber-100 { background-color: #3a2e0b; }
-.v2.gpanel[data-theme="dark"] .text-amber-800 { color: #fcd34d; }
-.v2.gpanel[data-theme="dark"] .bg-green-50, .v2.gpanel[data-theme="dark"] .bg-emerald-50 { background-color: #112a20; }
-.v2.gpanel[data-theme="dark"] .text-green-800, .v2.gpanel[data-theme="dark"] .text-emerald-800 { color: #6ee7b7; }
-.v2.gpanel[data-theme="dark"] .bg-red-50 { background-color: #3b1515; }
-.v2.gpanel[data-theme="dark"] .text-red-700, .v2.gpanel[data-theme="dark"] .text-red-800 { color: #fca5a5; }
+.v2[data-theme="dark"] .input-soft,
+.v2[data-theme="dark"] input,
+.v2[data-theme="dark"] select,
+.v2[data-theme="dark"] textarea { background-color: var(--card); color: var(--ink); border-color: var(--line); }
+.v2[data-theme="dark"] .bg-white { background-color: var(--card); }
+.v2[data-theme="dark"] .bg-amber-100 { background-color: #3a2e0b; }
+.v2[data-theme="dark"] .text-amber-800 { color: #fcd34d; }
+.v2[data-theme="dark"] .bg-green-50, .v2[data-theme="dark"] .bg-emerald-50 { background-color: #112a20; }
+.v2[data-theme="dark"] .text-green-800, .v2[data-theme="dark"] .text-emerald-800 { color: #6ee7b7; }
+.v2[data-theme="dark"] .bg-red-50 { background-color: #3b1515; }
+.v2[data-theme="dark"] .text-red-700, .v2[data-theme="dark"] .text-red-800 { color: #fca5a5; }
 
 /* O protótipo usa --muted para texto cinza; o shadcn usa para fundo suave. Dentro do .v2 o fundo suave vem do --panel. */
 .v2 { --muted-bg: var(--panel); }
