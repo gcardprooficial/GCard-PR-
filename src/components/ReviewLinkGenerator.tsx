@@ -124,9 +124,9 @@ export function ReviewLinkGenerator() {
   }
 
   return (
-    <section id="gerar-link" className="mx-auto max-w-4xl scroll-mt-20 px-5 py-14 md:py-16">
-      <div className="rounded-[2rem] border border-border bg-card p-6 card-soft sm:p-10">
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Ferramenta grátis</p>
+    <section id="gerar-link" className="lp-col scroll-mt-20" style={{ padding: "36px 0 64px", maxWidth: 960 }}>
+      <div className="card" style={{ padding: 32 }}>
+        <div className="lp-label">Ferramenta grátis</div>
         <h2 className="mt-3 text-3xl leading-tight sm:text-4xl">
           Gerador de <span className="highlight-yellow">Link de Avaliação do Google</span> (Grátis)
         </h2>

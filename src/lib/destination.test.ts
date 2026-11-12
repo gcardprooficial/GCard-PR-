@@ -186,3 +186,15 @@ describe("Toqy", () => {
     expect(u.searchParams.get("codigo")).toBe("GCARD-00252");
   });
 });
+
+describe("isToqyUrl com domínio próprio liberado pelo Toqy", () => {
+  it("reconhece o host registrado e volta ao normal ao limpar", async () => {
+    const { isToqyUrl, registerToqyHosts } = await import("./destination");
+    expect(isToqyUrl("https://www.barbeariadoleo.com.br/")).toBe(false);
+    registerToqyHosts(["www.barbeariadoleo.com.br"]);
+    expect(isToqyUrl("https://www.barbeariadoleo.com.br/")).toBe(true);
+    expect(isToqyUrl("https://outro.com.br/")).toBe(false);
+    registerToqyHosts([]);
+    expect(isToqyUrl("https://www.barbeariadoleo.com.br/")).toBe(false);
+  });
+});

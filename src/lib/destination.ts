@@ -74,11 +74,18 @@ export function isToqyHost(host: string): boolean {
   return h === "toqy.com.br" || h.endsWith(".toqy.com.br");
 }
 
-/** Página do TOQY: o painel mostra uma etiqueta. */
+// Domínios próprios de bio sites Toqy (plano Agência) liberados pela ponte assinada (allowed_destination_hosts.source = 'toqy').
+let partnerToqyHosts = new Set<string>();
+export function registerToqyHosts(hosts: string[]) {
+  partnerToqyHosts = new Set(hosts.map((h) => h.toLowerCase()));
+}
+
+/** Página do TOQY: o painel mostra uma etiqueta. Vale também para o domínio próprio liberado pelo Toqy. */
 export function isToqyUrl(url: string | null | undefined): boolean {
   if (!url) return false;
   try {
-    return isToqyHost(new URL(url).hostname);
+    const host = new URL(url).hostname.toLowerCase();
+    return isToqyHost(host) || partnerToqyHosts.has(host);
   } catch {
     return false;
   }

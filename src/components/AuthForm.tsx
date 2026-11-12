@@ -1,19 +1,18 @@
-import { useState, type FormEvent } from "react";
-import { Link } from "@tanstack/react-router";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
+import { PageShell } from "@/components/site/PageShell";
 import { checkSignupEmail } from "@/lib/auth-check.functions";
 import { suggestEmailDomain } from "@/lib/email-typo";
 import { getFirstTouch } from "@/lib/first-touch";
 import { CONSENT_TEXT, CONSENT_TEXT_VERSION, MARUSSO_CONSENT_TEXT } from "@/lib/consent";
 
 /** Login / cadastro / esqueci a senha. redirectPath = para onde o e-mail de confirmação volta. */
-export function AuthForm({ redirectPath, title, subtitle }: { redirectPath: string; title: string; subtitle: string }) {
+export function AuthForm({ redirectPath, title, subtitle, below }: { redirectPath: string; title: string; subtitle: string; below?: ReactNode }) {
   const checkEmail = useServerFn(checkSignupEmail);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -118,12 +117,10 @@ export function AuthForm({ redirectPath, title, subtitle }: { redirectPath: stri
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface px-5">
-      <form onSubmit={submit} className="w-full max-w-sm rounded-3xl bg-card p-8 card-soft">
-        <Link to="/" className="inline-flex items-center">
-          <img src={logoTransparente} alt="GCard-PRÓ" className="h-10 w-auto" draggable={false} />
-        </Link>
-        <h1 className="mt-4 text-xl">{title}</h1>
+    <PageShell width={440}>
+      <form onSubmit={submit} className="card" style={{ padding: 28 }}>
+        <div className="lp-label">Acesso</div>
+        <h1 className="mt-2" style={{ fontSize: 28 }}>{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
         <div className="mt-6 space-y-4">
           <div>
@@ -197,6 +194,7 @@ export function AuthForm({ redirectPath, title, subtitle }: { redirectPath: stri
             </button>
           ))}
       </form>
-    </div>
+      {below}
+    </PageShell>
   );
 }

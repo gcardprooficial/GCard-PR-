@@ -1,3 +1,4 @@
+import { PeriodFilter, inPeriod, periodPreset, type PeriodValue } from "@/components/PeriodFilter";
 import { fetchAll } from "@/lib/fetch-all";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -37,6 +38,7 @@ function Customers() {
   const [contacts, setContacts] = useState<Contact[] | null>(null);
   const [query, setQuery] = useState("");
   const [lim, setLim] = useState(15);
+  const [period, setPeriod] = useState<PeriodValue>(() => periodPreset("tudo"));
   const [segment, setSegment] = useState<"todos" | "consentidos" | "descadastrados" | "revenda" | "clientes">("todos");
   const loadMarketing = useServerFn(listMarketingStatus);
 
@@ -118,9 +120,10 @@ function Customers() {
           (segment === "descadastrados" && contact.unsubscribed) ||
           (segment === "revenda" && contact.kind === "revenda") ||
           (segment === "clientes" && contact.paid > 0);
-        return matchesQuery && matchesSegment;
+        const matchesPeriod = period.preset === "tudo" || inPeriod(period, contact.lastOrder.slice(0, 10));
+        return matchesQuery && matchesSegment && matchesPeriod;
       }),
-    [contacts, query, segment],
+    [contacts, query, segment, period],
   );
 
   const consented = (contacts ?? []).filter((x) => x.consent && !x.unsubscribed).length;
@@ -186,6 +189,7 @@ function Customers() {
             placeholder="Buscar por nome, e-mail ou telefone"
             className="h-11 lg:max-w-md"
           />
+          <PeriodFilter value={period} onChange={(v) => { setPeriod(v); setLim(15); }} />
           <div className="flex flex-wrap gap-2">
             {(
               [

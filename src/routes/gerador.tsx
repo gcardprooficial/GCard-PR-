@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthForm } from "@/components/AuthForm";
 import { ReviewLinkGenerator } from "@/components/ReviewLinkGenerator";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
+import { PageShell } from "@/components/site/PageShell";
 
 export const Route = createFileRoute("/gerador")({
   head: () => ({
@@ -28,37 +29,40 @@ function Gerador() {
   }, []);
 
   if (session === undefined) {
-    return <div className="flex min-h-screen items-center justify-center bg-surface text-sm text-muted-foreground">Carregando…</div>;
+    return <div className="v2"><div className="lp center sm muted" style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>Carregando…</div></div>;
   }
   if (!session) {
     return (
-      <>
-        <AuthForm
-          redirectPath="/gerador"
-          title="Gerador de link grátis"
-          subtitle="Entre ou crie sua conta (leva 1 minuto) para gerar o link de avaliação do Google do seu negócio."
-        />
-        {/* Texto para quem chega pelo Google: a ferramenta fica atrás do cadastro, mas a página explica o que ela faz. */}
-        <section className="mx-auto max-w-2xl px-5 pb-16 text-sm leading-relaxed text-muted-foreground">
-          <h2 className="font-display text-xl font-bold text-foreground">Como pegar o link de avaliação do Google do seu negócio</h2>
-          <p className="mt-3">
-            O link de avaliação leva o cliente direto para a tela de dar nota e escrever a avaliação do seu negócio no Google, sem procurar. É o mesmo link que vai na placa ou no cartão do GCard-PRÓ.
-          </p>
-          <ol className="mt-4 list-decimal space-y-1 pl-5">
-            <li>Crie sua conta grátis (leva 1 minuto).</li>
-            <li>Busque o seu negócio pelo nome.</li>
-            <li>Copie o link de avaliação e use onde quiser: WhatsApp, Instagram, QR Code ou NFC.</li>
-          </ol>
-          <p className="mt-4">Para o link funcionar, o seu negócio precisa ter o perfil ativo no Google Meu Negócio.</p>
-        </section>
-      </>
+      <AuthForm
+        redirectPath="/gerador"
+        title="Gerador de link grátis"
+        subtitle="Entre ou crie sua conta (leva 1 minuto) para gerar o link de avaliação do Google do seu negócio."
+        below={
+          /* Texto para quem chega pelo Google: a ferramenta fica atrás do cadastro, mas a página explica o que ela faz. */
+          <section className="card col sm" style={{ marginTop: 16, gap: 8 }}>
+            <h2>Como pegar o link de avaliação do Google do seu negócio</h2>
+            <p className="muted">
+              O link de avaliação leva o cliente direto para a tela de dar nota e escrever a avaliação do seu negócio no Google, sem procurar. É o mesmo link que vai na placa ou no cartão do GCard-PRÓ.
+            </p>
+            <ol className="muted" style={{ paddingLeft: 18, margin: 0 }}>
+              <li>Crie sua conta grátis (leva 1 minuto).</li>
+              <li>Busque o seu negócio pelo nome.</li>
+              <li>Copie o link de avaliação e use onde quiser: WhatsApp, Instagram, QR Code ou NFC.</li>
+            </ol>
+            <p className="muted">Para o link funcionar, o seu negócio precisa ter o perfil ativo no Google Meu Negócio.</p>
+          </section>
+        }
+      />
     );
   }
   return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader />
-      <ReviewLinkGenerator />
-      <SiteFooter />
+    <div className="v2">
+      <div className="lp">
+        <div className="lp-bg" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /></div>
+        <SiteHeader />
+        <ReviewLinkGenerator />
+        <SiteFooter />
+      </div>
     </div>
   );
 }
