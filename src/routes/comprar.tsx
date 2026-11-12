@@ -541,7 +541,7 @@ function Comprar() {
     setColor(null);
     setQuantity(isResale ? 10 : 1);
     setNfcAddonQty(0);
-    setQtyLocked(false);
+    // qtyLocked NÃO é liberado aqui: mudar a lista de passos no meio do clique em "Ir para pagamento" fazia o avanço cair no mesmo passo.
   }
 
   function removeFromCart(index: number) {
@@ -632,6 +632,11 @@ function Comprar() {
     if (isTransitioning) return;
     const nextIndex = Math.min(steps.length - 1, Math.max(0, stepIndex + delta));
     if (nextIndex === stepIndex) return;
+    // O modelo se escolhe só na página do produto: voltar do primeiro passo leva para lá, não para uma lista de modelos.
+    if (delta < 0 && steps[nextIndex] === "estilo") {
+      void navigate(product ? { to: "/produtos/$slug", params: { slug: product.slug } } : { to: "/produtos" });
+      return;
+    }
     setIsTransitioning(true);
     window.setTimeout(() => {
       setStepIndex(nextIndex);
@@ -953,13 +958,15 @@ function Comprar() {
       <div className="cmp-wrap cmp-body">
         <div className="cmp-head">
           <span className="lp-label">Revenda / lote · {publicPlanName}</span>
-          <div className="cmp-steps" role="list" aria-label={`Etapa ${stepIndex + 1} de ${steps.length}`}>
-            {steps.map((st, idx) => (
-              <span key={st} role="listitem" aria-current={idx === stepIndex ? "step" : undefined} className={`cmp-step ${idx === stepIndex ? "on" : idx < stepIndex ? "done" : ""}`}>
-                <i>{idx < stepIndex ? "✓" : idx + 1}</i>
-                <b>{stepLabels[st] ?? st}</b>
-              </span>
-            ))}
+          <div className="cmp-steps" role="list" aria-label={`Etapa ${Math.max(stepIndex, 1)} de ${steps.length - 1}`}>
+            {steps.map((st, idx) =>
+              st === "estilo" && stepIndex > 0 ? null : (
+                <span key={st} role="listitem" aria-current={idx === stepIndex ? "step" : undefined} className={`cmp-step ${idx === stepIndex ? "on" : idx < stepIndex ? "done" : ""}`}>
+                  <i>{idx < stepIndex ? "✓" : stepIndex > 0 ? idx : idx + 1}</i>
+                  <b>{stepLabels[st] ?? st}</b>
+                </span>
+              ),
+            )}
           </div>
         </div>
 
@@ -2061,6 +2068,7 @@ function Comprar() {
                 className="mt-5 h-12 w-full rounded-2xl font-bold"
                 onClick={() => {
                   addCurrentToCart();
+                  setQtyLocked(false); // o próximo produto escolhe a própria quantidade
                   setStepIndex(0);
                 }}
                 disabled={!product}
