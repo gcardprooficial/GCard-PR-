@@ -632,3 +632,10 @@
 
 /* O protótipo usa --muted para texto cinza; o shadcn usa para fundo suave. Dentro do .v2 o fundo suave vem do --panel. */
 .v2 { --muted-bg: var(--panel); }
+
+/* ===== Acabamento do desenho novo nas telas que ainda usam os botões e cartões antigos (shadcn/Tailwind) ===== */
+.v2 .inline-flex.items-center.justify-center.rounded-md.font-semibold { border-radius: 999px; }
+.v2 .inline-flex.items-center.justify-center.bg-primary.text-primary-foreground { background: var(--brand-grad); color: var(--brand-on); border: 0; box-shadow: 0 10px 20px -10px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.v2 .inline-flex.items-center.justify-center.border-input.bg-background { background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow-btn); }
+.v2 .card-soft, .v2 .rounded-2xl.bg-card, .v2 .rounded-3xl.bg-card { border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow-card); }
+.v2 table { border-collapse: collapse; }

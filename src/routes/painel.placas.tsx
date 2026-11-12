@@ -1,3 +1,4 @@
+import { PeriodFilter, inPeriod, periodPreset, type PeriodValue } from "@/components/PeriodFilter";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -65,6 +66,7 @@ function Placas() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | (typeof STATUS)[number]>("all");
   const [view, setView] = useState<View>("todas");
+  const [period, setPeriod] = useState<PeriodValue>(() => periodPreset("tudo"));
   const [open, setOpen] = useState<Set<string>>(new Set());
   const [limit, setLimit] = useState(PAGE);
   // Hosts de destino aceitos: tabela única do banco (a mesma do /r, do /ativar e do gatilho SQL).
@@ -135,6 +137,10 @@ function Placas() {
   const matches = useCallback(
     (r: Plate) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (period.preset !== "tudo") {
+        const d = r.sold_at ?? r.activated_at;
+        if (!d || !inPeriod(period, d.slice(0, 10))) return false;
+      }
       if (!searching) return true;
       const t = q.toLowerCase();
       return (
@@ -147,7 +153,7 @@ function Placas() {
         !!r.batches?.owner_email?.toLowerCase().includes(t)
       );
     },
-    [q, searching, statusFilter],
+    [q, searching, statusFilter, period],
   );
 
   const statusCounts = (rows ?? []).reduce<Record<string, number>>((acc, r) => {
@@ -323,6 +329,7 @@ function Placas() {
 
       <div className="row wrap" style={{ gap: 8 }}>
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar token, código, negócio ou lote" className="input" style={{ flex: "1 1 260px", width: "auto" }} />
+        <PeriodFilter value={period} onChange={(v) => { setPeriod(v); setLimit(PAGE); }} />
         <select aria-label="Situação" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="input" style={{ flex: "0 1 220px", width: "auto" }}>
           <option value="all">Todas as situações ({rows?.length ?? 0})</option>
           {STATUS.map((st) => (

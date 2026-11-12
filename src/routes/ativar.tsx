@@ -19,7 +19,7 @@ import { GLogo } from "@/components/site/SiteChrome";
 import { useV2Theme } from "@/lib/use-v2-theme";
 import { releaseBatch, releasePlate, renameMyBatch } from "@/lib/plates.functions";
 import { PlateScanStats } from "@/components/PlateScanStats";
-import { checkDestination, isToqyUrl, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
+import { checkDestination, isToqyUrl, registerToqyHosts, toqyOnboardingUrl, type DestinationRule } from "@/lib/destination";
 import { requestDestinationRelease } from "@/lib/destination.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -188,6 +188,18 @@ function Lote({ email, userId }: { email: string; userId: string }) {
   // Hosts aceitos como destino: lista única do banco (a mesma do /r e do gatilho SQL).
   const [rules, setRules] = useState<DestinationRule[]>([]);
   const [allowedUrls, setAllowedUrls] = useState<string[]>([]);
+  // Domínios próprios de bio sites Toqy: a placa mostra "Página TOQY" também para eles. Falha em silêncio se a coluna ainda não existir.
+  const [, setToqyHostsLoaded] = useState(false);
+  useEffect(() => {
+    void untyped(supabase)
+      .from("allowed_destination_hosts")
+      .select("host")
+      .eq("source", "toqy")
+      .then(({ data }: { data: { host: string }[] | null }) => {
+        registerToqyHosts((data ?? []).map((h) => h.host));
+        setToqyHostsLoaded(true);
+      });
+  }, []);
   // Pedido de liberação: aparece quando o link é válido mas o site ainda não está na lista.
   const [release, setRelease] = useState<{ plate: Plate; url: string; host: string } | null>(null);
   const [asking, setAsking] = useState(false);

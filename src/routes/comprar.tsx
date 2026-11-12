@@ -393,9 +393,13 @@ function Comprar() {
   // Insumo de revenda (tag NFC): sem negócio, sem cor, sem QR; quantidade só em múltiplos do kit.
   const isSupply = (product as { is_supply?: boolean } | null)?.is_supply ?? false;
   const quantityStep = Math.max(1, (product as { quantity_step?: number } | null)?.quantity_step ?? 1);
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const cartFromStore = useRef(false);
   // Tutorial de QR/NFC só nas placas com arte do Google (10x10/10x15, has_qr). Acrílico liso
   // e cartão só NFC não têm QR pra configurar. Quem já comprou (pago) antes também pula.
-  const skipVideos = isReturningCustomer === true || !product?.has_qr;
+  // Pedido vindo do carrinho: vale se qualquer item tiver QR.
+  const cartHasQr = cart.some((l) => products.find((x) => x.slug === l.productSlug)?.has_qr);
+  const skipVideos = isReturningCustomer === true || !(product?.has_qr || cartHasQr);
   // Quantidade vinda da página do produto: não pergunta de novo (nos produtos com opções de QR/chip a etapa fica, só com as opções).
   const [qtyLocked, setQtyLocked] = useState(false);
   // Veio do carrinho da loja: a revisão dos itens já aconteceu em /carrinho, então não há passo de carrinho aqui.
@@ -521,8 +525,6 @@ function Comprar() {
 
   // Carrinho: mais de um produto no mesmo pedido (só dentro do mesmo caminho --
   // lojista com lojista, revenda com revenda; cada tipo tem lógica de preço/lote própria).
-  const [cart, setCart] = useState<CartLine[]>([]);
-  const cartFromStore = useRef(false);
   const cartTotal = cart.reduce((s, l) => s + l.totalCents, 0);
 
   function buildCartItem(): CartLine | null {
