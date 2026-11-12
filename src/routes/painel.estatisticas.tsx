@@ -37,7 +37,7 @@ function Stats() {
       <div className="mb">
         <div className="eyebrow">GCard Plus</div>
         <h1>Estatísticas por código</h1>
-        <p className="muted sm" style={{ marginTop: 4 }}>Toques NFC e leituras QR por dia, no total e por código.</p>
+        <p className="muted sm" style={{ marginTop: 4 }}>Leituras por dia, no total e por código. NFC e QR aparecem separados só nas placas novas; as antigas contam como “sem origem”.</p>
       </div>
       <div className="card goldframe row wrap mb" style={{ gap: 12 }}>
         <span className="plustag">Plus</span>
@@ -108,11 +108,11 @@ function Viewer() {
         const top = [...per.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 10);
         let tops: Top[] = [];
         if (top.length) {
-          const { data: pl } = await db.from("plates").select("id, short_code, businesses(name), batches(label, owner_email, code)").in("id", top.map(([id]) => id));
-          const info = new Map<string, { short_code: string; businesses: { name: string } | null; batches: { label: string | null; owner_email: string | null; code: string } | null }>((pl ?? []).map((x: { id: string; short_code: string; businesses: { name: string } | null; batches: { label: string | null; owner_email: string | null; code: string } | null }) => [x.id, x]));
+          const { data: pl } = await db.from("plates").select("id, short_code, business_name, businesses(name), batches(label, owner_email, code)").in("id", top.map(([id]) => id));
+          const info = new Map<string, { short_code: string; business_name: string | null; businesses: { name: string } | null; batches: { label: string | null; owner_email: string | null; code: string } | null }>((pl ?? []).map((x: { id: string; short_code: string; business_name: string | null; businesses: { name: string } | null; batches: { label: string | null; owner_email: string | null; code: string } | null }) => [x.id, x]));
           tops = top.map(([id, c]) => {
             const i = info.get(id);
-            return { id, short_code: i?.short_code ?? id.slice(0, 8), name: i?.businesses?.name ?? "Sem negócio", owner: i?.batches ? i.batches.label || i.batches.owner_email || i.batches.code : "Estoque solto", ...c };
+            return { id, short_code: i?.short_code ?? id.slice(0, 8), name: i?.business_name ?? i?.businesses?.name ?? "Placa em branco", owner: i?.batches ? i.batches.label || i.batches.owner_email || i.batches.code : "Estoque solto", ...c };
           });
         }
         setOv({ nfc, qr, total, codes: per.size, series, tops });
@@ -135,8 +135,8 @@ function Viewer() {
         <div className="col" style={{ gap: 14 }}>
           <div className="metrics" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
             <div className="metric"><div className="xs muted">Leituras</div><div className="v">{ov.total}</div></div>
-            <div className="metric"><div className="xs muted">Toques NFC</div><div className="v">{ov.nfc}</div></div>
-            <div className="metric"><div className="xs muted">Leituras QR</div><div className="v">{ov.qr}</div></div>
+            {ov.nfc + ov.qr > 0 && <div className="metric"><div className="xs muted">Toques NFC</div><div className="v">{ov.nfc}</div></div>}
+            {ov.nfc + ov.qr > 0 && <div className="metric"><div className="xs muted">Leituras QR</div><div className="v">{ov.qr}</div></div>}
             <div className="metric"><div className="xs muted">Códigos com leitura</div><div className="v">{ov.codes}</div></div>
           </div>
           <div className="card"><b>Leituras por dia</b><AreaChart values={ov.series} height={130} /></div>
@@ -146,15 +146,15 @@ function Viewer() {
               <p className="sm muted" style={{ padding: "0 16px 16px" }}>Sem leituras neste período.</p>
             ) : (
               <table className="w-full text-sm">
-                <thead className="text-left text-xs muted"><tr><th className="p-3">Negócio</th><th className="p-3">Cliente / lote</th><th className="p-3">Código</th><th className="p-3 text-right">NFC</th><th className="p-3 text-right">QR</th><th className="p-3 text-right">Total</th></tr></thead>
+                <thead className="text-left text-xs muted"><tr><th className="p-3">Negócio</th><th className="p-3">Cliente / lote</th><th className="p-3">Código</th>{ov.nfc + ov.qr > 0 && <th className="p-3 text-right">NFC</th>}{ov.nfc + ov.qr > 0 && <th className="p-3 text-right">QR</th>}<th className="p-3 text-right">Leituras</th></tr></thead>
                 <tbody>
                   {ov.tops.map((t) => (
                     <tr key={t.id} style={{ borderTop: "1px solid var(--line)", cursor: "pointer" }} onClick={() => { setPicked({ id: t.id, token: "", short_code: t.short_code, status: "", scan_count: t.total }); document.getElementById("ver-codigo")?.scrollIntoView({ behavior: "smooth" }); }}>
                       <td className="p-3"><b>{t.name}</b></td>
                       <td className="p-3">{t.owner}</td>
                       <td className="p-3 font-mono text-xs">{t.short_code}</td>
-                      <td className="p-3 text-right">{t.nfc}</td>
-                      <td className="p-3 text-right">{t.qr}</td>
+                      {ov.nfc + ov.qr > 0 && <td className="p-3 text-right">{t.nfc}</td>}
+                      {ov.nfc + ov.qr > 0 && <td className="p-3 text-right">{t.qr}</td>}
                       <td className="p-3 text-right"><b>{t.total}</b></td>
                     </tr>
                   ))}
@@ -194,9 +194,9 @@ function Viewer() {
               ))}
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Box label="Toques NFC" value={total.nfc} />
-              <Box label="Leituras QR" value={total.qr} />
-              <Box label="Origem desconhecida" value={total.unk} />
+              {total.nfc + total.qr > 0 && <Box label="Toques NFC" value={total.nfc} />}
+              {total.nfc + total.qr > 0 && <Box label="Leituras QR" value={total.qr} />}
+              <Box label={total.nfc + total.qr > 0 ? "Sem origem (placa antiga)" : "Leituras (sem separar NFC e QR)"} value={total.unk} />
               <Box label="Visitantes únicos/dia (soma)" value={total.uniq} />
             </div>
             <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card p-3">

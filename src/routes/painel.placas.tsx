@@ -42,6 +42,7 @@ type Plate = {
   batch_id: string | null;
   products: { name: string } | null;
   orders: { order_number: number; customer_name: string } | null;
+  business_name: string | null;
   businesses: { name: string; review_url: string } | null;
   batches: { code: string; label: string | null; owner_email: string | null } | null;
 };
@@ -79,7 +80,7 @@ function Placas() {
     const { data, error } = await supabase
       .from("plates")
       .select(
-        "id, token, short_code, status, destination_url, scan_count, last_scan_at, activated_at, sold_at, blocked_at, block_reason, batch_id, products(name), orders(order_number, customer_name), businesses(name, review_url), batches(code, label, owner_email)",
+        "id, token, short_code, status, destination_url, business_name, scan_count, last_scan_at, activated_at, sold_at, blocked_at, block_reason, batch_id, products(name), orders(order_number, customer_name), businesses(name, review_url), batches(code, label, owner_email)",
       )
       .order("short_code", { ascending: true })
       .limit(3000);
@@ -139,7 +140,7 @@ function Placas() {
       return (
         r.token.toLowerCase().includes(t) ||
         r.short_code.toLowerCase().includes(t) ||
-        !!r.businesses?.name.toLowerCase().includes(t) ||
+        !!(r.business_name ?? r.businesses?.name ?? "").toLowerCase().includes(t) ||
         !!r.orders?.customer_name.toLowerCase().includes(t) ||
         String(r.orders?.order_number ?? "").includes(t) ||
         !!r.batches?.code.toLowerCase().includes(t) ||
@@ -218,7 +219,7 @@ function Placas() {
               {r.products?.name ?? "—"}
               {r.orders ? ` · pedido #${r.orders.order_number} (${r.orders.customer_name})` : ""}
             </p>
-            {r.businesses && <p className="text-sm text-muted-foreground">Negócio: {r.businesses.name}</p>}
+            {(r.business_name || r.businesses) && <p className="text-sm text-muted-foreground">Negócio: {r.business_name ?? r.businesses?.name}</p>}
             <p className="mt-1 text-xs font-semibold">
               {stageOf(r)}
               <span className="font-normal text-muted-foreground">
