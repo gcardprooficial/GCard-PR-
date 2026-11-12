@@ -87,6 +87,8 @@ export function PeriodFilter({ value, onChange, allowMonths = true }: { value: P
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [from, setFrom] = useState(value.from);
   const [to, setTo] = useState(value.to);
+  // Perto da borda direita da tela, o painel abre alinhado pela direita para não sair cortado.
+  const [alignRight, setAlignRight] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -108,14 +110,14 @@ export function PeriodFilter({ value, onChange, allowMonths = true }: { value: P
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button type="button" className="btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="btn" aria-haspopup="dialog" aria-expanded={open} onClick={() => { const r = ref.current?.getBoundingClientRect(); setAlignRight(!!r && r.left + 570 > window.innerWidth - 12); setOpen((o) => !o); }}>
         <CalendarDays size={16} />
         <span>{describePeriod(value)}</span>
         {value.preset !== "tudo" && value.preset !== "meses" && (rf || rt) && <span className="xs muted">{rf ? br(rf) : "…"} – {rt ? br(rt) : "…"}</span>}
         <ChevronDown size={14} />
       </button>
       {open && (
-        <div role="dialog" aria-label="Escolher período" className="card" style={{ position: "absolute", zIndex: 40, top: "calc(100% + 8px)", left: 0, width: "min(560px, 92vw)", padding: 14, display: "flex", flexWrap: "wrap", gap: 16 }}>
+        <div role="dialog" aria-label="Escolher período" className="card" style={{ position: "absolute", zIndex: 40, top: "calc(100% + 8px)", ...(alignRight ? { right: 0 } : { left: 0 }), width: "min(560px, 92vw)", padding: 14, display: "flex", flexWrap: "wrap", gap: 16 }}>
           <div className="col" style={{ gap: 2, flex: "1 1 170px" }}>
             <div className="xs muted" style={{ padding: "0 8px 4px" }}>Atalhos</div>
             {PRESETS.map((p) => (
