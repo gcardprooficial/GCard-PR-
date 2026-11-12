@@ -68,6 +68,7 @@ import { Route as ApiWebhooksSuperfreteRouteImport } from './routes/api/webhooks
 import { Route as ApiWebhooksWhatsappRouteImport } from './routes/api/webhooks/whatsapp'
 import { Route as ApiWebhooksZapiRouteImport } from './routes/api/webhooks/zapi'
 import { Route as PainelDossieOrderIdRouteImport } from './routes/painel.dossie.$orderId'
+import { Route as ApiPartnerToqyAllowHostRouteImport } from './routes/api/partner/toqy/allow-host'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -368,6 +369,11 @@ const PainelDossieOrderIdRoute = PainelDossieOrderIdRouteImport.update({
   path: '/dossie/$orderId',
   getParentRoute: () => PainelRoute,
 } as any)
+const ApiPartnerToqyAllowHostRoute = ApiPartnerToqyAllowHostRouteImport.update({
+  id: '/api/partner/toqy/allow-host',
+  path: '/api/partner/toqy/allow-host',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -429,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
   '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
+  '/api/partner/toqy/allow-host': typeof ApiPartnerToqyAllowHostRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -488,6 +495,7 @@ export interface FileRoutesByTo {
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
   '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
+  '/api/partner/toqy/allow-host': typeof ApiPartnerToqyAllowHostRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -550,6 +558,7 @@ export interface FileRoutesById {
   '/api/webhooks/whatsapp': typeof ApiWebhooksWhatsappRoute
   '/api/webhooks/zapi': typeof ApiWebhooksZapiRoute
   '/painel/dossie/$orderId': typeof PainelDossieOrderIdRoute
+  '/api/partner/toqy/allow-host': typeof ApiPartnerToqyAllowHostRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -613,6 +622,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
     | '/painel/dossie/$orderId'
+    | '/api/partner/toqy/allow-host'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -672,6 +682,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
     | '/painel/dossie/$orderId'
+    | '/api/partner/toqy/allow-host'
   id:
     | '__root__'
     | '/'
@@ -733,6 +744,7 @@ export interface FileRouteTypes {
     | '/api/webhooks/whatsapp'
     | '/api/webhooks/zapi'
     | '/painel/dossie/$orderId'
+    | '/api/partner/toqy/allow-host'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -770,6 +782,7 @@ export interface RootRouteChildren {
   ApiWebhooksSuperfreteRoute: typeof ApiWebhooksSuperfreteRoute
   ApiWebhooksWhatsappRoute: typeof ApiWebhooksWhatsappRoute
   ApiWebhooksZapiRoute: typeof ApiWebhooksZapiRoute
+  ApiPartnerToqyAllowHostRoute: typeof ApiPartnerToqyAllowHostRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1187,6 +1200,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PainelDossieOrderIdRouteImport
       parentRoute: typeof PainelRoute
     }
+    '/api/partner/toqy/allow-host': {
+      id: '/api/partner/toqy/allow-host'
+      path: '/api/partner/toqy/allow-host'
+      fullPath: '/api/partner/toqy/allow-host'
+      preLoaderRoute: typeof ApiPartnerToqyAllowHostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1293,6 +1313,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWebhooksSuperfreteRoute: ApiWebhooksSuperfreteRoute,
   ApiWebhooksWhatsappRoute: ApiWebhooksWhatsappRoute,
   ApiWebhooksZapiRoute: ApiWebhooksZapiRoute,
+  ApiPartnerToqyAllowHostRoute: ApiPartnerToqyAllowHostRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
