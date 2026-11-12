@@ -1,4 +1,5 @@
 import { addToCart, useCartItems } from "@/lib/cart";
+import { colorImage } from "@/lib/color-images";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { trackClientEvent } from "@/lib/events.functions";
@@ -85,7 +86,9 @@ export function ProdutoView(p: ProdutoViewProps) {
   const chipCents = p.isBlank && chip && p.nfcAddonCents ? p.nfcAddonCents * qty : 0;
   const total = unit * qty + chipCents;
   const pixOff = p.pixOn && !p.isBlank && !p.isSupply ? pixDiscountCents(total, 1) : 0;
-  const stage = pic === 0 ? p.image : (p.gallery[pic - 1] ?? p.image);
+  // Acrílico liso: a foto principal acompanha a cor escolhida.
+  const mainImage = (p.isBlank ? colorImage(p.slug, color) : undefined) ?? p.image;
+  const stage = pic === 0 ? mainImage : (p.gallery[pic - 1] ?? mainImage);
   const step = (d: number) => setQty(Math.max(p.minQty, qty + d * Math.max(1, p.step)));
   const quick = (p.step > 1 ? [p.minQty, p.minQty * 2, p.minQty * 4] : [p.minQty, 25, 100]).filter((n) => n >= p.minQty);
 
@@ -109,7 +112,7 @@ export function ProdutoView(p: ProdutoViewProps) {
               </div>
               {p.gallery.length > 0 && (
                 <div className="gp-thumbs">
-                  {[p.image, ...p.gallery].map((g, i) => (
+                  {[mainImage, ...p.gallery].map((g, i) => (
                     <button key={`${g}-${i}`} type="button" className={`gp-thumb ${pic === i ? "on" : ""}`} onClick={() => setPic(i)} aria-label={`Foto ${i + 1}`}><img src={g} alt="" /></button>
                   ))}
                 </div>
@@ -154,7 +157,7 @@ export function ProdutoView(p: ProdutoViewProps) {
                           const on = c.slug === color;
                           const dot: Record<string, string> = { cristal: "#e6f0f4", branco: "#ffffff", preto: "#111827", azul: "#2563eb" };
                           return (
-                            <button key={c.slug} type="button" aria-pressed={on} onClick={() => { setColor(c.slug); setAdded(false); }} className={`chip ${on ? "on" : ""}`} style={{ gap: 8 }}>
+                            <button key={c.slug} type="button" aria-pressed={on} onClick={() => { setColor(c.slug); setPic(0); setAdded(false); }} className={`chip ${on ? "on" : ""}`} style={{ gap: 8 }}>
                               <span style={{ width: 16, height: 16, borderRadius: 99, background: dot[c.slug] ?? "#ccc", border: "1px solid var(--line)", display: "inline-grid", placeItems: "center" }}>{on && <Check size={11} color={c.slug === "preto" || c.slug === "azul" ? "#fff" : "#111"} />}</span>
                               {c.name}{c.delta ? ` +${money(c.delta)}` : ""}
                             </button>

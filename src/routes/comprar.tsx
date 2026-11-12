@@ -398,6 +398,8 @@ function Comprar() {
   const skipVideos = isReturningCustomer === true || !product?.has_qr;
   // Quantidade vinda da página do produto: não pergunta de novo (nos produtos com opções de QR/chip a etapa fica, só com as opções).
   const [qtyLocked, setQtyLocked] = useState(false);
+  // Veio do carrinho da loja: a revisão dos itens já aconteceu em /carrinho, então não há passo de carrinho aqui.
+  const [fromCart, setFromCart] = useState(false);
   const stepsFull = isSupply
     ? (["estilo", "conta", "quantidade", "dados", "revisao"] as const)
     : isBlank
@@ -411,7 +413,7 @@ function Comprar() {
       : skipVideos
         ? (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "revisao"] as const)
         : (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "videos", "revisao"] as const);
-  const steps = (qtyLocked ? (stepsFull as readonly string[]).filter((x) => x !== "quantidade") : stepsFull) as unknown as typeof stepsFull;
+  const steps = (qtyLocked || fromCart ? (stepsFull as readonly string[]).filter((x) => !(qtyLocked && x === "quantidade") && !(fromCart && x === "carrinho")) : stepsFull) as unknown as typeof stepsFull;
   const step = steps[stepIndex];
 
   const [term, setTerm] = useState("");
@@ -635,6 +637,7 @@ function Comprar() {
       return;
     }
     cartFromStore.current = true;
+    setFromCart(true);
     setCart(lines);
     setQtyLocked(true);
     setStepIndex(1);

@@ -6,6 +6,7 @@ import { money, resolveUnitPrice } from "@/lib/pricing";
 import { PIX_DISCOUNT_PCT, pixDiscountActive, pixDiscountCents, pixEligible } from "@/lib/promo";
 import { PRODUCT_IMAGES, catalogQuery, plansFrom, productsFrom } from "@/lib/site-catalog";
 import { removeFromCartAt, setCartOptions, setCartQty, useCartItems } from "@/lib/cart";
+import { colorImage } from "@/lib/color-images";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 
 export const Route = createFileRoute("/carrinho")({
@@ -68,7 +69,7 @@ function Carrinho() {
                   const step = Math.max(1, product?.quantity_step ?? 1);
                   return (
                     <div key={`${it.slug}-${it.color}-${it.chip}-${it.qr}-${index}`} className="card" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                      <img src={PRODUCT_IMAGES[it.slug] ?? produtoCartao} alt="" style={{ width: 96, height: 96, objectFit: "contain", borderRadius: 14, border: "1px solid var(--line)", background: "#fff", padding: 6, flex: "none" }} />
+                      <img src={colorImage(it.slug, it.color) ?? PRODUCT_IMAGES[it.slug] ?? produtoCartao} alt="" style={{ width: 96, height: 96, objectFit: "contain", borderRadius: 14, border: "1px solid var(--line)", background: "#fff", padding: 6, flex: "none" }} />
                       <div className="col grow" style={{ gap: 4, minWidth: 220 }}>
                         <Link to="/produtos/$slug" params={{ slug: it.slug }} style={{ textDecoration: "none" }}><b>{product?.name ?? it.slug}</b></Link>
                         {variant && <span className="sm muted">Cor: {variant.name}</span>}
