@@ -14,10 +14,14 @@ export const Route = createFileRoute("/produtos/$slug")({
   // Abrir o link direto (sem passar pela home) começava com o catálogo vazio, só o fallback de 3 produtos, e
   // dava 404 em qualquer outro (10x15, Pix, WhatsApp, Instagram, tag). Carrega o catálogo de verdade antes de renderizar.
   loader: ({ context }) => context.queryClient.fetchQuery(catalogQuery).catch(() => null),
-  head: ({ params }) => ({
-    meta: [{ title: `${params.slug} | GCard-PRÓ` }],
-    links: [{ rel: "canonical", href: `https://www.gcardpro.com.br/produtos/${params.slug}` }],
-  }),
+  head: ({ params, loaderData }) => {
+    // Título com o nome do produto (antes saía o endereço, ex.: "plaquinha-10x10").
+    const name = (loaderData as { products?: { slug: string; name: string }[] } | null | undefined)?.products?.find((p) => p.slug === params.slug)?.name;
+    return {
+      meta: [{ title: `${name ?? params.slug} | GCard-PRÓ` }],
+      links: [{ rel: "canonical", href: `https://www.gcardpro.com.br/produtos/${params.slug}` }],
+    };
+  },
   component: Produto,
 });
 
