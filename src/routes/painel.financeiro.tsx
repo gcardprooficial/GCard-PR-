@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/fetch-all";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -70,14 +71,18 @@ function Financeiro() {
 
   const load = useCallback(async () => {
     const { from, to } = resolvePeriod(period);
-    let entriesQuery = supabase
-      .from("finance_entries")
-      .select("id, kind, category, description, amount_cents, entry_date, is_recurring, created_at, order_id, orders(order_number, payment_provider)")
-      .order("entry_date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(5000);
-    if (from) entriesQuery = entriesQuery.gte("entry_date", from);
-    if (to) entriesQuery = entriesQuery.lte("entry_date", to);
+    const entriesQuery = fetchAll<Entry>((a, b) => {
+      let q = supabase
+        .from("finance_entries")
+        .select("id, kind, category, description, amount_cents, entry_date, is_recurring, created_at, order_id, orders(order_number, payment_provider)")
+        .order("entry_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(a, b);
+      if (from) q = q.gte("entry_date", from);
+      if (to) q = q.lte("entry_date", to);
+      return q as unknown as PromiseLike<{ data: Entry[] | null; error: unknown }>;
+    });
     const [e, p] = await Promise.all([
       entriesQuery,
       supabase.from("finance_partners").select("id, name, share_percent").eq("is_active", true),

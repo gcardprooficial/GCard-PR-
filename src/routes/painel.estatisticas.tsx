@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/fetch-all";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -90,7 +91,9 @@ function Viewer() {
     setOv(null);
     setOvErr(false);
     const since = new Date(Date.now() - range * DAY_MS).toISOString().slice(0, 10);
-    db.from("plate_scan_daily").select("plate_id, day, leituras, nfc, qr").gte("day", since).limit(20000)
+    fetchAll<{ plate_id: string; day: string; leituras: number; nfc: number; qr: number }>((a, b) =>
+      db.from("plate_scan_daily").select("plate_id, day, leituras, nfc, qr").gte("day", since).order("day").order("plate_id").range(a, b),
+    )
       .then(async ({ data, error }: { data: { plate_id: string; day: string; leituras: number; nfc: number; qr: number }[] | null; error: unknown }) => {
         if (error) return setOvErr(true);
         const rows = data ?? [];
