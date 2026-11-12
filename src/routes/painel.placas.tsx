@@ -105,7 +105,9 @@ function Placas() {
   async function patch(row: Plate, changes: Record<string, unknown>) {
     const { error } = await supabase.from("plates").update(changes).eq("id", row.id);
     if (error) {
-      toast.error("Não foi possível salvar.");
+      // Painel é só da equipe: mostra o motivo real (gatilho do banco, permissão, link barrado) em vez de um aviso genérico.
+      console.error("plates update falhou", error);
+      toast.error(`Não foi possível salvar: ${error.message}`);
       return;
     }
     await supabase.from("audit_log").insert({
