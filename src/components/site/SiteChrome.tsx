@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, UserRound, X } from "lucide-react";
+import { Menu, ShoppingBag, UserRound, X } from "lucide-react";
+import { useCartItems } from "@/lib/cart";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { WHATSAPP_CONTACTS, whatsappLink } from "@/lib/contact";
@@ -72,6 +73,17 @@ function useLoggedEmail() {
   return email;
 }
 
+/** Ícone do carrinho com a quantidade de itens (some o número quando está vazio). */
+function CartButton() {
+  const count = useCartItems().length;
+  return (
+    <Link to="/carrinho" className="btn" aria-label={count ? `Carrinho, ${count} ${count === 1 ? "item" : "itens"}` : "Carrinho"} style={{ padding: "7px 12px", position: "relative" }}>
+      <ShoppingBag size={16} />
+      {count > 0 && <span style={{ position: "absolute", top: -6, right: -6, minWidth: 18, height: 18, padding: "0 5px", borderRadius: 99, background: "var(--brand-grad)", color: "var(--brand-on)", fontSize: 11, fontWeight: 700, display: "grid", placeItems: "center" }}>{count}</span>}
+    </Link>
+  );
+}
+
 export function SiteHeader() {
   const logged = useLoggedEmail();
   return (
@@ -95,6 +107,7 @@ export function SiteHeader() {
             ) : (
               <Link to="/ativar" className="btn ghost lp-hide-sm" style={{ padding: "7px 12px" }}>Acessar painel</Link>
             )}
+            <CartButton />
             <Link to="/produtos" className="btn primary" style={{ padding: "7px 14px" }}>Comprar</Link>
             <Sheet>
               <SheetTrigger asChild>

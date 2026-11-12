@@ -1,9 +1,10 @@
+import { addToCart, useCartItems } from "@/lib/cart";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { trackClientEvent } from "@/lib/events.functions";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Minus, Plus, ShieldCheck, Truck, Wallet } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Minus, Plus, ShieldCheck, ShoppingBag, Truck, Wallet } from "lucide-react";
 import { money } from "@/lib/pricing";
 import { DeliveryTimes, SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import { MERCADO_LIVRE_LINKS, PRODUCT_IMAGES, SHOW_MERCADO_LIVRE, mockupsFor, catalogQuery, plansFrom, productsFrom, resaleLines } from "@/lib/site-catalog";
@@ -51,6 +52,8 @@ export type ProdutoViewProps = {
   step: number;
   tiers: Tier[];
   nfcAddonCents: number | null;
+  /** Cores do acrílico liso (vazio nos outros produtos). delta = acréscimo por unidade. */
+  colors: { slug: string; name: string; delta: number }[];
   kitParam: "personalizar" | "personalizar-l" | null;
   mercadoLivreUrl: string | null;
   pixOn: boolean;
@@ -61,18 +64,10 @@ export type ProdutoViewProps = {
 export function ProdutoView(p: ProdutoViewProps) {
   const [qty, setQty] = useState(p.minQty);
   const [pic, setPic] = useState(0);
-  // Produtos que a pessoa já separou no carrinho (guardado ao clicar em "Adicionar e comprar outro produto").
-  const [inCart, setInCart] = useState(0);
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("gcard-cart-v1");
-      if (!raw) return;
-      const v = JSON.parse(raw) as { at?: number; cart?: unknown[] };
-      if (typeof v.at === "number" && Date.now() - v.at < 30 * 60_000 && Array.isArray(v.cart)) setInCart(v.cart.length);
-    } catch {
-      /* sem armazenamento */
-    }
-  }, []);
+  const navigate = useNavigate();
+  const cartItems = useCartItems();
+  const [color, setColor] = useState<string | null>(p.colors[0]?.slug ?? null);
+  const [added, setAdded] = useState(false);
   const [chip, setChip] = useState(false);
   const [wantQr, setWantQr] = useState(false);
   useEffect(() => {
@@ -84,7 +79,8 @@ export function ProdutoView(p: ProdutoViewProps) {
 
   const tierFor = (n: number) => [...p.tiers].reverse().find((t) => n >= t.min_quantity) ?? p.tiers[0];
   const t = tierFor(qty);
-  const unit = t?.unit_price_cents ?? 0;
+  const colorDelta = p.isBlank ? (p.colors.find((c) => c.slug === color)?.delta ?? 0) : 0;
+  const unit = (t?.unit_price_cents ?? 0) + colorDelta;
   const nfcOnly = p.hasNfc && !p.hasQr && !p.isBlank && !p.isSupply;
   const chipCents = p.isBlank && chip && p.nfcAddonCents ? p.nfcAddonCents * qty : 0;
   const total = unit * qty + chipCents;
@@ -150,6 +146,23 @@ export function ProdutoView(p: ProdutoViewProps) {
                     </div>
                   </div>
                   <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>{quick.map((n) => <button key={n} type="button" className={`chip ${qty === n ? "on" : ""}`} onClick={() => setQty(n)}>{n}</button>)}</div>
+                  {p.isBlank && p.colors.length > 0 && (
+                    <div className="col" style={{ gap: 8 }}>
+                      <span className="sm"><b>Cor</b> <span className="muted">{p.colors.find((c) => c.slug === color)?.name}</span></span>
+                      <div className="row wrap" style={{ gap: 8 }}>
+                        {p.colors.map((c) => {
+                          const on = c.slug === color;
+                          const dot: Record<string, string> = { cristal: "#e6f0f4", branco: "#ffffff", preto: "#111827", azul: "#2563eb" };
+                          return (
+                            <button key={c.slug} type="button" aria-pressed={on} onClick={() => { setColor(c.slug); setAdded(false); }} className={`chip ${on ? "on" : ""}`} style={{ gap: 8 }}>
+                              <span style={{ width: 16, height: 16, borderRadius: 99, background: dot[c.slug] ?? "#ccc", border: "1px solid var(--line)", display: "inline-grid", placeItems: "center" }}>{on && <Check size={11} color={c.slug === "preto" || c.slug === "azul" ? "#fff" : "#111"} />}</span>
+                              {c.name}{c.delta ? ` +${money(c.delta)}` : ""}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   {p.isBlank && (
                     <div className="col" style={{ gap: 8 }}>
                       {p.nfcAddonCents ? (
@@ -169,8 +182,25 @@ export function ProdutoView(p: ProdutoViewProps) {
                     <div className="row"><b className="grow">Total estimado</b><b className="gp-sum">{money(total)}</b></div>
                     {pixOff > 0 && <div className="row sm" style={{ color: "var(--brand-text)" }}><span className="grow">No Pix, com {PIX_DISCOUNT_PCT}% OFF</span><b>{money(total - pixOff)}</b></div>}
                   </div>
-                  {inCart > 0 && <p className="sm"><span className="badge green">Carrinho</span> Você já separou {inCart} produto{inCart > 1 ? "s" : ""}. Este entra junto, no mesmo pedido e com o mesmo frete.</p>}
-                  <Link to="/comprar" search={{ produto: p.slug, qtd: qty, ...(p.isBlank ? { chip: chip ? 1 : 0, qr: wantQr ? 1 : 0 } : {}) }} className="btn primary block" data-analytics-event="begin_checkout" data-analytics-label={`produto ${p.slug}`}>Comprar este kit</Link>
+                  {added ? (
+                    <div className="card panel col" style={{ gap: 8 }}>
+                      <b className="row" style={{ gap: 8 }}><Check size={16} color="var(--brand)" /> Adicionado ao carrinho</b>
+                      <span className="xs muted">{cartItems.length} {cartItems.length === 1 ? "item" : "itens"} no carrinho.</span>
+                      <div className="row wrap" style={{ gap: 8 }}>
+                        <Link to="/carrinho" className="btn primary"><ShoppingBag size={15} /> Ver carrinho</Link>
+                        <Link to="/produtos" className="btn">Continuar comprando</Link>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="col" style={{ gap: 8 }}>
+                      <button type="button" className="btn primary block" data-analytics-event="add_to_cart" data-analytics-label={`produto ${p.slug}`} onClick={() => { addToCart({ slug: p.slug, color, qty, chip: p.isBlank && chip, qr: p.isBlank && wantQr }); setAdded(true); }}>
+                        <ShoppingBag size={16} /> Adicionar ao carrinho
+                      </button>
+                      <button type="button" className="btn block" data-analytics-event="begin_checkout" data-analytics-label={`produto ${p.slug}`} onClick={() => { addToCart({ slug: p.slug, color, qty, chip: p.isBlank && chip, qr: p.isBlank && wantQr }); void navigate({ to: "/comprar", search: {} }); }}>
+                        Comprar agora
+                      </button>
+                    </div>
+                  )}
                   <p className="xs muted" style={{ margin: 0 }}>{p.isBlank || p.isSupply ? `Vendido só para revendedores, a partir de ${p.minQty} unidades. A quantidade escolhida aqui segue para a compra.` : nfcOnly ? "Chega com o chip NFC em branco; você grava o link com o app NFC Tools. A quantidade escolhida aqui segue para a compra." : "Chega com QR/NFC em branco; você ativa cada código com o link do seu cliente. A quantidade escolhida aqui segue para a compra."}</p>
                 </div>
               )}
@@ -301,6 +331,7 @@ function Produto() {
       step={(p as { quantity_step?: number | null }).quantity_step ?? 1}
       tiers={tiers.map((t) => ({ min_quantity: t.min_quantity, unit_price_cents: t.unit_price_cents, label: t.label }))}
       nfcAddonCents={(p as { nfc_addon_price_cents?: number | null }).nfc_addon_price_cents ?? null}
+      colors={((p as { color_variants?: { slug: string; name: string; delta_cents: number }[] | null }).color_variants ?? []).map((c) => ({ slug: c.slug, name: c.name, delta: c.delta_cents }))}
       kitParam={kitParamFor(p.slug)}
       mercadoLivreUrl={ml?.url ?? null}
       pixOn={pixDiscountActive()}

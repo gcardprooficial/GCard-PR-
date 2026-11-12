@@ -1,3 +1,4 @@
+import { addToCart, clearStoredCart, getCartItems, removeFromCartAt } from "@/lib/cart";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -519,6 +520,7 @@ function Comprar() {
   // Carrinho: mais de um produto no mesmo pedido (só dentro do mesmo caminho --
   // lojista com lojista, revenda com revenda; cada tipo tem lógica de preço/lote própria).
   const [cart, setCart] = useState<CartLine[]>([]);
+  const cartFromStore = useRef(false);
   const cartTotal = cart.reduce((s, l) => s + l.totalCents, 0);
 
   function buildCartItem(): CartLine | null {
@@ -536,19 +538,6 @@ function Comprar() {
     };
   }
 
-  // Carrinho guardado ao escolher outro produto na página dele; vale 30 minutos e é lido uma vez.
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("gcard-cart-v1");
-      if (!raw) return;
-      sessionStorage.removeItem("gcard-cart-v1");
-      const saved = JSON.parse(raw) as { at?: number; cart?: CartLine[] };
-      if (typeof saved.at === "number" && Date.now() - saved.at < 30 * 60_000 && Array.isArray(saved.cart) && saved.cart.length > 0) setCart(saved.cart);
-    } catch {
-      /* sem armazenamento: começa com o carrinho vazio */
-    }
-  }, []);
-
   function addCurrentToCart() {
     const item = buildCartItem();
     if (!item) return;
@@ -562,6 +551,8 @@ function Comprar() {
 
   function removeFromCart(index: number) {
     setCart((prev) => prev.filter((_, i) => i !== index));
+    // Linhas vindas do carrinho da loja: mantém os dois iguais.
+    if (cartFromStore.current) removeFromCartAt(index);
   }
 
   // Produtos sem passo de carrinho (acrílico sem arte) continuam com 1 item só --
@@ -613,7 +604,41 @@ function Comprar() {
   const trackVisit = useServerFn(trackClientEvent);
   // A escolha do produto é só na página do produto: quem chega aqui sem produto volta para a lista.
   useEffect(() => {
-    if (!produto && !kit) void navigate({ to: "/produtos", replace: true });
+    if (produto || kit || cartFromStore.current) return;
+    const items = getCartItems();
+    if (items.length === 0) {
+      void navigate({ to: "/produtos", replace: true });
+      return;
+    }
+    // Chegou do carrinho da loja: monta as linhas e começa direto na conta (modelo, cor, quantidade e opções já foram escolhidos).
+    const lines: CartLine[] = [];
+    for (const it of items) {
+      const prod = products.find((x) => x.slug === it.slug && x.status === "ativo");
+      if (!prod) continue;
+      const variant = prod.color_variants?.find((c) => c.slug === it.color) ?? null;
+      const unit = resolveUnitPrice(plan, prod, it.qty, true, variant);
+      const chipQty = it.chip && prod.is_blank ? it.qty : 0;
+      lines.push({
+        productSlug: prod.slug,
+        productName: variant ? `${prod.name} — ${variant.name}` : prod.name,
+        planSlug: plan.slug,
+        colorSlug: variant?.slug ?? null,
+        quantity: it.qty,
+        unitPriceCents: unit,
+        totalCents: unit * it.qty + chipQty * (prod.nfc_addon_price_cents ?? 0),
+        nfcAddonQty: chipQty,
+        qrCodeQty: it.qr && prod.is_blank ? it.qty : 0,
+      });
+    }
+    if (lines.length === 0) {
+      void navigate({ to: "/carrinho", replace: true });
+      return;
+    }
+    cartFromStore.current = true;
+    setCart(lines);
+    setQtyLocked(true);
+    setStepIndex(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [produto, kit, navigate]);
   const kitApplied = useRef(false);
   useEffect(() => {
@@ -650,7 +675,7 @@ function Comprar() {
     if (nextIndex === stepIndex) return;
     // O modelo se escolhe só na página do produto: voltar do primeiro passo leva para lá, não para uma lista de modelos.
     if (delta < 0 && steps[nextIndex] === "estilo") {
-      void navigate(product ? { to: "/produtos/$slug", params: { slug: product.slug } } : { to: "/produtos" });
+      void navigate(product ? { to: "/produtos/$slug", params: { slug: product.slug } } : { to: "/carrinho" });
       return;
     }
     setIsTransitioning(true);
@@ -745,6 +770,7 @@ function Comprar() {
         },
       });
       setOrderNumber(res.orderNumber);
+      clearStoredCart();
       // Cupom vale só pra compra que veio do clique: recompra precisa do link/cupom de novo.
       if (res.couponCode) clearReferral();
       // Try to create a checkout preference (only works if provider configured)
@@ -951,7 +977,7 @@ function Comprar() {
       <div className="cmp-wrap cmp-top">
         <button
             type="button"
-            onClick={() => navigate({ to: "/produtos" })}
+            onClick={() => navigate({ to: product ? "/produtos" : "/carrinho" })}
             className="btn"
           >
             <svg
@@ -967,7 +993,7 @@ function Comprar() {
             >
               <path d="m15 18-6-6 6-6" />
             </svg>
-            Trocar opção
+            {product ? "Trocar opção" : "Voltar ao carrinho"}
           </button>
       </div>
 
@@ -2083,19 +2109,13 @@ function Comprar() {
                 variant="outline"
                 className="mt-5 h-12 w-full rounded-2xl font-bold"
                 onClick={() => {
-                  // O produto novo se escolhe na página dele: guarda o carrinho e vai para a lista.
-                  const item = buildCartItem();
-                  if (!item) return;
-                  try {
-                    sessionStorage.setItem("gcard-cart-v1", JSON.stringify({ at: Date.now(), cart: [...cart, item] }));
-                  } catch {
-                    /* sem armazenamento: o carrinho não é guardado */
-                  }
+                  // O produto novo se escolhe na página dele. O que está em andamento vai para o carrinho da loja.
+                  if (product) addToCart({ slug: product.slug, color: color?.slug ?? null, qty: quantity, chip: nfcAddonQty > 0, qr: wantsQr });
                   void navigate({ to: "/produtos" });
                 }}
                 disabled={!product}
               >
-                + Adicionar e comprar outro produto
+                + Continuar comprando
               </Button>
 
               {cart.length + (product ? 1 : 0) > 0 && (

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtivarRouteImport } from './routes/ativar'
+import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as ComprarRouteImport } from './routes/comprar'
 import { Route as DenunciarRouteImport } from './routes/denunciar'
 import { Route as GeradorRouteImport } from './routes/gerador'
@@ -78,6 +79,11 @@ const IndexRoute = IndexRouteImport.update({
 const AtivarRoute = AtivarRouteImport.update({
   id: '/ativar',
   path: '/ativar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CarrinhoRoute = CarrinhoRouteImport.update({
+  id: '/carrinho',
+  path: '/carrinho',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComprarRoute = ComprarRouteImport.update({
@@ -378,6 +384,7 @@ const ApiPartnerToqyAllowHostRoute = ApiPartnerToqyAllowHostRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
+  '/carrinho': typeof CarrinhoRoute
   '/comprar': typeof ComprarRoute
   '/denunciar': typeof DenunciarRoute
   '/gerador': typeof GeradorRoute
@@ -440,6 +447,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
+  '/carrinho': typeof CarrinhoRoute
   '/comprar': typeof ComprarRoute
   '/denunciar': typeof DenunciarRoute
   '/gerador': typeof GeradorRoute
@@ -501,6 +509,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ativar': typeof AtivarRoute
+  '/carrinho': typeof CarrinhoRoute
   '/comprar': typeof ComprarRoute
   '/denunciar': typeof DenunciarRoute
   '/gerador': typeof GeradorRoute
@@ -565,6 +574,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/ativar'
+    | '/carrinho'
     | '/comprar'
     | '/denunciar'
     | '/gerador'
@@ -627,6 +637,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/ativar'
+    | '/carrinho'
     | '/comprar'
     | '/denunciar'
     | '/gerador'
@@ -687,6 +698,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/ativar'
+    | '/carrinho'
     | '/comprar'
     | '/denunciar'
     | '/gerador'
@@ -750,6 +762,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AtivarRoute: typeof AtivarRoute
+  CarrinhoRoute: typeof CarrinhoRoute
   ComprarRoute: typeof ComprarRoute
   DenunciarRoute: typeof DenunciarRoute
   GeradorRoute: typeof GeradorRoute
@@ -799,6 +812,13 @@ declare module '@tanstack/react-router' {
       path: '/ativar'
       fullPath: '/ativar'
       preLoaderRoute: typeof AtivarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carrinho': {
+      id: '/carrinho'
+      path: '/carrinho'
+      fullPath: '/carrinho'
+      preLoaderRoute: typeof CarrinhoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/comprar': {
@@ -1281,6 +1301,7 @@ const PainelRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtivarRoute: AtivarRoute,
+  CarrinhoRoute: CarrinhoRoute,
   ComprarRoute: ComprarRoute,
   DenunciarRoute: DenunciarRoute,
   GeradorRoute: GeradorRoute,
