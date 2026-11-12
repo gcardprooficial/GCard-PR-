@@ -185,7 +185,7 @@ export function HomeView({ minQty, lines, heroImage, pixLabel }: HomeViewProps) 
                   Vendemos <b>só kits, a partir de {minQty} unidades</b>, de cartão de bolso NFC e placa de acrílico 10×10 com QR Code e NFC, com a arte pronta. Você configura o link de cada cliente e troca quando quiser, sem reimprimir.
                 </p>
                 <div className="row wrap" style={{ gap: 8, marginTop: 20 }}>
-                  <Link to="/comprar" search={{}} className="btn primary" data-analytics-event="begin_checkout" data-analytics-label="hero">Comprar meu kit <ArrowRight size={16} /></Link>
+                  <Link to="/produtos" className="btn primary" data-analytics-event="begin_checkout" data-analytics-label="hero">Comprar meu kit <ArrowRight size={16} /></Link>
                   <Link to="/" hash="precos" className="btn">Ver preços dos kits</Link>
                 </div>
                 <p className="xs muted" style={{ marginTop: 12 }}>A partir de {minQty} unidades · Frete grátis · Pix, cartão e boleto · Produção de segunda a sexta</p>
@@ -306,7 +306,7 @@ export function HomeView({ minQty, lines, heroImage, pixLabel }: HomeViewProps) 
               <h2 className="lp-h2">Pronto para revender 5 estrelas?</h2>
               <p className="lp-sub" style={{ margin: "10px auto 0" }}>Entre no grupo de lançamento: condição especial para os primeiros, novidades dos novos formatos e uma comunidade de revendedores crescendo juntos.</p>
               <div className="row wrap" style={{ gap: 8, justifyContent: "center", marginTop: 16 }}>
-                <Link to="/comprar" search={{}} className="btn primary" data-analytics-event="begin_checkout" data-analytics-label="cta final">Comprar meu kit <ArrowRight size={16} /></Link>
+                <Link to="/produtos" className="btn primary" data-analytics-event="begin_checkout" data-analytics-label="cta final">Comprar meu kit <ArrowRight size={16} /></Link>
                 <a href="https://chat.whatsapp.com/EBYX68zzqOICn9mIlqHwQ5" data-analytics-event="generate_lead" data-analytics-label="whatsapp comunidade" target="_blank" rel="noopener noreferrer" className="btn">Entrar no grupo do WhatsApp</a>
               </div>
             </div>

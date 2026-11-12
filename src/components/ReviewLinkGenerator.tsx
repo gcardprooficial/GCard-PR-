@@ -230,7 +230,7 @@ export function ReviewLinkGenerator() {
                 Revende cartão NFC e placa de avaliação? Compre kits a partir de 10 unidades, com frete grátis.
               </p>
               <Button asChild size="sm" className="rounded-xl">
-                <Link to="/comprar" search={{}}>
+                <Link to="/produtos">
                   Ver kits →
                 </Link>
               </Button>

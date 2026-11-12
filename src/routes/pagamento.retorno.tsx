@@ -142,7 +142,7 @@ function PagamentoRetorno() {
         <div className="mt-8 grid gap-3">
           {view.kind === "falhou" ? (
             <Button asChild size="lg" className="rounded-2xl">
-              <Link to="/comprar">Tentar de novo</Link>
+              <Link to="/produtos">Tentar de novo</Link>
             </Button>
           ) : null}
           {view.kind === "falhou" || view.kind === "desconhecido" ? (
