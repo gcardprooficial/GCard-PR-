@@ -892,159 +892,82 @@ function Orders() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl">Pedidos</h1>
-        <div className="flex w-full items-center gap-2 sm:w-auto">
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar nome / e-mail / número"
-            className="h-10 min-w-0 flex-1 sm:w-64 sm:flex-none"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-10 shrink-0"
-            disabled={checkingPayments}
-            onClick={() => void load().then(() => checkPayments(false))}
-          >
-            {checkingPayments ? "Conferindo…" : (<><span className="sm:hidden">Atualizar</span><span className="hidden sm:inline">Atualizar e conferir pagamentos</span></>)}
-          </Button>
-          <Button size="sm" variant="outline" className="h-10 shrink-0" disabled={syncingShip} onClick={() => void syncShipping()} title="Consulta o Melhor Envio e atualiza enviado, entregue e código de rastreio">
-            {syncingShip ? "Sincronizando…" : (<><span className="sm:hidden">🚚 Rastreio</span><span className="hidden sm:inline">🚚 Sincronizar rastreio</span></>)}
-          </Button>
+      <div className="row between wrap mb" style={{ rowGap: 12 }}>
+        <div>
+          <div className="eyebrow">Vendas</div>
+          <h1>Pedidos</h1>
         </div>
-      </div>
-
-      <div className="mt-4 flex flex-nowrap gap-2 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible">
-        {STAGES.map((s) => {
-          const active = stage === s.key;
-          const urgent = s.key === "aguardando" && stageCounts.aguardando > 0;
-          return (
-            <button
-              key={s.key}
-              type="button"
-              onClick={() => setStage(s.key)}
-              className={`shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors ${
-                active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {s.label}{" "}
-              <span
-                className={`ml-1 rounded-full px-1.5 py-0.5 text-xs ${
-                  active
-                    ? "bg-black/10"
-                    : urgent
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-muted"
-                }`}
-              >
-                {stageCounts[s.key]}
-              </span>
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => setStage("todos")}
-          className={`shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-colors ${
-            stage === "todos"
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-card text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Todos ({counts.all})
-        </button>
-      </div>
-
-      <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible text-xs font-semibold text-muted-foreground">
-        <span className="shrink-0 self-center">Tipo:</span>
-        {(
-          [
-            ["all", `Todos (${counts.all})`],
-            ["individual", `Loja própria (${counts.individual})`],
-            ["revenda", `Revenda / lote (${counts.revenda})`],
-          ] as const
-        ).map(([k, label]) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setKindFilter(k)}
-            className={`shrink-0 rounded-full px-3 py-1 transition-colors ${
-              kindFilter === k ? "bg-muted font-bold text-foreground ring-1 ring-border" : "hover:text-foreground"
-            }`}
-          >
-            {label}
+        <div className="row wrap" style={{ gap: 8 }}>
+          <button type="button" className="btn" disabled={checkingPayments} onClick={() => void load().then(() => checkPayments(false))}>
+            {checkingPayments ? "Conferindo…" : "Atualizar e conferir pagamentos"}
           </button>
-        ))}
-      </div>
-
-      <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-visible items-center text-xs font-semibold text-muted-foreground">
-        <span className="shrink-0 self-center">Período:</span>
-        {(
-          [
-            ["todos", "Tudo"],
-            ["hoje", "Hoje"],
-            ["ontem", "Ontem"],
-            ["7d", "Últimos 7 dias"],
-            ["mes", "Este mês"],
-            ["custom", "Escolher datas"],
-          ] as const
-        ).map(([k, label]) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setPeriod(k)}
-            className={`shrink-0 rounded-full px-3 py-1 transition-colors ${
-              period === k ? "bg-muted font-bold text-foreground ring-1 ring-border" : "hover:text-foreground"
-            }`}
-          >
-            {label}
+          <button type="button" className="btn" disabled={syncingShip} onClick={() => void syncShipping()} title="Consulta o Melhor Envio e atualiza enviado, entregue e código de rastreio">
+            {syncingShip ? "Sincronizando…" : "🚚 Sincronizar rastreio"}
           </button>
-        ))}
-        {period === "custom" && (
-          <span className="flex items-center gap-1">
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 w-36 text-xs" />
-            até
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-8 w-36 text-xs" />
-          </span>
-        )}
-        <span className="ml-auto flex shrink-0 items-center gap-1">
-          Ordenar:
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortBy)}
-            className="h-8 rounded-lg border border-border bg-background px-2 text-xs font-semibold"
-          >
-            <option value="recentes">Mais recentes</option>
-            <option value="antigos">Mais antigos</option>
-            <option value="maior">Maior valor</option>
-            <option value="menor">Menor valor</option>
-          </select>
-        </span>
+        </div>
       </div>
 
       {rows !== null && (
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          <div className="rounded-2xl bg-card p-3 card-soft">
-            <p className="text-xs font-semibold text-muted-foreground">Pedidos no período</p>
-            <p className="text-xl font-black">{periodBase.length}</p>
-            <p className="text-xs text-muted-foreground">{brl(sum(periodBase))} em pedidos feitos</p>
+        <div className="metrics mb" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+          <div className="metric">
+            <div className="xs muted">Pedidos no período</div>
+            <div className="v">{periodBase.length}</div>
+            <div className="xs muted">{brl(sum(periodBase))} em pedidos feitos</div>
           </div>
-          <div className="rounded-2xl bg-card p-3 card-soft">
-            <p className="text-xs font-semibold text-muted-foreground">Vendas pagas</p>
-            <p className="text-xl font-black text-g-green">{brl(sum(periodPaid))}</p>
-            <p className="text-xs text-muted-foreground">{periodPaid.length} pedido(s) pago(s)</p>
+          <div className="metric">
+            <div className="xs muted">Vendas pagas</div>
+            <div className="v" style={{ color: "var(--brand-text)" }}>{brl(sum(periodPaid))}</div>
+            <div className="xs muted">{periodPaid.length} pedido(s) pago(s)</div>
           </div>
-          <div className="rounded-2xl bg-card p-3 card-soft">
-            <p className="text-xs font-semibold text-muted-foreground">Aguardando pagamento</p>
-            <p className="text-xl font-black">{brl(sum(periodOpen))}</p>
-            <p className="text-xs text-muted-foreground">{periodOpen.length} pedido(s) em aberto</p>
+          <div className={`metric ${periodOpen.length ? "warn" : ""}`}>
+            <div className="xs muted">Aguardando pagamento</div>
+            <div className="v">{brl(sum(periodOpen))}</div>
+            <div className="xs muted">{periodOpen.length} pedido(s) em aberto</div>
           </div>
         </div>
       )}
+
+      <div className="seg" style={{ marginBottom: 12 }}>
+        {STAGES.map((s) => (
+          <button key={s.key} type="button" onClick={() => setStage(s.key)} className={`chip ${stage === s.key ? "on" : ""}`}>
+            {s.label} · {stageCounts[s.key]}
+          </button>
+        ))}
+        <button type="button" onClick={() => setStage("todos")} className={`chip ${stage === "todos" ? "on" : ""}`}>
+          Todos · {counts.all}
+        </button>
+      </div>
+
+      <div className="row wrap mb" style={{ gap: 8 }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar nome, e-mail ou número" className="input" style={{ flex: "1 1 240px", width: "auto" }} />
+        <select aria-label="Tipo de venda" value={kindFilter} onChange={(e) => setKindFilter(e.target.value as typeof kindFilter)} className="input" style={{ flex: "0 1 190px", width: "auto" }}>
+          <option value="all">Todos os tipos ({counts.all})</option>
+          <option value="individual">Loja própria ({counts.individual})</option>
+          <option value="revenda">Revenda / lote ({counts.revenda})</option>
+        </select>
+        <select aria-label="Período" value={period} onChange={(e) => setPeriod(e.target.value as typeof period)} className="input" style={{ flex: "0 1 170px", width: "auto" }}>
+          <option value="todos">Todo o período</option>
+          <option value="hoje">Hoje</option>
+          <option value="ontem">Ontem</option>
+          <option value="7d">Últimos 7 dias</option>
+          <option value="mes">Este mês</option>
+          <option value="custom">Escolher datas</option>
+        </select>
+        <select aria-label="Ordenar por" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className="input" style={{ flex: "0 1 170px", width: "auto" }}>
+          <option value="recentes">Mais recentes</option>
+          <option value="antigos">Mais antigos</option>
+          <option value="maior">Maior valor</option>
+          <option value="menor">Menor valor</option>
+        </select>
+        {period === "custom" && (
+          <span className="row" style={{ gap: 6 }}>
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input" style={{ width: 150 }} />
+            <span className="xs muted">até</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input" style={{ width: 150 }} />
+          </span>
+        )}
+      </div>
+
       {rows !== null && rows.length >= 500 && range && (
         <p className="mt-1 text-xs text-muted-foreground">
           Considerando os 500 pedidos mais recentes: períodos muito antigos podem estar incompletos.

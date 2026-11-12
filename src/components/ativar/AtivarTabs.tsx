@@ -1,13 +1,15 @@
-import { BookOpen, Crown, LayoutGrid, User } from "lucide-react";
+import { BookOpen, Crown, FileText, LayoutDashboard, LayoutGrid, User } from "lucide-react";
 
-export type Aba = "codigos" | "plus" | "ajuda" | "conta";
-export const ABAS: Aba[] = ["codigos", "plus", "ajuda", "conta"];
+export type Aba = "inicio" | "placas" | "plus" | "relatorios" | "ajuda" | "conta";
+export const ABAS: Aba[] = ["inicio", "placas", "plus", "relatorios", "ajuda", "conta"];
 
 const ITEMS = [
-  { id: "codigos", label: "Meus códigos", icon: LayoutGrid },
+  { id: "inicio", label: "Início", icon: LayoutDashboard },
+  { id: "placas", label: "Minhas placas", icon: LayoutGrid },
   { id: "plus", label: "GCard Plus", icon: Crown },
-  { id: "ajuda", label: "Como usar", icon: BookOpen },
-  { id: "conta", label: "Minha conta", icon: User },
+  { id: "relatorios", label: "Relatórios", icon: FileText },
+  { id: "ajuda", label: "Ajuda", icon: BookOpen },
+  { id: "conta", label: "Conta", icon: User },
 ] as const;
 
 /** Menus da área do cliente. O Plus é pago: fica separado e em destaque (dourado). */

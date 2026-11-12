@@ -27,7 +27,6 @@ import { PIX_DISCOUNT_PCT, PIX_DISCOUNT_UNTIL_LABEL, pixDiscountActive, pixDisco
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { SecurityBadges } from "@/components/SecurityBadges";
 import produtoCartao from "@/assets/gcard-pro-cartoes-stack.jpeg";
 import produtoPlaquinha10x10 from "@/assets/placa 10x10 avaliacao google.png";
@@ -898,11 +897,9 @@ function Comprar() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background noise-bg">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -left-24 size-[480px] rounded-full bg-primary/12 blur-3xl"
-      />
+    <div className="v2">
+    <div className="lp cmp">
+      <div className="lp-bg" aria-hidden="true"><i className="b1" /><i className="b2" /><i className="b3" /></div>
 
       <AlertDialog open={productionNotice !== null} onOpenChange={(o) => !o && setProductionNotice(null)}>
         <AlertDialogContent>
@@ -929,11 +926,11 @@ function Comprar() {
       </AlertDialog>
 
       <SiteHeader />
-      <div className="mx-auto max-w-4xl px-5 pt-4">
+      <div className="cmp-wrap cmp-top">
         <button
             type="button"
             onClick={() => navigate({ to: "/comprar" })}
-            className="btn-press inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+            className="btn"
           >
             <svg
               width="16"
@@ -952,55 +949,22 @@ function Comprar() {
           </button>
       </div>
 
-      <div className="relative mx-auto max-w-4xl px-5 pb-20 pt-8 sm:pt-10">
-        <div className="mb-7 flex items-center gap-4">
-          <div className="inline-flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary font-display text-sm font-black text-primary-foreground shadow-sm">
-            {stepIndex + 1}
-            <span className="text-primary-foreground/60">/{steps.length}</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-                  Revenda / lote
-                </p>
-                <p className="truncate text-sm font-bold text-foreground">
-                  {stepLabels[step] ?? step}
-                  <span className="ml-2 font-medium text-muted-foreground">· {publicPlanName}</span>
-                </p>
-              </div>
-              <span className="shrink-0 text-xs font-bold text-muted-foreground">
-                {Math.round(((stepIndex + 1) / steps.length) * 100)}%
+      <div className="cmp-wrap cmp-body">
+        <div className="cmp-head">
+          <span className="lp-label">Revenda / lote · {publicPlanName}</span>
+          <div className="cmp-steps" role="list" aria-label={`Etapa ${stepIndex + 1} de ${steps.length}`}>
+            {steps.map((st, idx) => (
+              <span key={st} role="listitem" aria-current={idx === stepIndex ? "step" : undefined} className={`cmp-step ${idx === stepIndex ? "on" : idx < stepIndex ? "done" : ""}`}>
+                <i>{idx < stepIndex ? "✓" : idx + 1}</i>
+                <b>{stepLabels[st] ?? st}</b>
               </span>
-            </div>
-            <div className="flex gap-1.5" aria-hidden>
-              {steps.map((s, idx) => (
-                <span
-                  key={s}
-                  className={`h-1.5 flex-1 rounded-full transition-colors duration-500 ${
-                    idx <= stepIndex ? "bg-primary" : "bg-surface"
-                  }`}
-                />
-              ))}
-            </div>
+            ))}
           </div>
-        </div>
-
-        <div className="relative h-1 w-full overflow-hidden rounded-full bg-surface">
-          <div
-            className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out shadow-sm"
-            style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
-            role="progressbar"
-            aria-valuenow={stepIndex + 1}
-            aria-valuemin={1}
-            aria-valuemax={steps.length}
-          />
-          <Progress value={((stepIndex + 1) / steps.length) * 100} className="hidden" />
         </div>
 
         <div
           key={step}
-          className="mt-8 animate-rise rounded-[1.75rem] border border-border bg-card p-6 card-soft sm:p-9"
+          className="card cmp-card"
         >
           {step === "estilo" && (
             <div>
@@ -2458,6 +2422,8 @@ function Comprar() {
           </div>
         </div>
       )}
+      <SiteFooter />
+    </div>
     </div>
   );
 }

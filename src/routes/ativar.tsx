@@ -14,7 +14,7 @@ import { AtivarTabs, ABAS, type Aba } from "@/components/ativar/AtivarTabs";
 import { PlusHub } from "@/components/ativar/PlusHub";
 import { ToqyStrip } from "@/components/ativar/ToqyStrip";
 import { AjudaTab, ContaTab } from "@/components/ativar/AjudaConta";
-import { BookOpen, Crown, LayoutGrid, Moon, Palette, Pencil, Plus, ShoppingBag, Sun, Trash2, User } from "lucide-react";
+import { BookOpen, Crown, FileText, LayoutDashboard, LayoutGrid, Moon, Palette, Pencil, Plus, ShoppingBag, Sun, Trash2, User } from "lucide-react";
 import { GLogo } from "@/components/site/SiteChrome";
 import { useV2Theme } from "@/lib/use-v2-theme";
 import { releaseBatch, releasePlate, renameMyBatch } from "@/lib/plates.functions";
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/ativar")({
     ],
   }),
   validateSearch: (s: Record<string, unknown>): { aba?: Aba; codigo?: string } => ({
-    ...(ABAS.includes(s["aba"] as Aba) ? { aba: s["aba"] as Aba } : {}),
+    ...(s["aba"] === "codigos" ? { aba: "placas" as Aba } : ABAS.includes(s["aba"] as Aba) ? { aba: s["aba"] as Aba } : {}),
     ...(typeof s["codigo"] === "string" && /^[0-9a-f-]{36}$/i.test(s["codigo"]) ? { codigo: s["codigo"] } : {}),
   }),
   component: Ativar,
@@ -157,7 +157,7 @@ function Center({ children }: { children: ReactNode }) {
 function Lote({ email, userId }: { email: string; userId: string }) {
   const plus = usePlus();
   const search = Route.useSearch();
-  const aba: Aba = search.aba ?? "codigos";
+  const aba: Aba = search.aba ?? "inicio";
   const detailId = search.codigo ?? null;
   // Abre o painel Plus de um código (ou volta ao geral com null).
   const goDetail = (id: string | null) => {
@@ -442,14 +442,14 @@ function Lote({ email, userId }: { email: string; userId: string }) {
             <button role="tab" aria-selected className="on">Revendedor</button>
             {isTeamUser ? <Link to="/painel/visao-geral" role="tab" aria-selected={false} style={{ flex: 1, textAlign: "center", padding: "7px 8px", fontSize: 13, fontWeight: 600, color: "var(--muted)", textDecoration: "none" }}>Administração</Link> : null}
           </div>
-          {([["codigos", "Meus códigos", LayoutGrid]] as const).map(([k, label, Icon]) => (
-            <button key={k} type="button" className={`nav ${aba === k ? "on" : ""}`} onClick={() => goAba(k)}><Icon size={18} /> {label}</button>
-          ))}
+          <button type="button" className={`nav ${aba === "inicio" ? "on" : ""}`} onClick={() => goAba("inicio")}><LayoutDashboard size={18} /> Início</button>
+          <button type="button" className={`nav ${aba === "placas" ? "on" : ""}`} onClick={() => goAba("placas")}><LayoutGrid size={18} /> Minhas placas</button>
           <Link to="/comprar" search={{}} className="nav"><ShoppingBag size={18} /> Comprar</Link>
           <Link to="/personalizar" className="nav"><Palette size={18} /> Personalizar</Link>
           {showPlus && <button type="button" className={`nav plus ${aba === "plus" ? "on" : ""}`} onClick={() => goAba("plus")}><Crown size={18} /> GCard Plus <span className="plustag">Plus</span></button>}
-          <button type="button" className={`nav ${aba === "ajuda" ? "on" : ""}`} onClick={() => goAba("ajuda")}><BookOpen size={18} /> Como usar</button>
-          <button type="button" className={`nav ${aba === "conta" ? "on" : ""}`} onClick={() => goAba("conta")}><User size={18} /> Minha conta</button>
+          <button type="button" className={`nav ${aba === "relatorios" ? "on" : ""}`} onClick={() => goAba("relatorios")}><FileText size={18} /> Relatórios</button>
+          <button type="button" className={`nav ${aba === "ajuda" ? "on" : ""}`} onClick={() => goAba("ajuda")}><BookOpen size={18} /> Ajuda</button>
+          <button type="button" className={`nav ${aba === "conta" ? "on" : ""}`} onClick={() => goAba("conta")}><User size={18} /> Conta</button>
           <div style={{ marginTop: "auto" }} className="col">
             <span className="badge green">Conta de revendedor</span>
             <span className="xs muted" title={email} style={{ padding: "0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</span>
@@ -465,105 +465,71 @@ function Lote({ email, userId }: { email: string; userId: string }) {
         {aba === "plus" && showPlus && (
           <PlusHub plates={plates} rules={rules} allowedUrls={allowedUrls} active={plus.active} sub={plus.sub} onDone={() => void load()} onRemove={(p) => void removePlate(p as Plate)} detailId={detailId} onDetail={goDetail} />
         )}
-        {aba === "ajuda" && <AjudaTab />}
-        {aba === "conta" && <ContaTab email={email} onSignOut={() => supabase.auth.signOut()} />}
-        {(aba === "codigos" || (aba === "plus" && !showPlus)) && (
-        <>
-        <form id="resgatar" onSubmit={redeem} className="scroll-mt-24 rounded-2xl bg-card p-5 card-soft border border-dashed border-primary/40 mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <Label className="text-xs font-semibold">Recebeu um lote novo? Resgate pelo código</Label>
-            <Input
-              value={redeemCode}
-              onChange={(e) => setRedeemCode(e.target.value)}
-              placeholder="Ex: L-260915-AB12CD"
-              className="mt-1 h-10 input-soft rounded-xl font-mono"
-            />
-          </div>
-          <Button type="submit" disabled={redeeming || !redeemCode.trim()} className="rounded-xl font-bold">
-            {redeeming ? "Resgatando…" : "Resgatar lote"}
-          </Button>
-        </form>
-
-        {loadError && (
-          <div className="rounded-2xl bg-card p-6 card-soft mb-4">
-            <h2 className="text-lg text-foreground">Não foi possível carregar lotes</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{loadError}</p>
-            <div className="mt-4 flex gap-2">
-              <Button onClick={() => void load()}>Tentar novamente</Button>
-              <Button variant="outline" onClick={() => supabase.auth.signOut()}>
-                Sair
-              </Button>
-            </div>
-          </div>
+        {aba === "ajuda" && <><PageHead title="Ajuda" sub="Guias rápidos e atendimento." /><AjudaTab /></>}
+        {aba === "conta" && <><PageHead title="Conta" /><ContaTab email={email} onSignOut={() => supabase.auth.signOut()} /></>}
+        {aba === "inicio" && (
+          <InicioTab
+            batches={batches.length}
+            counts={counts}
+            reads={plates.reduce((n, p) => n + (p.scan_count ?? 0), 0)}
+            blanks={plates.filter((p) => p.status !== "ativada").slice(0, 3)}
+            batchLabel={(id) => (id ? `Lote ${batchNumberById.get(id) ?? ""}` : "")}
+            redeemCode={redeemCode}
+            setRedeemCode={setRedeemCode}
+            redeeming={redeeming}
+            onRedeem={redeem}
+            onGoPlacas={(f) => { setStatusFilter(f); goAba("placas"); }}
+            loadError={loadError}
+            onRetry={() => void load()}
+          />
         )}
-
+        {aba === "relatorios" && (
+          <RelatoriosTab plates={plates.filter((p) => p.status === "ativada")} plusActive={plus.active} plusEnabled={showPlus} onOpen={(id) => goDetail(id)} onPlus={() => goAba("plus")} />
+        )}
+        {(aba === "placas" || (aba === "plus" && !showPlus)) && (
+        <>
+        <PageHead title="Minhas placas" sub="Ative, troque o destino e baixe o QR. O destino vale na hora, sem reimprimir." />
 
         {batches.length === 0 ? (
-          <div className="rounded-2xl bg-card p-6 card-soft">
-            <h1 className="text-xl">Nenhum lote vinculado</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Não encontramos nenhum lote no e-mail <strong>{email}</strong>. Use o mesmo e-mail da
-              compra, ou fale com a GCard-PRÓ pelo Instagram{" "}
-              <a className="underline" href="https://instagram.com/gcardpro.oficial" target="_blank" rel="noopener noreferrer">
-                @gcardpro.oficial
-              </a>
-              .
+          <div className="card col">
+            <h2>Nenhum lote vinculado</h2>
+            <p className="sm muted">
+              Não encontramos nenhum lote no e-mail <b>{email}</b>. Use o mesmo e-mail da compra, resgate pelo código na tela Início ou fale com a GCard-PRÓ pelo Instagram{" "}
+              <a style={{ textDecoration: "underline" }} href="https://instagram.com/gcardpro.oficial" target="_blank" rel="noopener noreferrer">@gcardpro.oficial</a>.
             </p>
+            <button type="button" className="btn primary" style={{ alignSelf: "flex-start" }} onClick={() => goAba("inicio")}>Resgatar um lote</button>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Stat label="Lotes" value={batches.length} />
-              <Stat label="Total de códigos" value={counts.total} />
-              <Stat label="Ativados" value={counts.active} />
-              <Stat label="Em branco" value={counts.blank} />
-            </div>
-
-            <div className="mt-5" />
-            <div id="placas" className="mt-5 flex scroll-mt-24 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-bold">Cartões por lote</h2>
-                <p className="text-xs text-muted-foreground">Clique num lote pra abrir e ativar os cartões dele</p>
+            <div id="placas" className="col scroll-mt-24" style={{ gap: 10 }}>
+              <div className="seg">
+                {(
+                  [
+                    ["all", `Todas · ${counts.total}`],
+                    ["ativada", `Ativas · ${counts.active}`],
+                    ["nao_ativada", `Em branco · ${counts.blank}`],
+                  ] as const
+                ).map(([k, label]) => (
+                  <button key={k} type="button" onClick={() => setStatusFilter(k)} className={`chip ${statusFilter === k ? "on" : ""}`}>
+                    {label}
+                  </button>
+                ))}
               </div>
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código / negócio" className="h-10 w-full sm:w-64 input-soft rounded-xl" />
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <label className="text-xs font-semibold text-muted-foreground" htmlFor="ordenar-placas">
-                Ordenar por
-              </label>
-              <select
-                id="ordenar-placas"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="h-9 rounded-xl border border-border bg-background px-3 text-xs font-semibold"
-              >
-                <option value="codigo">Código (GCARD-0000)</option>
-                <option value="recentes">Ativadas há menos tempo</option>
-                <option value="antigas">Ativadas há mais tempo</option>
-                <option value="negocio">Nome do negócio (A–Z)</option>
-              </select>
-            </div>
-
-            <div className="mt-3 flex gap-1 rounded-full bg-muted p-1 text-xs font-semibold">
-              {(
-                [
-                  ["all", `Todos (${counts.total})`],
-                  ["ativada", `Ativados (${counts.active})`],
-                  ["nao_ativada", `Em branco (${counts.blank})`],
-                ] as const
-              ).map(([k, label]) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setStatusFilter(k)}
-                  className={`rounded-full px-3 py-1.5 transition-colors ${
-                    statusFilter === k ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                  }`}
+              <div className="row wrap" style={{ gap: 8 }}>
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar código ou negócio" className="input" style={{ flex: "1 1 220px", width: "auto" }} />
+                <select
+                  aria-label="Ordenar por"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="input"
+                  style={{ flex: "0 1 230px", width: "auto" }}
                 >
-                  {label}
-                </button>
-              ))}
+                  <option value="codigo">Ordenar: código</option>
+                  <option value="recentes">Ativadas há menos tempo</option>
+                  <option value="antigas">Ativadas há mais tempo</option>
+                  <option value="negocio">Nome do negócio (A–Z)</option>
+                </select>
+              </div>
             </div>
 
             <div className="mt-3 space-y-3">
@@ -616,7 +582,8 @@ function Lote({ email, userId }: { email: string; userId: string }) {
         </main>
 
         <nav className="tabbar" aria-label="Painel">
-          <button type="button" className={`tab ${aba === "codigos" ? "on" : ""}`} onClick={() => goAba("codigos")}><LayoutGrid size={20} />Códigos</button>
+          <button type="button" className={`tab ${aba === "inicio" ? "on" : ""}`} onClick={() => goAba("inicio")}><LayoutDashboard size={20} />Início</button>
+          <button type="button" className={`tab ${aba === "placas" ? "on" : ""}`} onClick={() => goAba("placas")}><LayoutGrid size={20} />Placas</button>
           <Link to="/comprar" search={{}} className="tab"><ShoppingBag size={20} />Comprar</Link>
           {showPlus ? <button type="button" className={`tab ${aba === "plus" ? "on" : ""}`} onClick={() => goAba("plus")}><Crown size={20} />Plus</button> : <button type="button" className={`tab ${aba === "ajuda" ? "on" : ""}`} onClick={() => goAba("ajuda")}><BookOpen size={20} />Ajuda</button>}
           <button type="button" className={`tab ${aba === "conta" ? "on" : ""}`} onClick={() => goAba("conta")}><User size={20} />Conta</button>
@@ -890,11 +857,101 @@ function PlateCard({
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+/** Cabeçalho de cada tela, igual ao do protótipo. */
+function PageHead({ title, eyebrow, sub }: { title: ReactNode; eyebrow?: string; sub?: ReactNode }) {
   return (
-    <div className="rounded-2xl bg-card p-4 card-soft">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1 font-display text-2xl">{value}</p>
+    <div className="mb">
+      {eyebrow && <div className="eyebrow">{eyebrow}</div>}
+      <h1>{title}</h1>
+      {sub && <p className="muted sm" style={{ marginTop: 4 }}>{sub}</p>}
     </div>
+  );
+}
+
+/** Início: o que falta ativar, números e o resgate de um lote novo. Tudo curto, sem listas longas. */
+function InicioTab(props: {
+  batches: number;
+  counts: { total: number; active: number; blank: number };
+  reads: number;
+  blanks: Plate[];
+  batchLabel: (id: string | null) => string;
+  redeemCode: string;
+  setRedeemCode: (v: string) => void;
+  redeeming: boolean;
+  onRedeem: (e: FormEvent) => void;
+  onGoPlacas: (f: "all" | "ativada" | "nao_ativada") => void;
+  loadError: string | null;
+  onRetry: () => void;
+}) {
+  const { counts } = props;
+  return (
+    <>
+      <PageHead title="Olá" eyebrow="Resumo" sub="Suas placas e o que falta ativar." />
+      <div className="col" style={{ gap: 14 }}>
+        {props.loadError && (
+          <div className="card col">
+            <h2>Não foi possível carregar os lotes</h2>
+            <p className="sm muted">{props.loadError}</p>
+            <button type="button" className="btn primary" style={{ alignSelf: "flex-start" }} onClick={props.onRetry}>Tentar novamente</button>
+          </div>
+        )}
+        <div className="metrics">
+          <div className="metric"><div className="xs muted">Placas ativas</div><div className="v">{counts.active}</div></div>
+          <div className={`metric ${counts.blank ? "warn" : ""}`}><div className="xs muted">Falta ativar</div><div className="v">{counts.blank}</div></div>
+          <div className="metric"><div className="xs muted">Lotes</div><div className="v">{props.batches}</div></div>
+          <div className="metric"><div className="xs muted">Leituras</div><div className="v">{props.reads}</div></div>
+        </div>
+        {counts.blank > 0 && (
+          <div className="card col">
+            <h2>Placas em branco</h2>
+            <p className="sm muted">Cada placa só começa a funcionar depois de ativada com o link do cliente.</p>
+            {props.blanks.map((p) => (
+              <div key={p.id} className="row">
+                <b className="grow">{p.short_code}</b>
+                <span className="xs muted">{props.batchLabel(p.batch_id)}</span>
+              </div>
+            ))}
+            <button type="button" className="btn primary" style={{ alignSelf: "flex-start" }} onClick={() => props.onGoPlacas("nao_ativada")}>Ativar agora</button>
+          </div>
+        )}
+        <form id="resgatar" onSubmit={props.onRedeem} className="card col scroll-mt-24">
+          <b>Recebeu um lote novo?</b>
+          <span className="sm muted">Resgate pelo código que veio com o pedido.</span>
+          <div className="row wrap" style={{ gap: 8 }}>
+            <input value={props.redeemCode} onChange={(e) => props.setRedeemCode(e.target.value)} placeholder="Ex.: L-260915-AB12CD" className="input" style={{ flex: "1 1 220px", width: "auto", fontFamily: "monospace" }} />
+            <button type="submit" className="btn primary" disabled={props.redeeming || !props.redeemCode.trim()}>{props.redeeming ? "Resgatando…" : "Resgatar lote"}</button>
+          </div>
+        </form>
+        <div className="card row wrap" style={{ gap: 12 }}>
+          <div className="grow"><b>Precisa de mais placas?</b><div className="sm muted">Revenda a partir de 10 unidades, frete grátis.</div></div>
+          <Link to="/comprar" search={{}} className="btn">Comprar</Link>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** Relatórios: cada placa ativa abre o link e o PDF para o cliente (recurso do Plus). */
+function RelatoriosTab({ plates, plusActive, plusEnabled, onOpen, onPlus }: { plates: Plate[]; plusActive: boolean; plusEnabled: boolean; onOpen: (id: string) => void; onPlus: () => void }) {
+  return (
+    <>
+      <PageHead title="Relatórios" sub="Um link e um PDF por cliente, para você mostrar quantas pessoas leram a placa." />
+      <div className="col" style={{ gap: 10 }}>
+        {!plusActive && (
+          <div className="card goldframe row wrap" style={{ gap: 10 }}>
+            <span className="plustag">Plus</span>
+            <span className="sm grow">Relatório para o cliente é um recurso do GCard Plus.</span>
+            {plusEnabled && <button type="button" className="btn goldbtn" onClick={onPlus}>Conhecer o Plus</button>}
+          </div>
+        )}
+        {plates.length === 0 && <div className="card panel center sm muted" style={{ padding: 22 }}>Nenhuma placa ativa ainda. Ative uma placa para gerar o relatório dela.</div>}
+        {plates.map((p) => (
+          <div key={p.id} className="card row wrap" style={{ gap: 10 }}>
+            <div className="grow"><b>{p.business_name || p.short_code}</b><div className="sm muted">{p.short_code} · {p.scan_count} leituras</div></div>
+            <button type="button" className="btn" disabled={!plusActive} onClick={() => onOpen(p.id)}>Abrir relatório</button>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
