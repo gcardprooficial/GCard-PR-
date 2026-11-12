@@ -410,7 +410,7 @@ function Comprar() {
       : skipVideos
         ? (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "revisao"] as const)
         : (["estilo", "negocio", "confirmar", "quantidade", "carrinho", "dados", "videos", "revisao"] as const);
-  const steps = (qtyLocked && !isBlank ? (stepsFull as readonly string[]).filter((x) => x !== "quantidade") : stepsFull) as unknown as typeof stepsFull;
+  const steps = (qtyLocked ? (stepsFull as readonly string[]).filter((x) => x !== "quantidade") : stepsFull) as unknown as typeof stepsFull;
   const step = steps[stepIndex];
 
   const [term, setTerm] = useState("");
@@ -521,22 +521,38 @@ function Comprar() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const cartTotal = cart.reduce((s, l) => s + l.totalCents, 0);
 
+  function buildCartItem(): CartLine | null {
+    if (!product) return null;
+    return {
+      productSlug: product.slug,
+      productName: color ? `${product.name} — ${color.name}` : product.name,
+      planSlug: plan.slug,
+      colorSlug: color?.slug ?? null,
+      quantity,
+      unitPriceCents: unitPrice,
+      totalCents: total,
+      nfcAddonQty,
+      qrCodeQty,
+    };
+  }
+
+  // Carrinho guardado ao escolher outro produto na página dele; vale 30 minutos e é lido uma vez.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("gcard-cart-v1");
+      if (!raw) return;
+      sessionStorage.removeItem("gcard-cart-v1");
+      const saved = JSON.parse(raw) as { at?: number; cart?: CartLine[] };
+      if (typeof saved.at === "number" && Date.now() - saved.at < 30 * 60_000 && Array.isArray(saved.cart) && saved.cart.length > 0) setCart(saved.cart);
+    } catch {
+      /* sem armazenamento: começa com o carrinho vazio */
+    }
+  }, []);
+
   function addCurrentToCart() {
-    if (!product) return;
-    setCart((prev) => [
-      ...prev,
-      {
-        productSlug: product.slug,
-        productName: color ? `${product.name} — ${color.name}` : product.name,
-        planSlug: plan.slug,
-        colorSlug: color?.slug ?? null,
-        quantity,
-        unitPriceCents: unitPrice,
-        totalCents: total,
-        nfcAddonQty,
-        qrCodeQty,
-      },
-    ]);
+    const item = buildCartItem();
+    if (!item) return;
+    setCart((prev) => [...prev, item]);
     setProduct(null);
     setColor(null);
     setQuantity(isResale ? 10 : 1);
@@ -2067,9 +2083,15 @@ function Comprar() {
                 variant="outline"
                 className="mt-5 h-12 w-full rounded-2xl font-bold"
                 onClick={() => {
-                  addCurrentToCart();
-                  setQtyLocked(false); // o próximo produto escolhe a própria quantidade
-                  setStepIndex(0);
+                  // O produto novo se escolhe na página dele: guarda o carrinho e vai para a lista.
+                  const item = buildCartItem();
+                  if (!item) return;
+                  try {
+                    sessionStorage.setItem("gcard-cart-v1", JSON.stringify({ at: Date.now(), cart: [...cart, item] }));
+                  } catch {
+                    /* sem armazenamento: o carrinho não é guardado */
+                  }
+                  void navigate({ to: "/produtos" });
                 }}
                 disabled={!product}
               >
