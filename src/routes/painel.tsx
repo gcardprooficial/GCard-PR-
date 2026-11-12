@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { GLogo } from "@/components/site/SiteChrome";
+import { useV2Theme } from "@/lib/use-v2-theme";
 import logoTransparente from "@/assets/logo/gcard-pro-logo-transparente.webp";
 
 export const Route = createFileRoute("/painel")({
@@ -38,26 +39,13 @@ const GROUPS: PGroup[] = [
 const tabActive = (t: PTab, pathname: string) => (t.exact ? pathname === t.to : pathname === t.to || pathname.startsWith(`${t.to}/`));
 const groupOf = (pathname: string) => GROUPS.find((g) => g.tabs.some((t) => tabActive(t, pathname)) || (g.extra ?? []).some((e) => pathname.startsWith(e))) ?? null;
 
-function useTheme() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  useEffect(() => {
-    try { if (localStorage.getItem("gcard-theme") === "dark") setTheme("dark"); } catch { /* sem armazenamento */ }
-  }, []);
-  useEffect(() => {
-    const root = document.querySelector(".v2.gpanel") as HTMLElement | null;
-    if (root) root.dataset["theme"] = theme;
-    try { localStorage.setItem("gcard-theme", theme); } catch { /* sem armazenamento */ }
-  }, [theme]);
-  return { theme, toggle: () => setTheme((t) => (t === "light" ? "dark" : "light")) };
-}
-
 function PanelLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
   const [isTeam, setIsTeam] = useState<boolean | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [menuOpen, setMenuOpen] = useState(false);
-  const { theme, toggle } = useTheme();
+  const { theme, toggle } = useV2Theme();
 
   useEffect(() => {
     setMenuOpen(false);
