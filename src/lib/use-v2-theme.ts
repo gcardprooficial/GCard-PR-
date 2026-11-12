@@ -6,9 +6,12 @@ export function useV2Theme() {
   useEffect(() => {
     try { if (localStorage.getItem("gcard-theme") === "dark") setTheme("dark"); } catch { /* sem armazenamento */ }
   }, []);
+  // Sem lista de dependências: o painel só aparece depois do login, e o atributo precisa ser posto quando ele surge.
   useEffect(() => {
     const root = document.querySelector(".v2.gpanel") as HTMLElement | null;
-    if (root) root.dataset["theme"] = theme;
+    if (root && root.dataset["theme"] !== theme) root.dataset["theme"] = theme;
+  });
+  useEffect(() => {
     try { localStorage.setItem("gcard-theme", theme); } catch { /* sem armazenamento */ }
   }, [theme]);
   return { theme, toggle: () => setTheme((t) => (t === "light" ? "dark" : "light")) };
