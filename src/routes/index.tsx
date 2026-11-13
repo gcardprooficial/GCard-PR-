@@ -304,10 +304,10 @@ export function HomeView({ minQty, lines, heroImage, pixLabel }: HomeViewProps) 
           <section id="contato" className="lp-sec lp-final">
             <div className="center rv">
               <h2 className="lp-h2">Pronto para revender 5 estrelas?</h2>
-              <p className="lp-sub" style={{ margin: "10px auto 0" }}>Entre no grupo de lançamento: condição especial para os primeiros, novidades dos novos formatos e uma comunidade de revendedores crescendo juntos.</p>
+              <p className="lp-sub" style={{ margin: "10px auto 0" }}>Entre no Grupo de Network, gratuito: converse com outras pessoas sobre plaquinhas, bio sites e outros negócios, e fique por dentro das novidades.</p>
               <div className="row wrap" style={{ gap: 8, justifyContent: "center", marginTop: 16 }}>
                 <Link to="/produtos" className="btn primary" data-analytics-event="begin_checkout" data-analytics-label="cta final">Comprar meu kit <ArrowRight size={16} /></Link>
-                <a href="https://chat.whatsapp.com/EC9Eh3dssZDEuZX4zDg8S6" data-analytics-event="generate_lead" data-analytics-label="whatsapp comunidade" target="_blank" rel="noopener noreferrer" className="btn">Entrar no grupo do WhatsApp</a>
+                <a href="https://chat.whatsapp.com/EC9Eh3dssZDEuZX4zDg8S6" data-analytics-event="generate_lead" data-analytics-label="whatsapp network" target="_blank" rel="noopener noreferrer" className="btn">Entrar no Grupo de Network</a>
               </div>
             </div>
           </section>
