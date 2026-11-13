@@ -162,7 +162,7 @@ function PanelLayout() {
             <SheetContent side="left" className="flex w-72 flex-col border-0 p-0">
               <SheetTitle className="sr-only">Menu do painel</SheetTitle>
               <div className="v2 gpanel" style={{ display: "contents" }}>
-                <div className="side" style={{ display: "flex", height: "100%", position: "static" }}>{nav}</div>
+                <div className="side" style={{ display: "flex", flexDirection: "column", gap: 4, padding: "22px 14px", height: "100%", overflowY: "auto", position: "static" }}>{nav}</div>
               </div>
             </SheetContent>
           </Sheet>

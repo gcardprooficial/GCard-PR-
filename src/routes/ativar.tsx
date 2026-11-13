@@ -476,6 +476,14 @@ O destino é apagado e a placa já impressa para de abrir o link até você ativ
 
         <main className="main">
           <div className="topwash" />
+          {isTeamUser ? (
+            <div className="min-[900px]:hidden" style={{ position: "relative", zIndex: 1 }}>
+              <div className="psw" role="tablist" aria-label="Área">
+                <button role="tab" aria-selected className="on">Revendedor</button>
+                <Link to="/painel/visao-geral" role="tab" aria-selected={false} style={{ flex: 1, textAlign: "center", padding: "7px 8px", fontSize: 13, fontWeight: 600, color: "var(--muted)", textDecoration: "none" }}>Administração</Link>
+              </div>
+            </div>
+          ) : null}
           <div className="frame">
           <div>
         {aba === "plus" && showPlus && (
@@ -597,7 +605,7 @@ O destino é apagado e a placa já impressa para de abrir o link até você ativ
           </div>
         </main>
 
-        <nav className="tabbar" aria-label="Painel">
+        <nav className="tabbar" aria-label="Painel" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
           <button type="button" className={`tab ${aba === "inicio" ? "on" : ""}`} onClick={() => goAba("inicio")}><LayoutDashboard size={20} />Início</button>
           <button type="button" className={`tab ${aba === "placas" ? "on" : ""}`} onClick={() => goAba("placas")}><LayoutGrid size={20} />Placas</button>
           <Link to="/produtos" className="tab"><ShoppingBag size={20} />Comprar</Link>
