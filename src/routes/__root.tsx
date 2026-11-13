@@ -10,7 +10,6 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
 import appCss from "../styles.css?url";
 import protoCss from "../proto.css?url";
 import { captureReferralFromUrl } from "@/lib/referral";
@@ -225,7 +224,6 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
-      <WhatsAppButton />
       <Analytics />
       <ReferralCapture />
       <Toaster
