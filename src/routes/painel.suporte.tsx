@@ -89,6 +89,14 @@ function ChatDoSite() {
     end.current?.scrollIntoView({ block: "end" });
   }, [msgs.length, selId]);
 
+  // A lista se atualiza sozinha (só a primeira página, para não desmontar quem pediu "Mostrar mais").
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (!document.hidden && page === 0) void loadList(0, filter, false);
+    }, 15000);
+    return () => clearInterval(t);
+  }, [filter, page, loadList]);
+
   const sel = items?.find((c) => c.id === selId) ?? null;
   const abertas =
     items?.filter((c) => c.status === "aberta" && c.last_from === "visitor").length ?? 0;
@@ -130,9 +138,10 @@ function ChatDoSite() {
 
   return (
     <>
-      <h1 className="text-2xl">Chat do site</h1>
+      <h1 className="text-2xl">Suporte</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Mensagens de quem escreveu pelo balão "Suporte" do site. O Hub também responde por aqui.
+        Mensagens de quem escreveu pelo balão "Suporte" do site. Responda aqui ou pelo Hub: cada
+        resposta mostra o nome de quem enviou. A tela se atualiza sozinha.
         {items ? ` ${abertas} esperando resposta nesta lista.` : ""}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -228,7 +237,10 @@ function ChatDoSite() {
                       {m.body}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {m.sender_type === "staff" ? "Equipe" : "Cliente"} · {when(m.created_at)}
+                      {m.sender_type === "staff"
+                        ? (m.sender_name ?? "Equipe GCard")
+                        : (sel.visitor_name ?? "Cliente")}{" "}
+                      · {when(m.created_at)}
                     </span>
                   </div>
                 ))}

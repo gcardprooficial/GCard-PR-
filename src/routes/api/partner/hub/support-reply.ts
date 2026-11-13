@@ -36,7 +36,7 @@ export const Route = createFileRoute("/api/partner/hub/support-reply")({
         const { error } = await db.from("chat_messages").insert({
           conversation_id: body.conversa,
           sender_type: "staff",
-          sender_name: "Equipe GCard",
+          sender_name: "Equipe GCard · Hub",
           body: body.texto,
         });
         if (error) {
