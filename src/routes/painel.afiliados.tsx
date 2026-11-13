@@ -79,6 +79,18 @@ function Afiliados() {
   const [codeTouched, setCodeTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Omit<typeof EMPTY_FORM, "code">>({
+    name: "",
+    instagram: "",
+    phone: "",
+    email: "",
+    document: "",
+    pix_key: "",
+    discount_pct: "5",
+    commission_pct: "5",
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
 
   const load = useCallback(async () => {
@@ -170,6 +182,57 @@ function Afiliados() {
     setAffiliates(
       (prev) => prev?.map((x) => (x.id === a.id ? { ...x, is_active: !a.is_active } : x)) ?? null,
     );
+  }
+
+  // Editar um parceiro já cadastrado. O código do cupom não muda (quebraria os links já enviados).
+  // Mudança de desconto e comissão vale para os próximos pedidos: cada pedido guarda a porcentagem da época.
+  function startEdit(a: Affiliate) {
+    setEditId(a.id);
+    setEditForm({
+      name: a.name,
+      instagram: a.instagram ?? "",
+      phone: a.phone ?? "",
+      email: a.email ?? "",
+      document: a.document ?? "",
+      pix_key: a.pix_key ?? "",
+      discount_pct: String(a.discount_pct),
+      commission_pct: String(a.commission_pct),
+    });
+  }
+
+  async function saveEdit(a: Affiliate) {
+    const name = editForm.name.trim();
+    const discount = Number(editForm.discount_pct);
+    const commission = Number(editForm.commission_pct);
+    if (name.length < 2) {
+      toast.error("Informe o nome do parceiro.");
+      return;
+    }
+    if (![discount, commission].every((n) => Number.isInteger(n) && n >= 0 && n <= 50)) {
+      toast.error("Desconto e comissão: número inteiro de 0 a 50.");
+      return;
+    }
+    setSavingEdit(true);
+    const patch = {
+      name,
+      instagram: editForm.instagram.trim().replace(/^@/, "") || null,
+      phone: editForm.phone.trim() || null,
+      email: editForm.email.trim().toLowerCase() || null,
+      document: editForm.document.trim() || null,
+      pix_key: editForm.pix_key.trim() || null,
+      discount_pct: discount,
+      commission_pct: commission,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await db.from("affiliates").update(patch).eq("id", a.id);
+    setSavingEdit(false);
+    if (error) {
+      toast.error("Não foi possível salvar as alterações.");
+      return;
+    }
+    toast.success("Parceiro atualizado.");
+    setEditId(null);
+    void load();
   }
 
   async function pay(a: Affiliate, pendingCents: number) {
@@ -298,14 +361,72 @@ function Afiliados() {
                     type="button"
                     onClick={() => void toggleActive(a)}
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      a.is_active
-                        ? "bg-green-100 text-green-800"
-                        : "bg-muted text-muted-foreground"
+                      a.is_active ? "bg-green-100 text-green-800" : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {a.is_active ? "Ativo" : "Pausado"}
                   </button>
                 </div>
+
+                {editId === a.id && (
+                  <div className="mt-4 rounded-xl border border-border p-3">
+                    <p className="text-xs font-black">Editar parceiro</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {(
+                        [
+                          ["name", "Nome", {}],
+                          ["instagram", "Instagram", { placeholder: "@perfil" }],
+                          ["phone", "WhatsApp", { inputMode: "tel" }],
+                          ["email", "E-mail", { type: "email" }],
+                          ["document", "CPF/CNPJ", {}],
+                          ["pix_key", "Chave Pix (pagar comissão)", {}],
+                          [
+                            "discount_pct",
+                            "Desconto do cliente (%)",
+                            { inputMode: "numeric", maxLength: 2 },
+                          ],
+                          [
+                            "commission_pct",
+                            "Comissão do parceiro (%)",
+                            { inputMode: "numeric", maxLength: 2 },
+                          ],
+                        ] as [
+                          keyof typeof editForm,
+                          string,
+                          Partial<React.ComponentProps<typeof Input>>,
+                        ][]
+                      ).map(([key, label, props]) => (
+                        <div key={key}>
+                          <Label className="text-xs">{label}</Label>
+                          <Input
+                            value={editForm[key]}
+                            onChange={(e) => setEditForm((f) => ({ ...f, [key]: e.target.value }))}
+                            className="mt-1 h-9"
+                            {...props}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      O código <span className="font-mono font-bold uppercase">{a.code}</span> não
+                      muda (os links já enviados continuam valendo). Desconto e comissão novos valem
+                      para os próximos pedidos; os já feitos mantêm a porcentagem da época.
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <Button size="sm" disabled={savingEdit} onClick={() => void saveEdit(a)}>
+                        {savingEdit ? "Salvando…" : "Salvar alterações"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={savingEdit}
+                        onClick={() => setEditId(null)}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                   <Mini label="Cliques" value={String(a.clicks)} />
@@ -329,6 +450,11 @@ function Afiliados() {
                   >
                     <Copy className="size-3.5" /> Painel do parceiro
                   </Button>
+                  {editId !== a.id && (
+                    <Button size="sm" variant="outline" onClick={() => startEdit(a)}>
+                      Editar
+                    </Button>
+                  )}
                   {s.pending > 0 && (
                     <Button
                       size="sm"
