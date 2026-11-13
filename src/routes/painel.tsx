@@ -2,9 +2,11 @@ import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-r
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { ClipboardList, Ellipsis, Factory, LayoutDashboard, Megaphone, MessageCircle, Moon, Plug, ScanLine, ShieldAlert, Sun, Wallet, type LucideIcon } from "lucide-react";
+import { ClipboardList, Ellipsis, Factory, Headset, LayoutDashboard, Megaphone, MessageCircle, Moon, Plug, ScanLine, ShieldAlert, Sun, Wallet, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PanelCtx } from "@/lib/panelContext";
+import { staffChatUnread } from "@/lib/chat.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { DomainExpiryBanner } from "@/components/DomainExpiryBanner";
 import { Input } from "@/components/ui/input";
@@ -26,13 +28,14 @@ type PGroup = { key: string; label: string; icon: LucideIcon; tabs: PTab[]; extr
 
 const GROUPS: PGroup[] = [
   { key: "visao", label: "Visão geral", icon: LayoutDashboard, tabs: [{ to: "/painel/visao-geral", label: "Visão geral" }] },
+  { key: "suporte", label: "Suporte", icon: Headset, tabs: [{ to: "/painel/suporte", label: "Chat do site" }] },
   { key: "vendas", label: "Vendas", icon: ClipboardList, extra: ["/painel/dossie"], tabs: [{ to: "/painel", label: "Pedidos", exact: true }, { to: "/painel/clientes", label: "Clientes" }, { to: "/painel/relatorios", label: "Relatórios" }] },
   { key: "producao", label: "Produção", icon: Factory, tabs: [{ to: "/painel/lotes", label: "Lotes" }, { to: "/painel/placas", label: "Placas" }, { to: "/painel/estoque", label: "Estoque" }, { to: "/painel/frete", label: "Frete por estado" }] },
   { key: "leituras", label: "Leituras", icon: ScanLine, tabs: [{ to: "/painel/scans", label: "Scans" }, { to: "/painel/estatisticas", label: "Estatísticas (Plus)" }] },
   { key: "dinheiro", label: "Dinheiro", icon: Wallet, tabs: [{ to: "/painel/financeiro", label: "Financeiro" }, { to: "/painel/calculadora", label: "Calculadora" }, { to: "/painel/contador", label: "Contador" }, { to: "/painel/conciliacao", label: "Conciliação MP" }] },
   { key: "crescimento", label: "Crescimento", icon: Megaphone, tabs: [{ to: "/painel/afiliados", label: "Afiliados" }] },
   { key: "seguranca", label: "Segurança", icon: ShieldAlert, tabs: [{ to: "/painel/liberacoes", label: "Liberações de destino" }, { to: "/painel/denuncias", label: "Denúncias" }] },
-  { key: "atendimento", label: "Atendimento", icon: MessageCircle, tabs: [{ to: "/painel/whatsapp", label: "WhatsApp" }, { to: "/painel/suporte", label: "Chat do site" }] },
+  { key: "atendimento", label: "Atendimento", icon: MessageCircle, tabs: [{ to: "/painel/whatsapp", label: "WhatsApp" }] },
   { key: "sistema", label: "Sistema", icon: Plug, tabs: [{ to: "/painel/integracoes", label: "Integrações" }] },
 ];
 
@@ -46,6 +49,8 @@ function PanelLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [menuOpen, setMenuOpen] = useState(false);
   const { theme, toggle } = useV2Theme();
+  const unreadFn = useServerFn(staffChatUnread);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -71,6 +76,18 @@ function PanelLayout() {
       .in("role", ["admin", "staff"])
       .then(({ data }) => setIsTeam((data?.length ?? 0) > 0));
   }, [session]);
+
+  // Aviso de conversas esperando resposta no menu Suporte: confere a cada 30 s com a aba à vista.
+  useEffect(() => {
+    if (!isTeam) return;
+    const check = () => {
+      if (document.hidden) return;
+      unreadFn().then((r) => setUnread(r.count)).catch(() => {});
+    };
+    check();
+    const t = setInterval(check, 30000);
+    return () => clearInterval(t);
+  }, [isTeam, unreadFn]);
 
   if (!ready) return <Shell>Carregando…</Shell>;
   if (!session) return <Login />;
@@ -98,6 +115,7 @@ function PanelLayout() {
         return (
           <Link key={g.key} to={g.tabs[0]!.to} className={`nav ${current?.key === g.key ? "on" : ""}`} aria-current={current?.key === g.key ? "page" : undefined}>
             <Icon size={18} aria-hidden="true" /> {g.label}
+            {g.key === "suporte" && unread > 0 && <span className="badge warn" style={{ marginLeft: "auto" }} aria-label={`${unread} esperando resposta`}>{unread}</span>}
           </Link>
         );
       })}

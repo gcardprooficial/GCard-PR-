@@ -36,6 +36,8 @@ async function assertTeam(userId: string) {
 export type ChatMessage = {
   id: string;
   sender_type: "visitor" | "staff";
+  /** Quem respondeu (equipe): "Leonardo · GCard", "Paulo · GCard" ou "Equipe GCard · Hub". */
+  sender_name?: string | null;
   body: string;
   created_at: string;
 };
@@ -206,7 +208,7 @@ export const staffChatThread = createServerFn({ method: "POST" })
     const sb = await db();
     const { data: rows } = await sb
       .from("chat_messages")
-      .select("id, sender_type, body, created_at")
+      .select("id, sender_type, sender_name, body, created_at")
       .eq("conversation_id", data.id)
       .order("created_at", { ascending: true })
       .limit(500);
@@ -221,10 +223,19 @@ export const staffChatReply = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertTeam(context.userId);
     const sb = await db();
+    // O nome de quem responde aparece na conversa (Leonardo, Paulo...), para a equipe saber quem já falou.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: u } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+    const meta = (u?.user?.user_metadata ?? {}) as Record<string, unknown>;
+    const raw = String(
+      meta["full_name"] ?? meta["name"] ?? u?.user?.email?.split("@")[0] ?? "Equipe",
+    );
+    const first = raw.trim().split(/[\s._-]+/)[0] ?? "Equipe";
+    const who = (first.charAt(0).toUpperCase() + first.slice(1)).slice(0, 30) || "Equipe";
     const { error } = await sb.from("chat_messages").insert({
       conversation_id: data.id,
       sender_type: "staff",
-      sender_name: "Equipe GCard",
+      sender_name: `${who} · GCard`,
       body: data.text,
     });
     if (error) throw error;
@@ -249,4 +260,30 @@ export const staffChatStatus = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (error) throw error;
     return { ok: true as const };
+  });
+
+/** Quantas conversas abertas esperam resposta (a última mensagem é do visitante). Alimenta o aviso do menu. */
+export const staffChatUnread = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertTeam(context.userId);
+    const sb = await db();
+    const { data: convs } = await sb
+      .from("chat_conversations")
+      .select("id")
+      .eq("status", "aberta")
+      .order("last_message_at", { ascending: false })
+      .limit(50);
+    const ids = ((convs ?? []) as { id: string }[]).map((c) => c.id);
+    if (!ids.length) return { count: 0 };
+    const { data: msgs } = await sb
+      .from("chat_messages")
+      .select("conversation_id, sender_type, created_at")
+      .in("conversation_id", ids)
+      .order("created_at", { ascending: false })
+      .limit(ids.length * 4);
+    const last = new Map<string, "visitor" | "staff">();
+    for (const m of (msgs ?? []) as { conversation_id: string; sender_type: "visitor" | "staff" }[])
+      if (!last.has(m.conversation_id)) last.set(m.conversation_id, m.sender_type);
+    return { count: [...last.values()].filter((t) => t === "visitor").length };
   });
