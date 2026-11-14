@@ -4,7 +4,9 @@ import { Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { untyped } from "@/lib/db-untyped";
-import { createScanSession, pollScanSession } from "@/lib/scan-session.functions";
+import { beep } from "@/lib/beep";
+import type { ScanStatus } from "@/lib/scan-cap";
+import { createScanSession, endScanSession, pollScanSession } from "@/lib/scan-session.functions";
 
 /** Aceita o que a placa guarda: URL /r/<token>, GCARD-00001 ou o token em hex. Outra coisa (código de barras de rastreio, etc.) é ignorada. */
 export function extractPlateCode(raw: string): string | null {
@@ -16,9 +18,10 @@ export function extractPlateCode(raw: string): string | null {
 }
 
 /** PC: mostra um QR; o celular abre o link e vira o bipador (câmera boa, lanterna, foco contínuo). Os códigos chegam aqui. */
-export function PhoneScanPanel({ onScan, already, onBack }: { onScan: (code: string) => void; already: Set<string>; onBack: () => void }) {
+export function PhoneScanPanel({ onScan, already, onBack }: { onScan: (code: string) => ScanStatus | void; already: Set<string>; onBack: () => void }) {
   const create = useServerFn(createScanSession);
   const poll = useServerFn(pollScanSession);
+  const end = useServerFn(endScanSession);
   const [qr, setQr] = useState<string | null>(null);
   const [link, setLink] = useState("");
   const [connected, setConnected] = useState(false);
@@ -45,8 +48,18 @@ export function PhoneScanPanel({ onScan, already, onBack }: { onScan: (code: str
           seen.current.add(display.toLowerCase());
         }
       }
+      // Quem monta o lote (o pai) decide: trava na quantidade do pedido e não aceita a placa seguinte.
+      const status = onScan(display);
+      if (status === "over") {
+        beep("erro"); // o aviso na tela já vem de quem monta o lote
+        return;
+      }
+      if (status === "invalid") {
+        beep("erro");
+        return void toast.message("Código lido, mas não é de uma placa GCard: ignorei.");
+      }
+      if (status === "dup") return;
       setReceived((r) => [display, ...r]);
-      onScan(display);
     }
 
     void (async () => {
@@ -78,6 +91,8 @@ export function PhoneScanPanel({ onScan, already, onBack }: { onScan: (code: str
     return () => {
       stopped = true;
       if (timer) clearInterval(timer);
+      // Fechou o bipador (ou o lote completou): encerra a sessão e o celular para de aceitar leituras.
+      if (tokenRef.current) void end({ data: { token: tokenRef.current } }).catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

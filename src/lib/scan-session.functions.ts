@@ -28,6 +28,18 @@ export const createScanSession = createServerFn({ method: "POST" })
     return { token };
   });
 
+/** PC (equipe): encerra a sessão (lote completo ou bipador fechado). O celular recebe "sessão encerrada" na próxima leitura e para de aceitar. */
+export const endScanSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ token: TOKEN }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { assertTeam } = await import("@/lib/team.server");
+    await assertTeam(context.userId);
+    const db = await admin();
+    await db.from("scan_sessions").update({ expires_at: new Date().toISOString() }).eq("token", data.token);
+    return { ok: true as const };
+  });
+
 /** PC (equipe): códigos novos que o celular mandou (e se o celular está conectado). */
 export const pollScanSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

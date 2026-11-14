@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, ScanLine, Zap, ZapOff } from "lucide-react";
+import { CheckCircle2, ScanLine, Volume2, VolumeX, Zap, ZapOff } from "lucide-react";
+import { audioReady, beep, unlockAudio } from "@/lib/beep";
 import { pingScanSession, sendScanCode } from "@/lib/scan-session.functions";
 
 export const Route = createFileRoute("/bipar/$token")({
@@ -25,6 +26,19 @@ function Bipar() {
   const [canTorch, setCanTorch] = useState(false);
   const [zoom, setZoom] = useState<{ min: number; max: number; step: number; value: number } | null>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);
+  const [soundOn, setSoundOn] = useState(false);
+
+  // O celular só libera o som depois de um toque na tela: o primeiro toque liga o bip.
+  useEffect(() => {
+    setSoundOn(unlockAudio());
+    const on = () => setSoundOn(unlockAudio() || audioReady());
+    window.addEventListener("pointerdown", on);
+    window.addEventListener("touchend", on);
+    return () => {
+      window.removeEventListener("pointerdown", on);
+      window.removeEventListener("touchend", on);
+    };
+  }, []);
 
   useEffect(() => {
     let stopped = false;
@@ -48,10 +62,16 @@ function Bipar() {
       try {
         const r = await send({ data: { token, code } });
         if (!r.ok) {
-          if (r.reason === "expired") return void setState("expirou");
+          if (r.reason === "expired") {
+            beep("erro");
+            return void setState("expirou");
+          }
+          beep("erro");
           return void setMsg("Não consegui enviar agora. Tente de novo.");
         }
         setMsg("");
+        if ("duplicate" in r && r.duplicate) return; // mesmo código lido em sequência: sem bip nem repetição na lista
+        beep("ok"); // um bip a cada placa lida
         setCodes((c) => [code, ...c.filter((x) => x !== code)].slice(0, 30));
       } catch {
         setMsg("Sem conexão com o servidor. Confira a internet do celular.");
@@ -61,7 +81,7 @@ function Bipar() {
     async function start() {
       const first = await ping({ data: { token } }).catch(() => null);
       if (!first || !first.ok) return void setState("expirou");
-      pingTimer = setInterval(() => void ping({ data: { token } }).then((r) => !r.ok && setState("expirou")).catch(() => {}), 10_000);
+      pingTimer = setInterval(() => void ping({ data: { token } }).then((r) => !r.ok && setState("expirou")).catch(() => {}), 3_000);
       try {
         const nav = navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> } };
         wake = (await nav.wakeLock?.request("screen")) ?? null; // tela não apaga
@@ -165,7 +185,7 @@ function Bipar() {
       <div className="flex min-h-screen items-center justify-center bg-black p-6 text-center text-white">
         <div>
           <p className="text-xl font-bold">Sessão encerrada</p>
-          <p className="mt-2 text-sm text-white/70">Volte ao computador, toque em "Usar o celular" e leia o QR de novo.</p>
+          <p className="mt-2 text-sm text-white/70">O lote está completo ou o bipador foi fechado no computador. Para bipar mais, volte ao computador, toque em "Usar o celular" e leia o QR de novo.</p>
         </div>
       </div>
     );
@@ -175,7 +195,20 @@ function Bipar() {
     <div className="fixed inset-0 flex flex-col bg-black text-white">
       <header className="flex items-center justify-between px-4 py-3">
         <p className="flex items-center gap-2 text-sm font-bold"><ScanLine className="size-4 text-amber-400" /> Bipador GCard-PRÓ</p>
-        <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-300">{state === "pronto" ? "Conectado ao PC" : "Abrindo…"}</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSoundOn(unlockAudio() || audioReady());
+              beep("ok");
+            }}
+            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${soundOn ? "bg-white/10 text-white/80" : "bg-amber-400 text-black"}`}
+            aria-label={soundOn ? "Som ligado. Toque para testar o bip" : "Som desligado. Toque para ligar o bip"}
+          >
+            {soundOn ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />} {soundOn ? "Som" : "Toque: ligar som"}
+          </button>
+          <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-300">{state === "pronto" ? "Conectado ao PC" : "Abrindo…"}</span>
+        </div>
       </header>
 
       <div className="relative flex-1 overflow-hidden">

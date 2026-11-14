@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { untyped } from "@/lib/db-untyped";
 import { OrderEmailStatus, type EmailEventRow } from "@/components/OrderEmailStatus";
 import { PhoneScanPanel } from "@/components/PhoneScanPanel";
+import { beep } from "@/lib/beep";
+import { addScannedCode, parseScanned, scanGap, scanGapLabel, type ScanStatus } from "@/lib/scan-cap";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { money } from "@/lib/pricing";
@@ -177,28 +179,7 @@ type AuditRow = {
 };
 
 /** Aceita links /r/<token>, tokens de 32 hex e os códigos curtos GCARD-00001 escritos nas placas. */
-function parseScanned(text: string) {
-  const hex = new Set((text.match(/[0-9a-f]{32}/gi) ?? []).map((t) => t.toLowerCase()));
-  const shorts = new Set((text.match(/GCARD-\d{5}/gi) ?? []).map((t) => t.toUpperCase()));
-  return { hex, shorts };
-}
-
-/** Bip curto de confirmação -- sem asset, só osciladores do WebAudio. */
-function beep() {
-  try {
-    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.12);
-  } catch {
-    // sem áudio disponível (autoplay bloqueado etc.) -- silencioso, não trava o scan.
-  }
-}
+// parseScanned, o bip e a trava de quantidade vivem em @/lib/scan-cap e @/lib/beep (testados à parte).
 
 /**
  * "Bipador" de placa via câmera do celular/notebook: aponta pro QR, ele extrai o código
@@ -208,7 +189,7 @@ function beep() {
  * que não fechava foco em QR pequeno de perto.
  */
 /** Bipador: câmera do PC ou, melhor, o celular conectado por QR (câmera boa, lanterna, foco contínuo). */
-function CameraScanner(props: { onScan: (code: string) => void; onClose: () => void; already: Set<string> }) {
+function CameraScanner(props: { onScan: (code: string) => ScanStatus | void; onClose: () => void; already: Set<string> }) {
   const [mode, setMode] = useState<"camera" | "celular">("camera");
   if (mode === "celular") {
     return (
@@ -227,7 +208,7 @@ function WebcamScanner({
   already,
   onUsePhone,
 }: {
-  onScan: (code: string) => void;
+  onScan: (code: string) => ScanStatus | void;
   onClose: () => void;
   already: Set<string>;
   onUsePhone: () => void;
@@ -332,9 +313,10 @@ function WebcamScanner({
                 seenThisSession.add(display.toLowerCase());
               }
             }
-            beep();
-            setLastCode(display);
-            onScan(display);
+            // Quem monta o lote (o pai) decide se a placa entrou: bip agudo se entrou, bip grave duplo se não coube.
+            const status = onScan(display);
+            beep(status === "over" || status === "invalid" ? "erro" : "ok");
+            if (status !== "over" && status !== "invalid") setLastCode(display);
           })();
         },
         {
@@ -517,8 +499,26 @@ function Orders() {
 
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
   const [scanOpenFor, setScanOpenFor] = useState<string | null>(null);
-  const [scanText, setScanText] = useState("");
+  const [scanText, setScanTextState] = useState("");
+  // Espelho síncrono do texto: leituras seguidas (câmera ou celular) não podem ler um texto velho e passar da quantidade do pedido.
+  const scanRef = useRef("");
+  const setScanText = (next: string) => {
+    scanRef.current = next;
+    setScanTextState(next);
+  };
   const [cameraOpenFor, setCameraOpenFor] = useState<string | null>(null);
+
+  /** Soma uma placa lida ao lote do pedido: trava na quantidade (não aceita a seguinte) e fecha o bipador quando completa. */
+  function addScan(code: string, row: OrderRow): ScanStatus {
+    const r = addScannedCode(scanRef.current, code, row.quantity);
+    if (r.status === "ok" || r.status === "complete") setScanText(r.text);
+    if (r.status === "complete") {
+      toast.success(`Completo: ${row.quantity} de ${row.quantity} placas. O bipador foi fechado.`);
+      setCameraOpenFor(null);
+    }
+    if (r.status === "over") toast.error(`O pedido tem ${row.quantity} un. e já está completo. Essa placa não entrou.`);
+    return r.status;
+  }
   const runGetFreightQuotes = useServerFn(getOrderFreightQuotes);
   const runBuyLabel = useServerFn(buyOrderShippingLabel);
   const runSyncShipping = useServerFn(syncShippingNow);
@@ -1090,25 +1090,24 @@ function Orders() {
                                 new Set([...parseScanned(scanText).hex, ...parseScanned(scanText).shorts])
                               }
                               onClose={() => setCameraOpenFor(null)}
-                              onScan={(code) => {
-                                setScanText((prev) => (prev.trim() ? `${prev.trim()}\n${code}` : code));
-                                const total =
-                                  parseScanned(scanText).hex.size + parseScanned(scanText).shorts.size + 1;
-                                if (total >= r.quantity) setCameraOpenFor(null);
-                              }}
+                              onScan={(code) => addScan(code, r)}
                             />
                           )}
                           <div className="mt-2 flex items-center gap-3">
                             <Button
                               size="sm"
                               className="h-8 rounded-lg text-xs"
-                              disabled={generatingFor === r.id}
+                              disabled={generatingFor === r.id || scanGap(scanText, r.quantity) !== 0}
                               onClick={() => void assignScannedPlates(r)}
+                              title={scanGap(scanText, r.quantity) !== 0 ? "O lote só monta com a quantidade exata do pedido" : undefined}
                             >
                               {generatingFor === r.id ? "Montando…" : "Montar lote"}
                             </Button>
                             <span className="text-xs text-muted-foreground">
-                              {parseScanned(scanText).hex.size + parseScanned(scanText).shorts.size} / {r.quantity} códigos
+                              {parseScanned(scanText).hex.size + parseScanned(scanText).shorts.size} / {r.quantity} códigos ·{" "}
+                              <span className={scanGap(scanText, r.quantity) === 0 ? "font-semibold text-green-600" : "font-semibold text-amber-600"}>
+                                {scanGapLabel(scanText, r.quantity)}
+                              </span>
                             </span>
                           </div>
                         </div>
