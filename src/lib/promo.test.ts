@@ -52,9 +52,9 @@ describe("pixDiscountActive", () => {
     expect(pixDiscountActive(new Date(limite + 1))).toBe(false);
     expect(pixDiscountActive(new Date(limite + 30 * 24 * 3600 * 1000))).toBe(false);
   });
-  it("o prazo é à meia-noite de Brasília (fim do dia 29/11)", () => {
-    expect(PIX_DISCOUNT_DEADLINE).toBe("2026-11-30T00:00:00-03:00");
-    expect(pixDiscountActive(new Date("2026-11-29T23:59:59-03:00"))).toBe(true);
-    expect(pixDiscountActive(new Date("2026-11-30T00:00:00-03:00"))).toBe(false);
+  it("o prazo é à meia-noite de Brasília (fim do dia 30/12)", () => {
+    expect(PIX_DISCOUNT_DEADLINE).toBe("2026-12-31T00:00:00-03:00");
+    expect(pixDiscountActive(new Date("2026-12-30T23:59:59-03:00"))).toBe(true);
+    expect(pixDiscountActive(new Date("2026-12-31T00:00:00-03:00"))).toBe(false);
   });
 });

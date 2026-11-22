@@ -1,8 +1,8 @@
 // Promoção temporária: 5% de desconto pagando via Pix. Prazo real vive só aqui --
 // mudou a data, muda aqui uma vez só (banner do site e checkout leem a mesma constante).
 export const PIX_DISCOUNT_PCT = 5;
-export const PIX_DISCOUNT_DEADLINE = "2026-11-30T00:00:00-03:00"; // fim de 29/11 (BRT)
-export const PIX_DISCOUNT_UNTIL_LABEL = "29/11";
+export const PIX_DISCOUNT_DEADLINE = "2026-12-31T00:00:00-03:00"; // fim de 30/12 (BRT); confirmado pelo Leonardo em 2026-11-22
+export const PIX_DISCOUNT_UNTIL_LABEL = "30/12";
 
 /** O desconto do Pix vale só para produto com arte (Google, Instagram, Pix, WhatsApp). Acrílico liso e tag NFC ficam de fora. */
 export function pixEligible(product: { is_blank?: boolean | null; is_supply?: boolean | null } | null | undefined): boolean {
