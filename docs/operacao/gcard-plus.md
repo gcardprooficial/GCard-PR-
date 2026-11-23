@@ -12,6 +12,10 @@ O destino de um QR criado pelo Plus fica congelado sem assinatura em dia (trigge
 - `/ativar` (assinante em dia): troca de destino em lote, estatísticas (7/30/90 dias), criador de QR. Sem assinatura: 1 QR de teste.
 - Cron diário existente (`/api/cron/daily`, 12:00 UTC): relatório mensal no dia 1 (SP) e alerta de destino fora do ar (1 por código por semana). Dedupe em `plus_webhook_events`.
 
+## Endereço do webhook na Kiwify: COM www
+Cadastre exatamente `https://www.gcardpro.com.br/api/webhooks/kiwify-plus`. O endereço sem www (`https://gcardpro.com.br/...`) responde **308 Redirect** para o www, e a Kiwify não segue redirecionamento de POST: o aviso se perde sem erro nenhum no GCard (nada em `plus_webhook_events`, nada na Vercel). Foi o que aconteceu em 22/11/2026, quando a primeira compra real do Plus não foi registrada. Teste: `curl -sI https://www.gcardpro.com.br/api/webhooks/kiwify-plus` deve dar 200, e a versão sem www dá 308. A mesma regra vale para os webhooks da InfinitePay e do Mercado Pago. (No Toqy é o contrário: o endereço certo é SEM www.)
+Sinal de que está funcionando: `select count(*) from public.plus_webhook_events;` sobe depois de uma compra. Zero em tudo significa que nenhum aviso foi processado.
+
 ## Ligar a venda
 Só depois do teste do QR e da primeira venda real combinada com o Hub:
 `UPDATE public.app_settings SET value = '{"enabled": true}'::jsonb WHERE key = 'gcard_plus';`
